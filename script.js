@@ -1,4 +1,4 @@
-const API_URL = "PASTE_URL_WEB_APP_ANDA_DISINI"; // Ganti dengan URL Apps Script Anda
+const API_URL = "https://script.google.com/macros/s/AKfycbylS_vmqMVqqCd4FO5qEWEvNduioq9oQaSFg5UnQTfUi8oBBwrecWbwzs-vh2SF8b3C/exec"; // Ganti dengan URL Apps Script Anda
 
 let activePicaId = null;
 let referensiDataCache = [];
