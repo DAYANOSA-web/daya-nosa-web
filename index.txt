@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daya NOSA - Operations & Standards</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-100 font-sans text-gray-800">
+
+  <div id="loginSection" class="min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-gray-100">
+      <div class="text-center mb-6">
+        <h1 class="text-3xl font-bold text-red-600">Daya NOSA</h1>
+        <p class="text-sm text-gray-500 mt-1">Network Operational Standard Audit</p>
+      </div>
+      
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-semibold mb-1">Email Pengguna</label>
+          <input type="email" id="emailInput" placeholder="Masukkan email..." class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500">
+        </div>
+        
+        <div>
+          <label class="block text-sm font-semibold mb-1">Masuk Sebagai (Role)</label>
+          <select id="roleSelect" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500">
+            <option value="Kacab">Kepala Cabang (Kacab)</option>
+            <option value="FLP">FLP Cabang</option>
+            <option value="NOS Officer">NOS Officer</option>
+          </select>
+        </div>
+
+        <button onclick="handleLogin()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg transition duration-200 shadow-lg shadow-red-200">
+          Masuk ke Aplikasi
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="dashboardSection" class="hidden min-h-screen pb-12">
+    <nav class="bg-red-600 text-white px-6 py-4 shadow-md flex justify-between items-center">
+      <div>
+        <h2 class="font-bold text-xl">Daya NOSA</h2>
+        <p id="userRoleBadge" class="text-xs bg-red-800 text-red-100 px-2 py-0.5 rounded inline-block mt-1"></p>
+      </div>
+      <button onclick="handleLogout()" class="text-sm bg-white text-red-600 px-3 py-1.5 rounded-lg font-semibold hover:bg-red-50 transition">
+        Keluar
+      </button>
+    </nav>
+
+    <main class="max-w-5xl mx-auto mt-6 px-4">
+      <div id="roleContent" class="space-y-6">
+        </div>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

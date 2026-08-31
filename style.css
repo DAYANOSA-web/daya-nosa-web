@@ -1,0 +1,10 @@
+/* Custom Styling Tambahan */
+body {
+  -webkit-tap-highlight-color: transparent;
+}
+.card-hover {
+  transition: transform 0.2s ease, shadow 0.2s ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+}
