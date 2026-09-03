@@ -150,24 +150,47 @@ function filterReferensi() {
   renderReferensiCards(filtered);
 }
 
-// Modal Handlers
+// Variable untuk menampung data gambar
+let selectedBase64Image = "";
+
 function openUploadModal(id, title) {
   activePicaId = id;
+  selectedBase64Image = "";
   document.getElementById("modalPicaTitle").innerText = `${id}: ${title}`;
+  document.getElementById("fotoFileInput").value = "";
+  document.getElementById("previewContainer").classList.add("hidden");
   document.getElementById("uploadModal").classList.remove("hidden");
 }
 
 function closeUploadModal() {
   document.getElementById("uploadModal").classList.add("hidden");
-  document.getElementById("fotoUrlInput").value = "";
+  selectedBase64Image = "";
+}
+
+// Fungsi Konversi Foto ke Base64 Data
+function previewImage(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    selectedBase64Image = e.target.result;
+    const imgPreview = document.getElementById("imagePreview");
+    imgPreview.src = selectedBase64Image;
+    document.getElementById("previewContainer").classList.remove("hidden");
+  };
+  reader.readAsDataURL(file);
 }
 
 function submitEvidence() {
-  const url = document.getElementById("fotoUrlInput").value;
-  if (!url) {
-    alert("Masukkan link foto terlebih dahulu!");
+  if (!selectedBase64Image) {
+    alert("Silakan ambil/pilih foto bukti perbaikan terlebih dahulu!");
     return;
   }
+
+  const btn = document.getElementById("btnSubmitFoto");
+  btn.innerText = "Mengunggah...";
+  btn.disabled = true;
 
   fetch(API_URL, {
     method: "POST",
@@ -175,14 +198,20 @@ function submitEvidence() {
       action: "updatePICA",
       idPica: activePicaId,
       status: "Waiting Verification",
-      fotoUrl: url
+      fotoUrl: selectedBase64Image
     })
   })
   .then(res => res.json())
   .then(res => {
-    alert("Bukti perbaikan berhasil diunggah!");
+    alert("Bukti perbaikan foto berhasil dikirim!");
+    btn.innerText = "Kirim Bukti";
+    btn.disabled = false;
     closeUploadModal();
-    loadPICAData(); // Reload PICA
+    loadPICAData(); // Reload data PICA
   })
-  .catch(err => alert("Gagal memperbarui PICA"));
+  .catch(err => {
+    alert("Gagal mengunggah foto.");
+    btn.innerText = "Kirim Bukti";
+    btn.disabled = false;
+  });
 }
