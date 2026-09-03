@@ -1,5 +1,5 @@
 // ISI DENGAN URL WEB APP APPS SCRIPT KAMU DARI Google Apps Script Deployment!
-const API_URL = "https://docs.google.com/spreadsheets/d/1R3PV03etW2Rr_YQndphEMHU50EoSjnBDHtUusgqkroY/edit?gid=1427910433#gid=1427910433";
+const API_URL = "https://script.google.com/macros/s/AKfycbylS_vmqMVqqCd4FO5qEWEvNduioq9oQaSFg5UnQTfUi8oBBwrecWbwzs-vh2SF8b3C/exec";
 let activePicaId = null;
 let referensiDataCache = [];
 let selectedBase64Image = "";
