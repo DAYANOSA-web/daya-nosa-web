@@ -215,3 +215,92 @@ function submitEvidence() {
     btn.disabled = false;
   });
 }
+
+let quizData = [];
+let currentQuizIndex = 0;
+let userScore = 0;
+
+// Tambahkan logika switchTab untuk 'nosizu'
+function switchTab(tabName) {
+  const picaBtn = document.getElementById("tabPica");
+  const refBtn = document.getElementById("tabReferensi");
+  const nosizuBtn = document.getElementById("tabNosizu");
+
+  const picaContent = document.getElementById("contentPica");
+  const refContent = document.getElementById("contentReferensi");
+  const nosizuContent = document.getElementById("contentNosizu");
+
+  // Hide all
+  picaContent.classList.add("hidden");
+  refContent.classList.add("hidden");
+  nosizuContent.classList.add("hidden");
+
+  picaBtn.className = refBtn.className = nosizuBtn.className = "px-4 py-2 font-bold text-sm rounded-lg text-gray-600 hover:bg-gray-100";
+
+  if (tabName === 'pica') {
+    picaContent.classList.remove("hidden");
+    picaBtn.className = "px-4 py-2 font-bold text-sm rounded-lg bg-red-600 text-white";
+  } else if (tabName === 'referensi') {
+    refContent.classList.remove("hidden");
+    refBtn.className = "px-4 py-2 font-bold text-sm rounded-lg bg-red-600 text-white";
+  } else if (tabName === 'nosizu') {
+    nosizuContent.classList.remove("hidden");
+    nosizuBtn.className = "px-4 py-2 font-bold text-sm rounded-lg bg-red-600 text-white";
+    loadQuizData();
+  }
+}
+
+function loadQuizData() {
+  fetch(`${API_URL}?action=getSoalNOSIZU`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.length <= 1) return;
+      quizData = data.slice(1); // Potong header
+      currentQuizIndex = 0;
+      renderQuizCard();
+    });
+}
+
+function renderQuizCard() {
+  if (currentQuizIndex >= quizData.length) {
+    document.getElementById("quizBox").innerHTML = `
+      <div class="text-center py-8 space-y-3">
+        <h3 class="text-2xl font-bold text-green-600">🎉 Misi Level Selesai!</h3>
+        <p class="text-sm text-gray-600">Total Skor yang Anda dapatkan: <strong>${userScore} PTS</strong></p>
+        <button onclick="loadQuizData()" class="px-6 py-2.5 bg-red-600 text-white font-bold rounded-xl text-sm">Main Lagi</button>
+      </div>
+    `;
+    return;
+  }
+
+  const [id, level, question, optA, optB, optC, optD, key] = quizData[currentQuizIndex];
+  
+  document.getElementById("quizLevelBadge").innerText = `Level ${level}`;
+  document.getElementById("quizProgress").innerText = `Soal ${currentQuizIndex + 1} dari ${quizData.length}`;
+  document.getElementById("quizQuestion").innerText = question;
+
+  const options = [optA, optB, optC, optD];
+  let optionsHtml = "";
+
+  options.forEach(opt => {
+    optionsHtml += `
+      <button onclick="checkAnswer('${opt}', '${key}')" class="w-full text-left p-4 rounded-xl border border-gray-200 font-semibold text-sm hover:border-red-500 hover:bg-red-50 transition">
+        ${opt}
+      </button>
+    `;
+  });
+
+  document.getElementById("quizOptions").innerHTML = optionsHtml;
+}
+
+function checkAnswer(selected, key) {
+  if (selected === key) {
+    alert("✨ Jawaban Benar! (+10 PTS)");
+    userScore += 10;
+    document.getElementById("nosizuScore").innerText = `${userScore} PTS`;
+  } else {
+    alert(`❌ Salah! Jawaban yang benar adalah: ${key}`);
+  }
+  currentQuizIndex++;
+  renderQuizCard();
+}
