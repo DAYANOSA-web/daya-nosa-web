@@ -1,6 +1,5 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbylS_vmqMVqqCd4FO5qEWEvNduioq9oQaSFg5UnQTfUi8oBBwrecWbwzs-vh2SF8b3C/exec"; // Ganti dengan URL Apps Script Anda
-
-
+// ISI DENGAN URL WEB APP APPS SCRIPT KAMU DARI Google Apps Script Deployment!
+const API_URL = "https://docs.google.com/spreadsheets/d/1R3PV03etW2Rr_YQndphEMHU50EoSjnBDHtUusgqkroY/edit?gid=1427910433#gid=1427910433";
 let activePicaId = null;
 let referensiDataCache = [];
 let selectedBase64Image = "";
@@ -9,6 +8,7 @@ let quizData = [];
 let currentQuizIndex = 0;
 let userScore = 0;
 
+// Logika Login
 function handleLogin() {
   const email = document.getElementById("emailInput").value;
   const role = document.getElementById("roleSelect").value;
@@ -49,20 +49,17 @@ function switchTab(tabName) {
   const refContent = document.getElementById("contentReferensi");
   const nosizuContent = document.getElementById("contentNosizu");
 
-  // Sembunyikan Semua Tab Konten
   picaContent.classList.add("hidden");
   refContent.classList.add("hidden");
   nosizuContent.classList.add("hidden");
 
-  // Reset Style Tombol
-  const defaultBtnClass = "px-4 py-2 font-bold text-sm rounded-lg text-gray-600 hover:bg-gray-100";
-  const activeBtnClass = "px-4 py-2 font-bold text-sm rounded-lg bg-red-600 text-white";
+  const defaultBtnClass = "px-4 py-2 font-bold text-sm rounded-lg text-gray-600 hover:bg-gray-100 transition";
+  const activeBtnClass = "px-4 py-2 font-bold text-sm rounded-lg bg-red-600 text-white transition";
 
   picaBtn.className = defaultBtnClass;
   refBtn.className = defaultBtnClass;
   nosizuBtn.className = defaultBtnClass;
 
-  // Tampilkan Tab Aktif
   if (tabName === 'pica') {
     picaContent.classList.remove("hidden");
     picaBtn.className = activeBtnClass;
@@ -72,20 +69,20 @@ function switchTab(tabName) {
   } else if (tabName === 'nosizu') {
     nosizuContent.classList.remove("hidden");
     nosizuBtn.className = activeBtnClass;
-    loadQuizData(); // Load soal saat tab diklik
+    loadQuizData();
   }
 }
 
 // Fetch Data PICA
 function loadPICAData() {
   const container = document.getElementById("picaContainer");
-  container.innerHTML = `<p class="text-gray-500 text-sm">Sedang mengambil data PICA...</p>`;
+  container.innerHTML = `<p class="text-gray-500 text-sm col-span-2">Sedang mengambil data PICA...</p>`;
 
   fetch(`${API_URL}?action=getPICA`)
     .then(res => res.json())
     .then(data => {
       if (!data || data.length <= 1) {
-        container.innerHTML = `<p class="text-gray-500 text-sm">Belum ada item PICA.</p>`;
+        container.innerHTML = `<p class="text-gray-500 text-sm col-span-2">Belum ada item PICA.</p>`;
         return;
       }
 
@@ -101,16 +98,16 @@ function loadPICAData() {
           <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm space-y-3">
             <div class="flex justify-between items-start">
               <div>
-                <span class="text-xs font-bold text-gray-400">${id} • ${cabang}</span>
-                <h4 class="font-bold text-lg text-gray-800">${item}</h4>
+                <span class="text-xs font-bold text-gray-400">${id || '-'} • ${cabang || '-'}</span>
+                <h4 class="font-bold text-base text-gray-800 mt-0.5">${item || '-'}</h4>
               </div>
-              <span class="text-xs px-2.5 py-1 rounded-full font-bold ${statusBadge}">${status}</span>
+              <span class="text-xs px-2.5 py-1 rounded-full font-bold ${statusBadge}">${status || 'Pending'}</span>
             </div>
             
             <p class="text-xs text-gray-600"><strong>Catatan NOS:</strong> ${catatan || '-'}</p>
 
             <div class="flex justify-between items-center pt-2 border-t text-xs text-gray-500">
-              <span>Prioritas: <strong class="text-red-600">${prioritas}</strong></span>
+              <span>Prioritas: <strong class="text-red-600">${prioritas || 'Normal'}</strong></span>
               ${foto && foto !== '-' ? `<a href="${foto}" target="_blank" class="text-blue-600 underline font-semibold">Lihat Bukti Foto</a>` : '<span class="italic text-gray-400">Belum ada bukti</span>'}
             </div>
 
@@ -123,7 +120,8 @@ function loadPICAData() {
       container.innerHTML = html;
     })
     .catch(err => {
-      container.innerHTML = `<p class="text-red-500 text-sm">Gagal memuat data PICA.</p>`;
+      console.error(err);
+      container.innerHTML = `<p class="text-red-500 text-sm col-span-2">Gagal memuat data PICA. Cek koneksi API Apps Script.</p>`;
     });
 }
 
@@ -136,13 +134,17 @@ function loadReferensiData() {
     .then(data => {
       referensiDataCache = data;
       renderReferensiCards(data);
+    })
+    .catch(err => {
+      console.error(err);
+      container.innerHTML = `<p class="text-red-500 text-sm col-span-2">Gagal memuat data referensi.</p>`;
     });
 }
 
 function renderReferensiCards(data) {
   const container = document.getElementById("referensiContainer");
   if (!data || data.length <= 1) {
-    container.innerHTML = `<p class="text-gray-500 text-sm">Belum ada data referensi.</p>`;
+    container.innerHTML = `<p class="text-gray-500 text-sm col-span-2">Belum ada data referensi.</p>`;
     return;
   }
 
@@ -151,12 +153,12 @@ function renderReferensiCards(data) {
     const [id, judul, kategori, deskripsi, fungsi, instruksi] = data[i];
     html += `
       <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm space-y-2">
-        <span class="text-xs font-bold bg-red-100 text-red-600 px-2 py-0.5 rounded">${kategori}</span>
-        <h4 class="font-bold text-md text-gray-800">${judul}</h4>
-        <p class="text-xs text-gray-600">${deskripsi}</p>
+        <span class="text-xs font-bold bg-red-100 text-red-600 px-2 py-0.5 rounded">${kategori || 'Standar'}</span>
+        <h4 class="font-bold text-md text-gray-800">${judul || '-'}</h4>
+        <p class="text-xs text-gray-600">${deskripsi || '-'}</p>
         <div class="bg-gray-50 p-3 rounded-lg text-xs space-y-1">
-          <p><strong>Fungsi:</strong> ${fungsi}</p>
-          <p><strong>Instruksi & Spek:</strong> ${instruksi}</p>
+          <p><strong>Fungsi:</strong> ${fungsi || '-'}</p>
+          <p><strong>Instruksi & Spek:</strong> ${instruksi || '-'}</p>
         </div>
       </div>
     `;
@@ -236,16 +238,16 @@ function submitEvidence() {
   });
 }
 
-// Logika Kuis NOSIZU
+// Logika Game NOSIZU
 function loadQuizData() {
   const quizBox = document.getElementById("quizBox");
-  quizBox.innerHTML = `<p class="text-gray-500 text-sm">Sedang menyiapkan soal kuis...</p>`;
+  quizBox.innerHTML = `<p class="text-gray-500 text-sm">Sedang mengambil soal dari Google Sheets...</p>`;
 
   fetch(`${API_URL}?action=getSoalNOSIZU`)
     .then(res => res.json())
     .then(data => {
       if (!data || data.length <= 1) {
-        quizBox.innerHTML = `<p class="text-gray-500 text-sm">Belum ada soal kuis yang tersedia di Google Sheets.</p>`;
+        quizBox.innerHTML = `<p class="text-gray-500 text-sm">Belum ada soal kuis di sheet <strong>SoalNOSIZU</strong>.</p>`;
         return;
       }
       quizData = data.slice(1);
@@ -253,7 +255,8 @@ function loadQuizData() {
       renderQuizCard();
     })
     .catch(err => {
-      quizBox.innerHTML = `<p class="text-red-500 text-sm">Gagal memuat soal kuis.</p>`;
+      console.error(err);
+      quizBox.innerHTML = `<p class="text-red-500 text-sm">Gagal memuat soal kuis. Pastikan tab <strong>SoalNOSIZU</strong> sudah ada di spreadsheet.</p>`;
     });
 }
 
@@ -265,19 +268,30 @@ function renderQuizCard() {
       <div class="text-center py-8 space-y-3">
         <h3 class="text-2xl font-bold text-green-600">🎉 Misi Level Selesai!</h3>
         <p class="text-sm text-gray-600">Total Skor yang Anda dapatkan: <strong>${userScore} PTS</strong></p>
-        <button onclick="loadQuizData()" class="px-6 py-2.5 bg-red-600 text-white font-bold rounded-xl text-sm hover:bg-red-700">Main Lagi</button>
+        <button onclick="loadQuizData()" class="px-6 py-2.5 bg-red-600 text-white font-bold rounded-xl text-sm hover:bg-red-700 transition">Main Lagi</button>
       </div>
     `;
     return;
   }
 
-  const [id, level, question, optA, optB, optC, optD, key] = quizData[currentQuizIndex];
+  const row = quizData[currentQuizIndex];
+  const id = row[0] || 'Q-001';
+  const level = row[1] || '1';
+  const question = row[2] || 'Pertanyaan tidak ditemukan';
+  const optA = row[3] || '-';
+  const optB = row[4] || '-';
+  const optC = row[5] || '-';
+  const optD = row[6] || '-';
+  const key = row[7] || '-';
+
   const options = [optA, optB, optC, optD];
 
   let optionsHtml = "";
   options.forEach(opt => {
+    const escapedOpt = String(opt).replace(/'/g, "\\'");
+    const escapedKey = String(key).replace(/'/g, "\\'");
     optionsHtml += `
-      <button onclick="checkAnswer('${opt.replace(/'/g, "\\'")}', '${key.replace(/'/g, "\\'")}')" class="w-full text-left p-4 rounded-xl border border-gray-200 font-semibold text-sm hover:border-red-500 hover:bg-red-50 transition">
+      <button onclick="checkAnswer('${escapedOpt}', '${escapedKey}')" class="w-full text-left p-4 rounded-xl border border-gray-200 font-semibold text-sm hover:border-red-500 hover:bg-red-50 transition">
         ${opt}
       </button>
     `;
@@ -289,7 +303,7 @@ function renderQuizCard() {
       <span class="text-xs font-semibold text-gray-400">Soal ${currentQuizIndex + 1} dari ${quizData.length}</span>
     </div>
 
-    <h4 class="text-lg font-bold text-gray-800 pt-2">${question}</h4>
+    <h4 class="text-lg font-bold text-gray-800 pt-1">${question}</h4>
 
     <div class="grid grid-cols-1 gap-3 pt-2">
       ${optionsHtml}
@@ -303,8 +317,16 @@ function checkAnswer(selected, key) {
     userScore += 10;
     document.getElementById("nosizuScore").innerText = `${userScore} PTS`;
   } else {
-    alert(`❌ Salah! Jawaban yang benar adalah: ${key}`);
+    alert(`❌ Salah! Jawaban yang benar: ${key}`);
   }
   currentQuizIndex++;
   renderQuizCard();
 }
+
+// Auto-check session saat reload
+window.onload = function() {
+  const savedRole = localStorage.getItem("userRole");
+  if (savedRole) {
+    renderDashboard(savedRole);
+  }
+};
