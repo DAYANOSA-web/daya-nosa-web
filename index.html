@@ -58,6 +58,7 @@
       <div class="flex space-x-2 border-b border-gray-200 mb-6 bg-white p-2 rounded-xl shadow-sm" id="tabMenu">
         <button onclick="switchTab('pica')" id="tabPica" class="px-4 py-2 font-bold text-sm rounded-lg bg-red-600 text-white">Dashboard PICA</button>
         <button onclick="switchTab('referensi')" id="tabReferensi" class="px-4 py-2 font-bold text-sm rounded-lg text-gray-600 hover:bg-gray-100">Referensi Standar</button>
+        <button onclick="switchTab('nosizu')" id="tabNosizu" class="px-4 py-2 font-bold text-sm rounded-lg text-gray-600 hover:bg-gray-100">🎮 Game NOSIZU</button>
       </div>
 
       <!-- Tab Content: PICA -->
@@ -83,7 +84,37 @@
       </div>
     </main>
   </div>
+  
+<!-- Tab Content: Game NOSIZU -->
+<div id="contentNosizu" class="hidden space-y-6">
+  <!-- Header Status Level & Skor -->
+  <div class="bg-gradient-to-r from-red-600 to-red-800 text-white p-6 rounded-2xl shadow-lg flex justify-between items-center">
+    <div>
+      <span class="text-xs uppercase tracking-wider bg-red-900 px-2 py-1 rounded">Kuis Standar FLP</span>
+      <h3 class="text-2xl font-black mt-1">NOSIZU Arena</h3>
+    </div>
+    <div class="text-right">
+      <p class="text-xs opacity-80">Total Skor Anda</p>
+      <p id="nosizuScore" class="text-3xl font-bold">0 PTS</p>
+    </div>
+  </div>
 
+  <!-- Area Kuis Game -->
+  <div id="quizBox" class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+    <div class="flex justify-between items-center">
+      <span id="quizLevelBadge" class="text-xs font-bold bg-gray-100 px-3 py-1 rounded-full text-gray-600">Level 1</span>
+      <span id="quizProgress" class="text-xs font-semibold text-gray-400">Soal 1 dari 5</span>
+    </div>
+
+    <h4 id="quizQuestion" class="text-lg font-bold text-gray-800 pt-2">Memuat pertanyaan...</h4>
+
+    <!-- Pilihan Jawaban -->
+    <div id="quizOptions" class="grid grid-cols-1 gap-3 pt-2">
+      <!-- Button pilihan akan di-generate via JavaScript -->
+    </div>
+  </div>
+</div>
+  
 <!-- Modal Upload Evidence -->
   <div id="uploadModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl">
