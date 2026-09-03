@@ -1,7 +1,13 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbylS_vmqMVqqCd4FO5qEWEvNduioq9oQaSFg5UnQTfUi8oBBwrecWbwzs-vh2SF8b3C/exec"; // Ganti dengan URL Apps Script Anda
 
+
 let activePicaId = null;
 let referensiDataCache = [];
+let selectedBase64Image = "";
+
+let quizData = [];
+let currentQuizIndex = 0;
+let userScore = 0;
 
 function handleLogin() {
   const email = document.getElementById("emailInput").value;
@@ -33,40 +39,57 @@ function renderDashboard(role) {
   loadReferensiData();
 }
 
+// Navigasi Tab
 function switchTab(tabName) {
   const picaBtn = document.getElementById("tabPica");
   const refBtn = document.getElementById("tabReferensi");
+  const nosizuBtn = document.getElementById("tabNosizu");
+
   const picaContent = document.getElementById("contentPica");
   const refContent = document.getElementById("contentReferensi");
+  const nosizuContent = document.getElementById("contentNosizu");
 
+  // Sembunyikan Semua Tab Konten
+  picaContent.classList.add("hidden");
+  refContent.classList.add("hidden");
+  nosizuContent.classList.add("hidden");
+
+  // Reset Style Tombol
+  const defaultBtnClass = "px-4 py-2 font-bold text-sm rounded-lg text-gray-600 hover:bg-gray-100";
+  const activeBtnClass = "px-4 py-2 font-bold text-sm rounded-lg bg-red-600 text-white";
+
+  picaBtn.className = defaultBtnClass;
+  refBtn.className = defaultBtnClass;
+  nosizuBtn.className = defaultBtnClass;
+
+  // Tampilkan Tab Aktif
   if (tabName === 'pica') {
     picaContent.classList.remove("hidden");
-    refContent.classList.add("hidden");
-    picaBtn.className = "px-4 py-2 font-bold text-sm rounded-lg bg-red-600 text-white";
-    refBtn.className = "px-4 py-2 font-bold text-sm rounded-lg text-gray-600 hover:bg-gray-100";
-  } else {
-    picaContent.classList.add("hidden");
+    picaBtn.className = activeBtnClass;
+  } else if (tabName === 'referensi') {
     refContent.classList.remove("hidden");
-    refBtn.className = "px-4 py-2 font-bold text-sm rounded-lg bg-red-600 text-white";
-    picaBtn.className = "px-4 py-2 font-bold text-sm rounded-lg text-gray-600 hover:bg-gray-100";
+    refBtn.className = activeBtnClass;
+  } else if (tabName === 'nosizu') {
+    nosizuContent.classList.remove("hidden");
+    nosizuBtn.className = activeBtnClass;
+    loadQuizData(); // Load soal saat tab diklik
   }
 }
 
 // Fetch Data PICA
 function loadPICAData() {
   const container = document.getElementById("picaContainer");
-  container.innerHTML = `<p class="text-gray-500 text-sm">Sedang mengambil data PICA dari Google Sheets...</p>`;
+  container.innerHTML = `<p class="text-gray-500 text-sm">Sedang mengambil data PICA...</p>`;
 
   fetch(`${API_URL}?action=getPICA`)
     .then(res => res.json())
     .then(data => {
-      if (data.length <= 1) {
+      if (!data || data.length <= 1) {
         container.innerHTML = `<p class="text-gray-500 text-sm">Belum ada item PICA.</p>`;
         return;
       }
 
       let html = "";
-      // Loop dari baris ke-2 (skip header)
       for (let i = 1; i < data.length; i++) {
         const [id, cabang, item, prioritas, status, foto, catatan, tgl] = data[i];
         
@@ -118,7 +141,7 @@ function loadReferensiData() {
 
 function renderReferensiCards(data) {
   const container = document.getElementById("referensiContainer");
-  if (data.length <= 1) {
+  if (!data || data.length <= 1) {
     container.innerHTML = `<p class="text-gray-500 text-sm">Belum ada data referensi.</p>`;
     return;
   }
@@ -144,15 +167,13 @@ function renderReferensiCards(data) {
 function filterReferensi() {
   const keyword = document.getElementById("searchRef").value.toLowerCase();
   const filtered = referensiDataCache.filter((row, index) => {
-    if (index === 0) return true; // Keep header
+    if (index === 0) return true;
     return row.some(cell => String(cell).toLowerCase().includes(keyword));
   });
   renderReferensiCards(filtered);
 }
 
-// Variable untuk menampung data gambar
-let selectedBase64Image = "";
-
+// Modal Handlers
 function openUploadModal(id, title) {
   activePicaId = id;
   selectedBase64Image = "";
@@ -167,7 +188,6 @@ function closeUploadModal() {
   selectedBase64Image = "";
 }
 
-// Fungsi Konversi Foto ke Base64 Data
 function previewImage(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -207,7 +227,7 @@ function submitEvidence() {
     btn.innerText = "Kirim Bukti";
     btn.disabled = false;
     closeUploadModal();
-    loadPICAData(); // Reload data PICA
+    loadPICAData();
   })
   .catch(err => {
     alert("Gagal mengunggah foto.");
@@ -216,81 +236,65 @@ function submitEvidence() {
   });
 }
 
-let quizData = [];
-let currentQuizIndex = 0;
-let userScore = 0;
-
-// Tambahkan logika switchTab untuk 'nosizu'
-function switchTab(tabName) {
-  const picaBtn = document.getElementById("tabPica");
-  const refBtn = document.getElementById("tabReferensi");
-  const nosizuBtn = document.getElementById("tabNosizu");
-
-  const picaContent = document.getElementById("contentPica");
-  const refContent = document.getElementById("contentReferensi");
-  const nosizuContent = document.getElementById("contentNosizu");
-
-  // Hide all
-  picaContent.classList.add("hidden");
-  refContent.classList.add("hidden");
-  nosizuContent.classList.add("hidden");
-
-  picaBtn.className = refBtn.className = nosizuBtn.className = "px-4 py-2 font-bold text-sm rounded-lg text-gray-600 hover:bg-gray-100";
-
-  if (tabName === 'pica') {
-    picaContent.classList.remove("hidden");
-    picaBtn.className = "px-4 py-2 font-bold text-sm rounded-lg bg-red-600 text-white";
-  } else if (tabName === 'referensi') {
-    refContent.classList.remove("hidden");
-    refBtn.className = "px-4 py-2 font-bold text-sm rounded-lg bg-red-600 text-white";
-  } else if (tabName === 'nosizu') {
-    nosizuContent.classList.remove("hidden");
-    nosizuBtn.className = "px-4 py-2 font-bold text-sm rounded-lg bg-red-600 text-white";
-    loadQuizData();
-  }
-}
-
+// Logika Kuis NOSIZU
 function loadQuizData() {
+  const quizBox = document.getElementById("quizBox");
+  quizBox.innerHTML = `<p class="text-gray-500 text-sm">Sedang menyiapkan soal kuis...</p>`;
+
   fetch(`${API_URL}?action=getSoalNOSIZU`)
     .then(res => res.json())
     .then(data => {
-      if (data.length <= 1) return;
-      quizData = data.slice(1); // Potong header
+      if (!data || data.length <= 1) {
+        quizBox.innerHTML = `<p class="text-gray-500 text-sm">Belum ada soal kuis yang tersedia di Google Sheets.</p>`;
+        return;
+      }
+      quizData = data.slice(1);
       currentQuizIndex = 0;
       renderQuizCard();
+    })
+    .catch(err => {
+      quizBox.innerHTML = `<p class="text-red-500 text-sm">Gagal memuat soal kuis.</p>`;
     });
 }
 
 function renderQuizCard() {
+  const quizBox = document.getElementById("quizBox");
+
   if (currentQuizIndex >= quizData.length) {
-    document.getElementById("quizBox").innerHTML = `
+    quizBox.innerHTML = `
       <div class="text-center py-8 space-y-3">
         <h3 class="text-2xl font-bold text-green-600">🎉 Misi Level Selesai!</h3>
         <p class="text-sm text-gray-600">Total Skor yang Anda dapatkan: <strong>${userScore} PTS</strong></p>
-        <button onclick="loadQuizData()" class="px-6 py-2.5 bg-red-600 text-white font-bold rounded-xl text-sm">Main Lagi</button>
+        <button onclick="loadQuizData()" class="px-6 py-2.5 bg-red-600 text-white font-bold rounded-xl text-sm hover:bg-red-700">Main Lagi</button>
       </div>
     `;
     return;
   }
 
   const [id, level, question, optA, optB, optC, optD, key] = quizData[currentQuizIndex];
-  
-  document.getElementById("quizLevelBadge").innerText = `Level ${level}`;
-  document.getElementById("quizProgress").innerText = `Soal ${currentQuizIndex + 1} dari ${quizData.length}`;
-  document.getElementById("quizQuestion").innerText = question;
-
   const options = [optA, optB, optC, optD];
-  let optionsHtml = "";
 
+  let optionsHtml = "";
   options.forEach(opt => {
     optionsHtml += `
-      <button onclick="checkAnswer('${opt}', '${key}')" class="w-full text-left p-4 rounded-xl border border-gray-200 font-semibold text-sm hover:border-red-500 hover:bg-red-50 transition">
+      <button onclick="checkAnswer('${opt.replace(/'/g, "\\'")}', '${key.replace(/'/g, "\\'")}')" class="w-full text-left p-4 rounded-xl border border-gray-200 font-semibold text-sm hover:border-red-500 hover:bg-red-50 transition">
         ${opt}
       </button>
     `;
   });
 
-  document.getElementById("quizOptions").innerHTML = optionsHtml;
+  quizBox.innerHTML = `
+    <div class="flex justify-between items-center">
+      <span class="text-xs font-bold bg-gray-100 px-3 py-1 rounded-full text-gray-600">Level ${level}</span>
+      <span class="text-xs font-semibold text-gray-400">Soal ${currentQuizIndex + 1} dari ${quizData.length}</span>
+    </div>
+
+    <h4 class="text-lg font-bold text-gray-800 pt-2">${question}</h4>
+
+    <div class="grid grid-cols-1 gap-3 pt-2">
+      ${optionsHtml}
+    </div>
+  `;
 }
 
 function checkAnswer(selected, key) {
