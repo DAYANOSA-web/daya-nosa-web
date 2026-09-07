@@ -129,6 +129,7 @@ function loadPICAData() {
 
         let actionButtons = "";
         
+        // FLP/Kacab/User biasa bisa upload bukti jika belum terverifikasi
         if (status !== "Verified") {
           actionButtons += `
             <button onclick="openUploadModal('${id}', '${item}')" class="w-full mt-2 bg-gray-900 hover:bg-black text-white text-xs font-bold py-2.5 rounded-lg transition">
@@ -137,10 +138,11 @@ function loadPICAData() {
           `;
         }
 
-        if ((currentRole === "Kacab" || currentRole === "NOS Officer") && status === "Waiting Verification") {
+        // KHUSUS ROLE "NOS Officer" yang bisa Verifikasi
+        if (currentRole === "NOS Officer" && status === "Waiting Verification") {
           actionButtons += `
             <button onclick="openVerifyModal('${id}', '${item}')" class="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2.5 rounded-lg transition">
-              🔍 Verifikasi Bukti (Kacab / NOS)
+              🔍 Verifikasi Bukti (NOS Officer Only)
             </button>
           `;
         }
@@ -159,7 +161,7 @@ function loadPICAData() {
 
             <div class="flex justify-between items-center pt-2 border-t text-xs text-gray-500">
               <span>Prioritas: <strong class="text-red-600">${prioritas || 'Normal'}</strong></span>
-              ${foto && foto !== '-' ? `<a href="${foto}" target="_blank" class="text-blue-600 underline font-semibold">Lihat Bukti Foto</a>` : '<span class="italic text-gray-400">Belum ada bukti</span>'}
+              ${foto && foto !== '-' && foto.length > 10 ? `<a href="${foto}" target="_blank" class="text-blue-600 underline font-semibold">Lihat Bukti Foto</a>` : '<span class="italic text-gray-400">Belum ada bukti</span>'}
             </div>
 
             ${actionButtons}
@@ -224,7 +226,7 @@ function filterReferensi() {
   renderReferensiCards(filtered);
 }
 
-// Modal Handlers (Upload Evidence)
+// Modal Upload Evidence
 function openUploadModal(id, title) {
   activePicaId = id;
   selectedBase64Image = "";
@@ -239,16 +241,40 @@ function closeUploadModal() {
   selectedBase64Image = "";
 }
 
+// Preview + Kompres Gambar secara Otomatis
 function previewImage(event) {
   const file = event.target.files[0];
   if (!file) return;
 
   const reader = new FileReader();
   reader.onload = function(e) {
-    selectedBase64Image = e.target.result;
-    const imgPreview = document.getElementById("imagePreview");
-    imgPreview.src = selectedBase64Image;
-    document.getElementById("previewContainer").classList.remove("hidden");
+    const img = new Image();
+    img.src = e.target.result;
+    
+    img.onload = function() {
+      // Kompres ukuran gambar max width 600px
+      const canvas = document.createElement("canvas");
+      const MAX_WIDTH = 600;
+      const scaleFactor = MAX_WIDTH / img.width;
+      
+      if (img.width > MAX_WIDTH) {
+        canvas.width = MAX_WIDTH;
+        canvas.height = img.height * scaleFactor;
+      } else {
+        canvas.width = img.width;
+        canvas.height = img.height;
+      }
+
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      // Konversi ke Base64 terkompresi (kualitas JPEG 60%)
+      selectedBase64Image = canvas.toDataURL("image/jpeg", 0.6);
+
+      const imgPreview = document.getElementById("imagePreview");
+      imgPreview.src = selectedBase64Image;
+      document.getElementById("previewContainer").classList.remove("hidden");
+    };
   };
   reader.readAsDataURL(file);
 }
@@ -274,20 +300,26 @@ function submitEvidence() {
   })
   .then(res => res.json())
   .then(res => {
-    alert("Bukti perbaikan foto berhasil dikirim!");
     btn.innerText = "Kirim Bukti";
     btn.disabled = false;
-    closeUploadModal();
-    loadPICAData();
+
+    if (res.status === "success") {
+      alert("✅ Bukti perbaikan foto berhasil dikirim dan tersimpan di database!");
+      closeUploadModal();
+      loadPICAData();
+    } else {
+      alert("❌ Gagal simpan: " + res.message);
+    }
   })
   .catch(err => {
-    alert("Gagal mengunggah foto.");
+    console.error(err);
+    alert("❌ Gagal mengunggah foto. Pastikan koneksi aman.");
     btn.innerText = "Kirim Bukti";
     btn.disabled = false;
   });
 }
 
-// Modal Handlers (Verifikasi PICA)
+// Modal Verifikasi PICA
 function openVerifyModal(id, title) {
   activePicaId = id;
   document.getElementById("modalVerifyTitle").innerText = `${id}: ${title}`;
@@ -318,7 +350,7 @@ function processVerification(newStatus) {
   })
   .then(res => res.json())
   .then(res => {
-    alert(`Item PICA berhasil diubah menjadi: ${newStatus}`);
+    alert(`Status verifikasi berhasil diubah menjadi: ${newStatus}`);
     btnApprove.disabled = false;
     btnReject.disabled = false;
     closeVerifyModal();
