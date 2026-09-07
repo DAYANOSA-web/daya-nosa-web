@@ -1,4 +1,3 @@
-// ISI DENGAN URL WEB APP APPS SCRIPT KAMU!
 const API_URL = "https://script.google.com/macros/s/AKfycbxzlY8Hfge00hXIkhPbn-CkA-pIHUOcpv_ThL7qnKEkM6mC2fVXIUWTlgVsDjqbkwv-/exec";
 
 let activePicaId = null;
@@ -274,7 +273,7 @@ function renderQuizCard() {
     quizBox.innerHTML = `
       <div class="text-center py-8 space-y-3">
         <h3 class="text-2xl font-bold text-green-600">🎉 Misi Level Selesai!</h3>
-        <p class="text-sm text-gray-600">Total Skor yang Anda dapatkan: <strong>${userScore} PTS</strong></p>
+        <p class="text-sm text-gray-600">Total Skor Anda: <strong>${userScore} PTS</strong></p>
         <p class="text-xs text-gray-400">Skor Anda telah otomatis dicatat di Leaderboard.</p>
         <button onclick="loadQuizData()" class="px-6 py-2.5 bg-red-600 text-white font-bold rounded-xl text-sm hover:bg-red-700 transition">Main Lagi</button>
       </div>
@@ -358,7 +357,7 @@ function loadLeaderboard() {
     .then(res => res.json())
     .then(data => {
       if (!data || data.length <= 1) {
-        tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-400">Belum ada skor yang tercatat. Be the first!</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-gray-400">Belum ada skor tercatat.</td></tr>`;
         return;
       }
 
@@ -371,17 +370,22 @@ function loadLeaderboard() {
 
       let html = "";
       rows.forEach((item, index) => {
-        let badgeRank = `<span class="font-bold text-gray-500">#${index + 1}</span>`;
-        if (index === 0) badgeRank = `🥇 <span class="font-bold text-yellow-600">#1</span>`;
-        if (index === 1) badgeRank = `🥈 <span class="font-bold text-gray-400">#2</span>`;
-        if (index === 2) badgeRank = `🥉 <span class="font-bold text-amber-700">#3</span>`;
+        let badgeRank = `<span class="font-bold text-gray-400">#${index + 1}</span>`;
+        if (index === 0) badgeRank = `🥇`;
+        if (index === 1) badgeRank = `🥈`;
+        if (index === 2) badgeRank = `🥉`;
+
+        // Ambil nama dari email (sebelum karakter @)
+        const username = item.email.split('@')[0];
 
         html += `
           <tr class="hover:bg-gray-50">
-            <td class="p-3 font-semibold">${badgeRank}</td>
-            <td class="p-3 font-semibold text-gray-800">${item.email}</td>
-            <td class="p-3"><span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-[10px] font-bold">${item.role}</span></td>
-            <td class="p-3 text-right font-black text-red-600">${item.score} PTS</td>
+            <td class="p-2 font-bold text-center">${badgeRank}</td>
+            <td class="p-2">
+              <div class="font-semibold text-gray-800 text-xs">${username}</div>
+              <div class="text-[9px] text-gray-400">${item.role}</div>
+            </td>
+            <td class="p-2 text-right font-black text-red-600 text-xs">${item.score} PTS</td>
           </tr>
         `;
       });
@@ -390,7 +394,7 @@ function loadLeaderboard() {
     })
     .catch(err => {
       console.error(err);
-      tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-red-500">Gagal memuat leaderboard.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-red-500">Gagal memuat.</td></tr>`;
     });
 }
 
