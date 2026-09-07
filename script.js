@@ -1,8 +1,8 @@
-// Gantilah URL ini jika URL Deployment Google Apps Script kamu diperbarui
+// Ganti URL ini sesuai dengan URL Web App Google Apps Script milik Anda
 const API_URL = "https://script.google.com/macros/s/AKfycbxzlY8Hfge00hXIkhPbn-CkA-pIHUOcpv_ThL7qnKEkM6mC2fVXIUWTlgVsDjqbkwv-/exec";
 
 // ==========================================
-// 1. SISTEM AUTENTIKASI & APLIKASI
+// 1. AUTENTIKASI & LOGOUT
 // ==========================================
 
 function handleLogin() {
@@ -15,8 +15,10 @@ function handleLogin() {
     return;
   }
 
-  loginBtn.innerText = "Memeriksa...";
-  loginBtn.disabled = true;
+  if (loginBtn) {
+    loginBtn.innerText = "Memeriksa...";
+    loginBtn.disabled = true;
+  }
 
   fetch(API_URL, {
     method: "POST",
@@ -28,8 +30,10 @@ function handleLogin() {
   })
     .then(res => res.json())
     .then(data => {
-      loginBtn.innerText = "Masuk ke Aplikasi";
-      loginBtn.disabled = false;
+      if (loginBtn) {
+        loginBtn.innerText = "Masuk ke Aplikasi";
+        loginBtn.disabled = false;
+      }
 
       if (data.status === "success") {
         const user = data.userData;
@@ -37,6 +41,37 @@ function handleLogin() {
         localStorage.setItem("userRole", user.role);
         localStorage.setItem("userName", user.nama);
         localStorage.setItem("userCabang", user.cabang);
+
+        renderDashboard(user);
+      } else {
+        showError(loginError, data.message || "Email tidak terdaftar!");
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      if (loginBtn) {
+        loginBtn.innerText = "Masuk ke Aplikasi";
+        loginBtn.disabled = false;
+      }
+      showError(loginError, "Gagal terhubung ke server database.");
+    });
+}
+
+function handleLogout() {
+  localStorage.clear();
+  location.reload();
+}
+
+function showError(el, msg) {
+  if (el) {
+    el.innerText = msg;
+    el.classList.remove("hidden");
+  }
+}
+
+// ==========================================
+// 2. TAMPILAN DASHBOARD
+// ==========================================
 
 function renderDashboard(user) {
   const loginSec = document.getElementById("loginSection");
@@ -53,35 +88,9 @@ function renderDashboard(user) {
   loadPICAData();
   loadReferensiData();
 }
-function handleLogout() {
-  localStorage.clear();
-  location.reload();
-}
-
-function showError(el, msg) {
-  if (el) {
-    el.innerText = msg;
-    el.classList.remove("hidden");
-  }
-}
 
 // ==========================================
-// 2. DASHBOARD & RENDER TAMPILAN
-// ==========================================
-
-function renderDashboard(user) {
-  document.getElementById("loginSection").classList.add("hidden");
-  document.getElementById("mainDashboard").classList.remove("hidden");
-
-  document.getElementById("userDisplayName").innerText = user.nama;
-  document.getElementById("userDisplayRole").innerText = `${user.role} - ${user.cabang}`;
-
-  loadPICAData();
-  loadReferensiData();
-}
-
-// ==========================================
-// 3. FITUR PICA (PROBLEM IDENTIFICATION & CORRECTIVE ACTION)
+// 3. AMBIL DATA PICA
 // ==========================================
 
 function loadPICAData() {
@@ -101,7 +110,7 @@ function loadPICAData() {
 
       let html = "";
       for (let i = 1; i < data.length; i++) {
-        const [id, cabang, item, prioritas, status, foto, catatan, tgl] = data[i];
+        const [id, cabang, item, prioritas, status, foto, catatan] = data[i];
 
         let statusBadge = "bg-yellow-100 text-yellow-800";
         if (status === "Waiting Verification") statusBadge = "bg-blue-100 text-blue-800";
@@ -119,11 +128,7 @@ function loadPICAData() {
 
         let linkFotoHtml = '<span class="italic text-gray-400">Belum ada bukti</span>';
         if (foto && foto !== "-" && foto.length > 5) {
-          if (foto.startsWith("http")) {
-            linkFotoHtml = '<a href="' + foto + '" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline font-semibold">Lihat Bukti Foto</a>';
-          } else {
-            linkFotoHtml = '<button onclick="viewBase64Image(\'' + id + '\')" class="text-blue-600 underline font-semibold">Lihat Bukti Foto</button>';
-          }
+          linkFotoHtml = '<a href="' + foto + '" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline font-semibold">Lihat Bukti Foto</a>';
         }
 
         html += `
@@ -156,7 +161,7 @@ function loadPICAData() {
 }
 
 // ==========================================
-// 4. MODAL UPLOAD & VERIFIKASI
+// 4. MODAL UPLOAD FOTO
 // ==========================================
 
 let currentUploadId = "";
@@ -164,16 +169,28 @@ let base64ImageString = "";
 
 function openUploadModal(idPica, namaItem) {
   currentUploadId = idPica;
-  document.getElementById("modalPicaTitle").innerText = `${idPica}: ${namaItem}`;
-  document.getElementById("uploadModal").classList.remove("hidden");
-  document.getElementById("uploadModal").classList.add("flex");
+  const titleEl = document.getElementById("modalPicaTitle");
+  const modal = document.getElementById("uploadModal");
+
+  if (titleEl) titleEl.innerText = `${idPica}: ${namaItem}`;
+  if (modal) {
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
+  }
 }
 
 function closeUploadModal() {
-  document.getElementById("uploadModal").classList.add("hidden");
-  document.getElementById("uploadModal").classList.remove("flex");
-  document.getElementById("fileInput").value = "";
-  document.getElementById("imagePreview").classList.add("hidden");
+  const modal = document.getElementById("uploadModal");
+  const fileInp = document.getElementById("fileInput");
+  const preview = document.getElementById("imagePreview");
+
+  if (modal) {
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
+  }
+  if (fileInp) fileInp.value = "";
+  if (preview) preview.classList.add("hidden");
+  
   base64ImageString = "";
 }
 
@@ -185,8 +202,10 @@ function handleFileSelect(event) {
   reader.onload = function (e) {
     base64ImageString = e.target.result;
     const preview = document.getElementById("imagePreview");
-    preview.src = base64ImageString;
-    preview.classList.remove("hidden");
+    if (preview) {
+      preview.src = base64ImageString;
+      preview.classList.remove("hidden");
+    }
   };
   reader.readAsDataURL(file);
 }
@@ -198,8 +217,10 @@ function submitPerbaikan() {
   }
 
   const submitBtn = document.getElementById("submitUploadBtn");
-  submitBtn.innerText = "Mengunggah...";
-  submitBtn.disabled = true;
+  if (submitBtn) {
+    submitBtn.innerText = "Mengunggah...";
+    submitBtn.disabled = true;
+  }
 
   fetch(API_URL, {
     method: "POST",
@@ -213,27 +234,31 @@ function submitPerbaikan() {
   })
     .then(res => res.json())
     .then(data => {
-      submitBtn.innerText = "Mengunggah...";
-      submitBtn.disabled = false;
+      if (submitBtn) {
+        submitBtn.innerText = "Kirim Bukti";
+        submitBtn.disabled = false;
+      }
 
       if (data.status === "success") {
         alert("Bukti perbaikan berhasil diunggah!");
         closeUploadModal();
         loadPICAData();
       } else {
-        alert("Gagal simpan: " + data.message);
+        alert("Gagal menyimpan: " + data.message);
       }
     })
     .catch(err => {
       console.error(err);
-      submitBtn.innerText = "Mengunggah...";
-      submitBtn.disabled = false;
+      if (submitBtn) {
+        submitBtn.innerText = "Kirim Bukti";
+        submitBtn.disabled = false;
+      }
       alert("Terjadi kesalahan jaringan.");
     });
 }
 
 // ==========================================
-// 5. REFERENSI STANDAR & DATA TAMBAHAN
+// 5. REFERENSI DATA
 // ==========================================
 
 function loadReferensiData() {
@@ -252,9 +277,9 @@ function loadReferensiData() {
       for (let i = 1; i < data.length; i++) {
         html += `
           <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm space-y-1">
-            <span class="text-xs font-bold text-red-600">${data[i][0]}</span>
-            <h5 class="font-bold text-sm text-gray-800">${data[i][1]}</h5>
-            <p class="text-xs text-gray-600">${data[i][2]}</p>
+            <span class="text-xs font-bold text-red-600">${data[i][0] || ''}</span>
+            <h5 class="font-bold text-sm text-gray-800">${data[i][1] || ''}</h5>
+            <p class="text-xs text-gray-600">${data[i][2] || ''}</p>
           </div>
         `;
       }
@@ -267,9 +292,9 @@ function loadReferensiData() {
 }
 
 // ==========================================
-// 6. INISIALISASI SAAT HALAMAN SELESAI DIMUAT
+// 6. INISIALISASI SETELAH HALAMAN READY
 // ==========================================
-// Cek paling bawah file script.js kamu
+
 document.addEventListener("DOMContentLoaded", function () {
   const savedEmail = localStorage.getItem("userEmail");
   const savedRole = localStorage.getItem("userRole");
@@ -284,4 +309,4 @@ document.addEventListener("DOMContentLoaded", function () {
       cabang: savedCabang
     });
   }
-});// <--- PASTIKAN ADA ADA KURUNG TUTUP BENAR SEPERTI INI
+});
