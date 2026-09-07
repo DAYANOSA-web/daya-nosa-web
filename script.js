@@ -8,32 +8,64 @@ let quizData = [];
 let currentQuizIndex = 0;
 let userScore = 0;
 
-// Logika Login
+// Logika Login dengan Database Check
 function handleLogin() {
-  const email = document.getElementById("emailInput").value;
-  const role = document.getElementById("roleSelect").value;
+  const emailInput = document.getElementById("emailInput").value.trim();
+  const btnLogin = document.getElementById("btnLogin");
 
-  if (!email) {
-    alert("Silakan masukkan email terlebih dahulu!");
+  if (!emailInput) {
+    alert("Silakan masukkan email Anda!");
     return;
   }
 
-  localStorage.setItem("userEmail", email);
-  localStorage.setItem("userRole", role);
+  btnLogin.innerText = "Memeriksa Database...";
+  btnLogin.disabled = true;
 
-  renderDashboard(role);
+  fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "loginUser",
+      email: emailInput
+    })
+  })
+  .then(res => res.json())
+  .then(res => {
+    btnLogin.innerText = "Masuk ke Aplikasi";
+    btnLogin.disabled = false;
+
+    if (res.status === "success") {
+      const user = res.userData;
+      localStorage.setItem("userEmail", user.email);
+      localStorage.setItem("userName", user.nama);
+      localStorage.setItem("userRole", user.role);
+      localStorage.setItem("userCabang", user.cabang);
+
+      renderDashboard(user);
+    } else {
+      alert("❌ " + res.message);
+    }
+  })
+  .catch(err => {
+    console.error(err);
+    alert("Gagal terhubung ke server. Cek koneksi Anda.");
+    btnLogin.innerText = "Masuk ke Aplikasi";
+    btnLogin.disabled = false;
+  });
 }
 
 function handleLogout() {
   localStorage.clear();
   document.getElementById("dashboardSection").classList.add("hidden");
   document.getElementById("loginSection").classList.remove("hidden");
+  document.getElementById("emailInput").value = "";
 }
 
-function renderDashboard(role) {
+function renderDashboard(user) {
   document.getElementById("loginSection").classList.add("hidden");
   document.getElementById("dashboardSection").classList.remove("hidden");
-  document.getElementById("userRoleBadge").innerText = `Role: ${role}`;
+  
+  document.getElementById("userNameBadge").innerText = `${user.nama || user.email}`;
+  document.getElementById("userRoleBadge").innerText = `Role: ${user.role} (${user.cabang || '-'})`;
 
   loadPICAData();
   loadReferensiData();
@@ -73,7 +105,7 @@ function switchTab(tabName) {
   }
 }
 
-// Fetch Data PICA + Multi-Role Control
+// Fetch Data PICA
 function loadPICAData() {
   const container = document.getElementById("picaContainer");
   const currentRole = localStorage.getItem("userRole") || "FLP";
@@ -95,10 +127,8 @@ function loadPICAData() {
         if (status === "Waiting Verification") statusBadge = "bg-blue-100 text-blue-800";
         if (status === "Verified") statusBadge = "bg-green-100 text-green-800";
 
-        // Kontrol Tombol Berdasarkan Role
         let actionButtons = "";
         
-        // 1. FLP selalu bisa upload bukti perbaikan jika belum Verified
         if (status !== "Verified") {
           actionButtons += `
             <button onclick="openUploadModal('${id}', '${item}')" class="w-full mt-2 bg-gray-900 hover:bg-black text-white text-xs font-bold py-2.5 rounded-lg transition">
@@ -107,7 +137,6 @@ function loadPICAData() {
           `;
         }
 
-        // 2. Verifikasi khusus Kacab & NOS Officer jika status Waiting Verification
         if ((currentRole === "Kacab" || currentRole === "NOS Officer") && status === "Waiting Verification") {
           actionButtons += `
             <button onclick="openVerifyModal('${id}', '${item}')" class="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2.5 rounded-lg transition">
@@ -463,8 +492,17 @@ function loadLeaderboard() {
 
 // Auto-check session saat reload
 window.onload = function() {
+  const savedEmail = localStorage.getItem("userEmail");
   const savedRole = localStorage.getItem("userRole");
-  if (savedRole) {
-    renderDashboard(savedRole);
+  const savedName = localStorage.getItem("userName");
+  const savedCabang = localStorage.getItem("userCabang");
+
+  if (savedEmail && savedRole) {
+    renderDashboard({
+      email: savedEmail,
+      nama: savedName,
+      role: savedRole,
+      cabang: savedCabang
+    });
   }
 };
