@@ -109,13 +109,13 @@ function switchTab(tabName) {
 function loadPICAData() {
   const container = document.getElementById("picaContainer");
   const currentRole = localStorage.getItem("userRole") || "FLP";
-  container.innerHTML = `<p class="text-gray-500 text-sm col-span-2">Sedang mengambil data PICA...</p>`;
+  container.innerHTML = '<p class="text-gray-500 text-sm col-span-2">Sedang mengambil data PICA...</p>';
 
   fetch(`${API_URL}?action=getPICA`)
     .then(res => res.json())
     .then(data => {
       if (!data || data.length <= 1) {
-        container.innerHTML = `<p class="text-gray-500 text-sm col-span-2">Belum ada item PICA.</p>`;
+        container.innerHTML = '<p class="text-gray-500 text-sm col-span-2">Belum ada item PICA.</p>';
         return;
       }
 
@@ -140,19 +140,18 @@ function loadPICAData() {
         if (currentRole === "NOS Officer" && status === "Waiting Verification") {
           actionButtons += `
             <button onclick="openVerifyModal('${id}', '${item}')" class="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2.5 rounded-lg transition">
-              🔍 Verifikasi Bukti (NOS Officer)
+              🔍 Verifikasi Bukti (NOS Officer Only)
             </button>
           `;
         }
 
-        // Tampilan Link Bukti
+        // Penanganan link foto tanpa backtick bersarang
         let linkFotoHtml = '<span class="italic text-gray-400">Belum ada bukti</span>';
         if (foto && foto !== '-' && foto.length > 5) {
-          if (foto.startsWith("http")) {
-            linkFotoHtml = `<a href="${foto}" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline font-semibold">Lihat Bukti Foto</a>`;
+          if (foto.startsWith('http')) {
+            linkFotoHtml = '<a href="' + foto + '" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline font-semibold">Lihat Bukti Foto</a>';
           } else {
-            // Jika data lama masih berbentuk Base64
-            linkFotoHtml = `<button onclick="viewBase64Image('${id}')" class="text-blue-600 underline font-semibold">Lihat Bukti Foto</button>`;
+            linkFotoHtml = '<button onclick="viewBase64Image(\'' + id + '\')" class="text-blue-600 underline font-semibold">Lihat Bukti Foto</button>';
           }
         }
 
@@ -181,7 +180,7 @@ function loadPICAData() {
     })
     .catch(err => {
       console.error(err);
-      container.innerHTML = `<p class="text-red-500 text-sm col-span-2">Gagal memuat data PICA.</p>`;
+      container.innerHTML = '<p class="text-red-500 text-sm col-span-2">Gagal memuat data PICA.</p>';
     });
 }
         // FLP/Kacab/User biasa bisa upload bukti jika belum terverifikasi
