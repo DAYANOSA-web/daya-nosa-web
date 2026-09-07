@@ -1,8 +1,46 @@
-// Ganti URL ini sesuai dengan URL Web App Google Apps Script milik Anda
+// Ganti dengan URL Web App Apps Script milik kamu
 const API_URL = "https://script.google.com/macros/s/AKfycbxzlY8Hfge00hXIkhPbn-CkA-pIHUOcpv_ThL7qnKEkM6mC2fVXIUWTlgVsDjqbkwv-/exec";
 
 // ==========================================
-// 1. AUTENTIKASI & LOGOUT
+// 1. NAVIGASI TAB
+// ==========================================
+
+function switchTab(tabName) {
+  const tabPica = document.getElementById("tabPica");
+  const tabRef = document.getElementById("tabRef");
+  const tabKuis = document.getElementById("tabKuis");
+
+  const btnPica = document.getElementById("tabBtnPica");
+  const btnRef = document.getElementById("tabBtnRef");
+  const btnKuis = document.getElementById("tabBtnKuis");
+
+  // Sembunyikan semua tab
+  if (tabPica) tabPica.classList.add("hidden");
+  if (tabRef) tabRef.classList.add("hidden");
+  if (tabKuis) tabKuis.classList.add("hidden");
+
+  // Reset style semua tombol
+  [btnPica, btnRef, btnKuis].forEach(btn => {
+    if (btn) {
+      btn.className = "px-4 py-2 text-xs font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-800 transition";
+    }
+  });
+
+  // Tampilkan tab yang dipilih
+  if (tabName === "pica") {
+    if (tabPica) tabPica.classList.remove("hidden");
+    if (btnPica) btnPica.className = "px-4 py-2 text-xs font-bold border-b-2 border-red-600 text-red-600 transition";
+  } else if (tabName === "ref") {
+    if (tabRef) tabRef.classList.remove("hidden");
+    if (btnRef) btnRef.className = "px-4 py-2 text-xs font-bold border-b-2 border-red-600 text-red-600 transition";
+  } else if (tabName === "kuis") {
+    if (tabKuis) tabKuis.classList.remove("hidden");
+    if (btnKuis) btnKuis.className = "px-4 py-2 text-xs font-bold border-b-2 border-red-600 text-red-600 transition";
+  }
+}
+
+// ==========================================
+// 2. AUTENTIKASI & LOGOUT
 // ==========================================
 
 function handleLogin() {
@@ -70,7 +108,7 @@ function showError(el, msg) {
 }
 
 // ==========================================
-// 2. TAMPILAN DASHBOARD
+// 3. TAMPILAN DASHBOARD
 // ==========================================
 
 function renderDashboard(user) {
@@ -85,12 +123,13 @@ function renderDashboard(user) {
   if (nameEl) nameEl.innerText = user.nama || "";
   if (roleEl) roleEl.innerText = `${user.role || ""} - ${user.cabang || ""}`;
 
+  switchTab("pica");
   loadPICAData();
   loadReferensiData();
 }
 
 // ==========================================
-// 3. AMBIL DATA PICA
+// 4. AMBIL DATA PICA
 // ==========================================
 
 function loadPICAData() {
@@ -120,10 +159,6 @@ function loadPICAData() {
 
         if (status !== "Verified") {
           actionButtons += '<button onclick="openUploadModal(\'' + id + '\', \'' + item + '\')" class="w-full mt-2 bg-gray-900 hover:bg-black text-white text-xs font-bold py-2.5 rounded-lg transition">📷 Upload Bukti Perbaikan</button>';
-        }
-
-        if (currentRole === "NOS Officer" && status === "Waiting Verification") {
-          actionButtons += '<button onclick="openVerifyModal(\'' + id + '\', \'' + item + '\')" class="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2.5 rounded-lg transition">🔍 Verifikasi Bukti (NOS Officer Only)</button>';
         }
 
         let linkFotoHtml = '<span class="italic text-gray-400">Belum ada bukti</span>';
@@ -161,7 +196,7 @@ function loadPICAData() {
 }
 
 // ==========================================
-// 4. MODAL UPLOAD FOTO
+// 5. UPLOAD BUKTI FOTO
 // ==========================================
 
 let currentUploadId = "";
@@ -258,7 +293,7 @@ function submitPerbaikan() {
 }
 
 // ==========================================
-// 5. REFERENSI DATA
+// 6. REFERENSI DATA
 // ==========================================
 
 function loadReferensiData() {
@@ -292,7 +327,28 @@ function loadReferensiData() {
 }
 
 // ==========================================
-// 6. INISIALISASI SETELAH HALAMAN READY
+// 7. KUIS NOSIZU
+// ==========================================
+
+function checkAnswer(btn, isCorrect) {
+  const resEl = document.getElementById("quizResult");
+  if (isCorrect) {
+    btn.classList.add("bg-green-100", "border-green-500", "text-green-900");
+    if (resEl) {
+      resEl.innerText = "🎉 Benar! Tepat sekali sesuai dengan panduan standar NOSIZU.";
+      resEl.className = "p-4 rounded-xl bg-green-50 border border-green-200 text-xs text-green-800 font-bold block";
+    }
+  } else {
+    btn.classList.add("bg-red-100", "border-red-500", "text-red-900");
+    if (resEl) {
+      resEl.innerText = "❌ Kurang tepat, silakan pelajari kembali panduan di tab Referensi Standar.";
+      resEl.className = "p-4 rounded-xl bg-red-50 border border-red-200 text-xs text-red-800 font-bold block";
+    }
+  }
+}
+
+// ==========================================
+// 8. INISIALISASI SETELAH HALAMAN READY
 // ==========================================
 
 document.addEventListener("DOMContentLoaded", function () {
