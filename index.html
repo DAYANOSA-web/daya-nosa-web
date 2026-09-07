@@ -161,7 +161,24 @@
       </div>
     </div>
   </div>
+<!-- Modal Verifikasi PICA (Khusus Kacab / NOS Officer) -->
+  <div id="verifyModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div class="bg-white p-6 rounded-2xl w-full max-w-md space-y-4 shadow-2xl">
+      <h3 class="text-lg font-bold text-gray-800">Verifikasi Item PICA</h3>
+      <p id="modalVerifyTitle" class="text-xs text-gray-500 font-medium"></p>
+      
+      <div>
+        <label class="block text-xs font-semibold mb-1 text-gray-600">Catatan Evaluasi / Alasan Penolakan (Opsional):</label>
+        <textarea id="verifyNoteInput" rows="3" placeholder="Masukkan catatan jika diperlukan..." class="w-full text-xs p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"></textarea>
+      </div>
 
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeVerifyModal()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-bold rounded-lg">Batal</button>
+        <button id="btnReject" onclick="processVerification('Pending')" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg">❌ Reject (Perbaiki Lagi)</button>
+        <button id="btnApprove" onclick="processVerification('Verified')" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg">✅ Approve (Setujui)</button>
+      </div>
+    </div>
+  </div>
   <script src="script.js"></script>
 </body>
 </html>
