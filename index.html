@@ -53,7 +53,7 @@
     </header>
 
     <!-- Content Wrapper -->
-    <main class="max-w-5xl mx-auto p-4 sm:p-6 space-y-6">
+    <main class="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
       <!-- Navigation Tabs -->
       <div class="flex bg-white p-1.5 rounded-xl shadow-sm border border-gray-200 gap-2">
         <button id="tabPica" onclick="switchTab('pica')" class="px-4 py-2 font-bold text-sm rounded-lg bg-red-600 text-white transition">
@@ -89,7 +89,7 @@
         </div>
       </div>
 
-      <!-- Tab Content 3: Game NOSIZU -->
+      <!-- Tab Content 3: Game NOSIZU (Side-by-Side Layout) -->
       <div id="contentNosizu" class="hidden space-y-6">
         <!-- Header Banner -->
         <div class="bg-gradient-to-r from-red-600 to-red-800 text-white p-6 rounded-2xl shadow-lg flex justify-between items-center">
@@ -103,34 +103,38 @@
           </div>
         </div>
 
-        <!-- Box Kuis -->
-        <div id="quizBox" class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
-          <p class="text-gray-500 text-sm">Sedang menyiapkan kuis...</p>
-        </div>
+        <!-- Grid Container: Kuis (Kiri) & Leaderboard (Kanan) -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+          
+          <!-- Area Kuis (Lebar 2 Kolom) -->
+          <div id="quizBox" class="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+            <p class="text-gray-500 text-sm">Sedang menyiapkan kuis...</p>
+          </div>
 
-        <!-- Leaderboard Table -->
-        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
-          <div class="flex justify-between items-center border-b pb-3">
-            <h4 class="text-lg font-bold text-gray-800 flex items-center gap-2">🏆 Leaderboard NOSIZU Top Performers</h4>
-            <button onclick="loadLeaderboard()" class="text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg font-semibold text-gray-600">🔄 Refresh</button>
+          <!-- Area Leaderboard (Lebar 1 Kolom) -->
+          <div class="lg:col-span-1 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+              <h4 class="text-base font-bold text-gray-800 flex items-center gap-1.5">🏆 Top Performers</h4>
+              <button onclick="loadLeaderboard()" class="text-[11px] bg-gray-100 hover:bg-gray-200 px-2.5 py-1 rounded-md font-semibold text-gray-600">🔄 Refresh</button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-gray-50 uppercase font-bold text-gray-400 text-[10px]">
+                  <tr>
+                    <th class="p-2">Rank</th>
+                    <th class="p-2">Pengguna</th>
+                    <th class="p-2 text-right">Skor</th>
+                  </tr>
+                </thead>
+                <tbody id="leaderboardBody" class="divide-y text-gray-700">
+                  <tr>
+                    <td colspan="3" class="p-4 text-center text-gray-400">Memuat peringkat...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-          <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs">
-              <thead class="bg-gray-50 uppercase font-bold text-gray-500">
-                <tr>
-                  <th class="p-3">Peringkat</th>
-                  <th class="p-3">Pengguna</th>
-                  <th class="p-3">Role</th>
-                  <th class="p-3 text-right">Skor</th>
-                </tr>
-              </thead>
-              <tbody id="leaderboardBody" class="divide-y text-gray-700">
-                <tr>
-                  <td colspan="4" class="p-4 text-center text-gray-400">Memuat data peringkat...</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+
         </div>
       </div>
     </main>
