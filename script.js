@@ -129,6 +129,61 @@ function loadPICAData() {
 
         let actionButtons = "";
         
+        if (status !== "Verified") {
+          actionButtons += `
+            <button onclick="openUploadModal('${id}', '${item}')" class="w-full mt-2 bg-gray-900 hover:bg-black text-white text-xs font-bold py-2.5 rounded-lg transition">
+              📷 Upload Bukti Perbaikan
+            </button>
+          `;
+        }
+
+        if (currentRole === "NOS Officer" && status === "Waiting Verification") {
+          actionButtons += `
+            <button onclick="openVerifyModal('${id}', '${item}')" class="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2.5 rounded-lg transition">
+              🔍 Verifikasi Bukti (NOS Officer)
+            </button>
+          `;
+        }
+
+        // Tampilan Link Bukti
+        let linkFotoHtml = '<span class="italic text-gray-400">Belum ada bukti</span>';
+        if (foto && foto !== '-' && foto.length > 5) {
+          if (foto.startsWith("http")) {
+            linkFotoHtml = `<a href="${foto}" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline font-semibold">Lihat Bukti Foto</a>`;
+          } else {
+            // Jika data lama masih berbentuk Base64
+            linkFotoHtml = `<button onclick="viewBase64Image('${id}')" class="text-blue-600 underline font-semibold">Lihat Bukti Foto</button>`;
+          }
+        }
+
+        html += `
+          <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm space-y-3">
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="text-xs font-bold text-gray-400">${id || '-'} • ${cabang || '-'}</span>
+                <h4 class="font-bold text-base text-gray-800 mt-0.5">${item || '-'}</h4>
+              </div>
+              <span class="text-xs px-2.5 py-1 rounded-full font-bold ${statusBadge}">${status || 'Pending'}</span>
+            </div>
+            
+            <p class="text-xs text-gray-600"><strong>Catatan NOS:</strong> ${catatan || '-'}</p>
+
+            <div class="flex justify-between items-center pt-2 border-t text-xs text-gray-500">
+              <span>Prioritas: <strong class="text-red-600">${prioritas || 'Normal'}</strong></span>
+              ${linkFotoHtml}
+            </div>
+
+            ${actionButtons}
+          </div>
+        `;
+      }
+      container.innerHTML = html;
+    })
+    .catch(err => {
+      console.error(err);
+      container.innerHTML = `<p class="text-red-500 text-sm col-span-2">Gagal memuat data PICA.</p>`;
+    });
+}
         // FLP/Kacab/User biasa bisa upload bukti jika belum terverifikasi
         if (status !== "Verified") {
           actionButtons += `
