@@ -73,9 +73,10 @@ function switchTab(tabName) {
   }
 }
 
-// Fetch Data PICA
+// Fetch Data PICA + Multi-Role Control
 function loadPICAData() {
   const container = document.getElementById("picaContainer");
+  const currentRole = localStorage.getItem("userRole") || "FLP";
   container.innerHTML = `<p class="text-gray-500 text-sm col-span-2">Sedang mengambil data PICA...</p>`;
 
   fetch(`${API_URL}?action=getPICA`)
@@ -94,6 +95,27 @@ function loadPICAData() {
         if (status === "Waiting Verification") statusBadge = "bg-blue-100 text-blue-800";
         if (status === "Verified") statusBadge = "bg-green-100 text-green-800";
 
+        // Kontrol Tombol Berdasarkan Role
+        let actionButtons = "";
+        
+        // 1. FLP selalu bisa upload bukti perbaikan jika belum Verified
+        if (status !== "Verified") {
+          actionButtons += `
+            <button onclick="openUploadModal('${id}', '${item}')" class="w-full mt-2 bg-gray-900 hover:bg-black text-white text-xs font-bold py-2.5 rounded-lg transition">
+              📷 Upload Bukti Perbaikan
+            </button>
+          `;
+        }
+
+        // 2. Verifikasi khusus Kacab & NOS Officer jika status Waiting Verification
+        if ((currentRole === "Kacab" || currentRole === "NOS Officer") && status === "Waiting Verification") {
+          actionButtons += `
+            <button onclick="openVerifyModal('${id}', '${item}')" class="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2.5 rounded-lg transition">
+              🔍 Verifikasi Bukti (Kacab / NOS)
+            </button>
+          `;
+        }
+
         html += `
           <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm space-y-3">
             <div class="flex justify-between items-start">
@@ -111,9 +133,7 @@ function loadPICAData() {
               ${foto && foto !== '-' ? `<a href="${foto}" target="_blank" class="text-blue-600 underline font-semibold">Lihat Bukti Foto</a>` : '<span class="italic text-gray-400">Belum ada bukti</span>'}
             </div>
 
-            <button onclick="openUploadModal('${id}', '${item}')" class="w-full mt-2 bg-gray-900 hover:bg-black text-white text-xs font-bold py-2.5 rounded-lg transition">
-              📷 Upload Bukti Perbaikan
-            </button>
+            ${actionButtons}
           </div>
         `;
       }
@@ -121,7 +141,7 @@ function loadPICAData() {
     })
     .catch(err => {
       console.error(err);
-      container.innerHTML = `<p class="text-red-500 text-sm col-span-2">Gagal memuat data PICA. Cek koneksi API Apps Script.</p>`;
+      container.innerHTML = `<p class="text-red-500 text-sm col-span-2">Gagal memuat data PICA.</p>`;
     });
 }
 
@@ -175,7 +195,7 @@ function filterReferensi() {
   renderReferensiCards(filtered);
 }
 
-// Modal Handlers
+// Modal Handlers (Upload Evidence)
 function openUploadModal(id, title) {
   activePicaId = id;
   selectedBase64Image = "";
@@ -235,6 +255,50 @@ function submitEvidence() {
     alert("Gagal mengunggah foto.");
     btn.innerText = "Kirim Bukti";
     btn.disabled = false;
+  });
+}
+
+// Modal Handlers (Verifikasi PICA)
+function openVerifyModal(id, title) {
+  activePicaId = id;
+  document.getElementById("modalVerifyTitle").innerText = `${id}: ${title}`;
+  document.getElementById("verifyNoteInput").value = "";
+  document.getElementById("verifyModal").classList.remove("hidden");
+}
+
+function closeVerifyModal() {
+  document.getElementById("verifyModal").classList.add("hidden");
+}
+
+function processVerification(newStatus) {
+  const note = document.getElementById("verifyNoteInput").value;
+  const btnApprove = document.getElementById("btnApprove");
+  const btnReject = document.getElementById("btnReject");
+
+  btnApprove.disabled = true;
+  btnReject.disabled = true;
+
+  fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "verifyPICA",
+      idPica: activePicaId,
+      status: newStatus,
+      catatan: note
+    })
+  })
+  .then(res => res.json())
+  .then(res => {
+    alert(`Item PICA berhasil diubah menjadi: ${newStatus}`);
+    btnApprove.disabled = false;
+    btnReject.disabled = false;
+    closeVerifyModal();
+    loadPICAData();
+  })
+  .catch(err => {
+    alert("Gagal memproses verifikasi.");
+    btnApprove.disabled = false;
+    btnReject.disabled = false;
   });
 }
 
@@ -375,7 +439,6 @@ function loadLeaderboard() {
         if (index === 1) badgeRank = `🥈`;
         if (index === 2) badgeRank = `🥉`;
 
-        // Ambil nama dari email (sebelum karakter @)
         const username = item.email.split('@')[0];
 
         html += `
