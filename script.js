@@ -1,5 +1,5 @@
 // Gantilah URL ini jika URL Deployment Google Apps Script kamu diperbarui
-const API_URL = "https://script.google.com/macros/s/AKfycbz_URL_APPS_SCRIPT_KAMU/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxzlY8Hfge00hXIkhPbn-CkA-pIHUOcpv_ThL7qnKEkM6mC2fVXIUWTlgVsDjqbkwv-/exec";
 
 // ==========================================
 // 1. SISTEM AUTENTIKASI & APLIKASI
