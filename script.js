@@ -291,7 +291,85 @@ function submitPerbaikan() {
       alert("Terjadi kesalahan jaringan.");
     });
 }
+function loadKuisData() {
+  const container = document.getElementById("kuisContainer");
+  if (!container) return;
 
+  container.innerHTML = '<p class="text-gray-500 text-sm">Sedang memuat data kuis...</p>';
+
+  fetch(`${API_URL}?action=getKuis`)
+    .then(res => res.json())
+    .then(data => {
+      if (!data || data.length <= 1) {
+        container.innerHTML = '<p class="text-gray-500 text-sm">Belum ada soal di tab SoalNOSIZU.</p>';
+        return;
+      }
+
+      let html = "";
+      // Loop mulai baris ke-2 (indeks 1) untuk lewati header
+      for (let i = 1; i < data.length; i++) {
+        const [id, level, pertanyaan, optA, optB, optC, optD, kunci] = data[i];
+
+        // Pastikan baris tidak kosong
+        if (!pertanyaan) continue;
+
+        html += `
+          <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-red-600 uppercase tracking-wider">${id || 'SOAL'} • Level ${level || '1'}</span>
+              <span class="text-xs text-gray-400 font-semibold">Soal ${i} dari ${data.length - 1}</span>
+            </div>
+            <h4 class="text-base font-bold text-gray-800">${pertanyaan}</h4>
+
+            <div class="space-y-2">
+              <button onclick="checkAnswer(this, \`${kunci}\`, \`${optA}\`)" class="w-full text-left p-3 text-xs rounded-xl border border-gray-200 hover:bg-gray-50 font-medium transition">
+                A. ${optA}
+              </button>
+              <button onclick="checkAnswer(this, \`${kunci}\`, \`${optB}\`)" class="w-full text-left p-3 text-xs rounded-xl border border-gray-200 hover:bg-gray-50 font-medium transition">
+                B. ${optB}
+              </button>
+              <button onclick="checkAnswer(this, \`${kunci}\`, \`${optC}\`)" class="w-full text-left p-3 text-xs rounded-xl border border-gray-200 hover:bg-gray-50 font-medium transition">
+                C. ${optC}
+              </button>
+              <button onclick="checkAnswer(this, \`${kunci}\`, \`${optD}\`)" class="w-full text-left p-3 text-xs rounded-xl border border-gray-200 hover:bg-gray-50 font-medium transition">
+                D. ${optD}
+              </button>
+            </div>
+
+            <div class="quizFeedback hidden p-3 rounded-xl text-xs font-bold mt-2"></div>
+          </div>
+        `;
+      }
+      container.innerHTML = html;
+    })
+    .catch(err => {
+      console.error(err);
+      container.innerHTML = '<p class="text-red-500 text-sm">Gagal memuat kuis dari database.</p>';
+    });
+}
+
+function checkAnswer(btn, kunci, pilihanTeks) {
+  const parentCard = btn.closest(".bg-white");
+  const buttons = parentCard.querySelectorAll("button");
+  const feedback = parentCard.querySelector(".quizFeedback");
+
+  // Matikan semua tombol di soal ini setelah diklik
+  buttons.forEach(b => b.disabled = true);
+
+  // Bersihkan spasi berlebih untuk perbandingan
+  const cleanKunci = String(kunci).trim().toLowerCase();
+  const cleanPilihan = String(pilihanTeks).trim().toLowerCase();
+
+  if (cleanPilihan === cleanKunci) {
+    btn.classList.add("bg-green-100", "border-green-500", "text-green-900");
+    feedback.innerText = "🎉 Jawaban Anda Benar!";
+    feedback.className = "quizFeedback p-3 rounded-xl text-xs font-bold mt-2 bg-green-50 border border-green-200 text-green-800 block";
+  } else {
+    btn.classList.add("bg-red-100", "border-red-500", "text-red-900");
+    feedback.innerText = `❌ Jawaban Kurang Tepat. Jawaban yang benar: "${kunci}"`;
+    feedback.className = "quizFeedback p-3 rounded-xl text-xs font-bold mt-2 bg-red-50 border border-red-200 text-red-800 block";
+  }
+}
 // ==========================================
 // 6. REFERENSI DATA
 // ==========================================
