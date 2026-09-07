@@ -269,7 +269,7 @@ function loadReferensiData() {
 // ==========================================
 // 6. INISIALISASI SAAT HALAMAN SELESAI DIMUAT
 // ==========================================
-
+// Cek paling bawah file script.js kamu
 document.addEventListener("DOMContentLoaded", function () {
   const savedEmail = localStorage.getItem("userEmail");
   const savedRole = localStorage.getItem("userRole");
@@ -284,4 +284,4 @@ document.addEventListener("DOMContentLoaded", function () {
       cabang: savedCabang
     });
   }
-});
+}); // <--- PASTIKAN ADA ADA KURUNG TUTUP BENAR SEPERTI INI
