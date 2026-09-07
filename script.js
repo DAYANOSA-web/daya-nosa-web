@@ -202,7 +202,7 @@ function loadPICAData() {
           `;
         }
 
-        html += `
+      html += `
           <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm space-y-3">
             <div class="flex justify-between items-start">
               <div>
@@ -216,7 +216,7 @@ function loadPICAData() {
 
             <div class="flex justify-between items-center pt-2 border-t text-xs text-gray-500">
               <span>Prioritas: <strong class="text-red-600">${prioritas || 'Normal'}</strong></span>
-              ${foto && foto !== '-' && foto.length > 10 ? `<a href="${foto}" target="_blank" class="text-blue-600 underline font-semibold">Lihat Bukti Foto</a>` : '<span class="italic text-gray-400">Belum ada bukti</span>'}
+              ${foto && foto !== '-' && foto.length > 5 ? (foto.startsWith('http') ? `<a href="${foto}" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline font-semibold">Lihat Bukti Foto</a>` : `<button onclick="viewBase64Image('${id}')" class="text-blue-600 underline font-semibold">Lihat Bukti Foto</button>`) : '<span class="italic text-gray-400">Belum ada bukti</span>'}
             </div>
 
             ${actionButtons}
