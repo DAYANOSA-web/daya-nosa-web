@@ -9,6 +9,7 @@
 </head>
 <body class="bg-gray-100 font-sans text-gray-800">
 
+  <!-- Section Login -->
   <div id="loginSection" class="min-h-screen flex items-center justify-center p-4">
     <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-gray-100 space-y-6">
       <div class="text-center">
@@ -38,7 +39,9 @@
     </div>
   </div>
 
+  <!-- Section Dashboard -->
   <div id="dashboardSection" class="hidden min-h-screen">
+    <!-- Navbar Header -->
     <header class="bg-red-600 text-white px-6 py-4 shadow-md flex justify-between items-center">
       <div>
         <h1 class="text-xl font-bold">Daya NOSA</h1>
@@ -49,7 +52,9 @@
       </button>
     </header>
 
+    <!-- Content Wrapper -->
     <main class="max-w-5xl mx-auto p-4 sm:p-6 space-y-6">
+      <!-- Navigation Tabs -->
       <div class="flex bg-white p-1.5 rounded-xl shadow-sm border border-gray-200 gap-2">
         <button id="tabPica" onclick="switchTab('pica')" class="px-4 py-2 font-bold text-sm rounded-lg bg-red-600 text-white transition">
           Dashboard PICA
@@ -62,6 +67,7 @@
         </button>
       </div>
 
+      <!-- Tab Content 1: Dashboard PICA -->
       <div id="contentPica" class="space-y-4">
         <div class="flex justify-between items-center">
           <h3 class="text-xl font-bold text-gray-800">Daftar Perbaikan PICA</h3>
@@ -72,6 +78,7 @@
         </div>
       </div>
 
+      <!-- Tab Content 2: Referensi Standar -->
       <div id="contentReferensi" class="hidden space-y-4">
         <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
           <h3 class="text-xl font-bold text-gray-800">Referensi Standar Visual</h3>
@@ -82,7 +89,9 @@
         </div>
       </div>
 
-<div id="contentNosizu" class="hidden space-y-6">
+      <!-- Tab Content 3: Game NOSIZU -->
+      <div id="contentNosizu" class="hidden space-y-6">
+        <!-- Header Banner -->
         <div class="bg-gradient-to-r from-red-600 to-red-800 text-white p-6 rounded-2xl shadow-lg flex justify-between items-center">
           <div>
             <span class="text-xs uppercase tracking-wider bg-red-900 px-2.5 py-1 rounded-md font-bold">Kuis Standar FLP</span>
@@ -94,10 +103,12 @@
           </div>
         </div>
 
+        <!-- Box Kuis -->
         <div id="quizBox" class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
           <p class="text-gray-500 text-sm">Sedang menyiapkan kuis...</p>
         </div>
 
+        <!-- Leaderboard Table -->
         <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
           <div class="flex justify-between items-center border-b pb-3">
             <h4 class="text-lg font-bold text-gray-800 flex items-center gap-2">🏆 Leaderboard NOSIZU Top Performers</h4>
@@ -122,14 +133,10 @@
           </div>
         </div>
       </div>
-
-        <div id="quizBox" class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
-          <p class="text-gray-500 text-sm">Sedang menyiapkan kuis...</p>
-        </div>
-      </div>
     </main>
   </div>
 
+  <!-- Modal Upload Evidence -->
   <div id="uploadModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
     <div class="bg-white p-6 rounded-2xl w-full max-w-md space-y-4 shadow-2xl">
       <h3 class="text-lg font-bold text-gray-800">Upload Bukti Foto Perbaikan</h3>
