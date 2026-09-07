@@ -38,19 +38,21 @@ function handleLogin() {
         localStorage.setItem("userName", user.nama);
         localStorage.setItem("userCabang", user.cabang);
 
-        renderDashboard(user);
-      } else {
-        showError(loginError, data.message || "Email tidak ditemukan!");
-      }
-    })
-    .catch(err => {
-      console.error(err);
-      loginBtn.innerText = "Masuk ke Aplikasi";
-      loginBtn.disabled = false;
-      showError(loginError, "Gagal terhubung ke server database.");
-    });
-}
+function renderDashboard(user) {
+  const loginSec = document.getElementById("loginSection");
+  const mainDash = document.getElementById("mainDashboard");
+  const nameEl = document.getElementById("userDisplayName");
+  const roleEl = document.getElementById("userDisplayRole");
 
+  if (loginSec) loginSec.classList.add("hidden");
+  if (mainDash) mainDash.classList.remove("hidden");
+
+  if (nameEl) nameEl.innerText = user.nama || "";
+  if (roleEl) roleEl.innerText = `${user.role || ""} - ${user.cabang || ""}`;
+
+  loadPICAData();
+  loadReferensiData();
+}
 function handleLogout() {
   localStorage.clear();
   location.reload();
@@ -265,11 +267,10 @@ function loadReferensiData() {
 }
 
 // ==========================================
-// 6. INISIALISASI SAAT RELOAD
+// 6. INISIALISASI SAAT HALAMAN SELESAI DIMUAT
 // ==========================================
 
-window.onload = function () {
-  // Pastikan variabel API_URL disesuaikan di paling atas
+document.addEventListener("DOMContentLoaded", function () {
   const savedEmail = localStorage.getItem("userEmail");
   const savedRole = localStorage.getItem("userRole");
   const savedName = localStorage.getItem("userName");
@@ -283,4 +284,4 @@ window.onload = function () {
       cabang: savedCabang
     });
   }
-};
+});
