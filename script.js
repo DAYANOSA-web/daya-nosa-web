@@ -1,5 +1,6 @@
-// ISI DENGAN URL WEB APP APPS SCRIPT KAMU DARI Google Apps Script Deployment!
+// ISI DENGAN URL WEB APP APPS SCRIPT KAMU!
 const API_URL = "https://script.google.com/macros/s/AKfycbxzlY8Hfge00hXIkhPbn-CkA-pIHUOcpv_ThL7qnKEkM6mC2fVXIUWTlgVsDjqbkwv-/exec";
+
 let activePicaId = null;
 let referensiDataCache = [];
 let selectedBase64Image = "";
@@ -238,10 +239,12 @@ function submitEvidence() {
   });
 }
 
-// Logika Game NOSIZU
+// Logika Game NOSIZU & Leaderboard
 function loadQuizData() {
   const quizBox = document.getElementById("quizBox");
   quizBox.innerHTML = `<p class="text-gray-500 text-sm">Sedang mengambil soal dari Google Sheets...</p>`;
+
+  loadLeaderboard();
 
   fetch(`${API_URL}?action=getSoalNOSIZU`)
     .then(res => res.json())
@@ -252,11 +255,13 @@ function loadQuizData() {
       }
       quizData = data.slice(1);
       currentQuizIndex = 0;
+      userScore = 0;
+      document.getElementById("nosizuScore").innerText = `0 PTS`;
       renderQuizCard();
     })
     .catch(err => {
       console.error(err);
-      quizBox.innerHTML = `<p class="text-red-500 text-sm">Gagal memuat soal kuis. Pastikan tab <strong>SoalNOSIZU</strong> sudah ada di spreadsheet.</p>`;
+      quizBox.innerHTML = `<p class="text-red-500 text-sm">Gagal memuat soal kuis.</p>`;
     });
 }
 
@@ -264,10 +269,13 @@ function renderQuizCard() {
   const quizBox = document.getElementById("quizBox");
 
   if (currentQuizIndex >= quizData.length) {
+    submitScoreToLeaderboard(userScore);
+
     quizBox.innerHTML = `
       <div class="text-center py-8 space-y-3">
         <h3 class="text-2xl font-bold text-green-600">🎉 Misi Level Selesai!</h3>
         <p class="text-sm text-gray-600">Total Skor yang Anda dapatkan: <strong>${userScore} PTS</strong></p>
+        <p class="text-xs text-gray-400">Skor Anda telah otomatis dicatat di Leaderboard.</p>
         <button onclick="loadQuizData()" class="px-6 py-2.5 bg-red-600 text-white font-bold rounded-xl text-sm hover:bg-red-700 transition">Main Lagi</button>
       </div>
     `;
@@ -275,7 +283,6 @@ function renderQuizCard() {
   }
 
   const row = quizData[currentQuizIndex];
-  const id = row[0] || 'Q-001';
   const level = row[1] || '1';
   const question = row[2] || 'Pertanyaan tidak ditemukan';
   const optA = row[3] || '-';
@@ -321,6 +328,70 @@ function checkAnswer(selected, key) {
   }
   currentQuizIndex++;
   renderQuizCard();
+}
+
+function submitScoreToLeaderboard(score) {
+  const email = localStorage.getItem("userEmail") || "Anonim";
+  const role = localStorage.getItem("userRole") || "FLP";
+
+  fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "submitScore",
+      email: email,
+      role: role,
+      score: score
+    })
+  })
+  .then(res => res.json())
+  .then(() => {
+    loadLeaderboard();
+  })
+  .catch(err => console.error("Gagal simpan skor:", err));
+}
+
+function loadLeaderboard() {
+  const tbody = document.getElementById("leaderboardBody");
+  if (!tbody) return;
+
+  fetch(`${API_URL}?action=getLeaderboard`)
+    .then(res => res.json())
+    .then(data => {
+      if (!data || data.length <= 1) {
+        tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-400">Belum ada skor yang tercatat. Be the first!</td></tr>`;
+        return;
+      }
+
+      const rows = data.slice(1).map(r => ({
+        email: r[0],
+        role: r[1],
+        score: parseInt(r[2]) || 0,
+        date: r[3]
+      })).sort((a, b) => b.score - a.score);
+
+      let html = "";
+      rows.forEach((item, index) => {
+        let badgeRank = `<span class="font-bold text-gray-500">#${index + 1}</span>`;
+        if (index === 0) badgeRank = `🥇 <span class="font-bold text-yellow-600">#1</span>`;
+        if (index === 1) badgeRank = `🥈 <span class="font-bold text-gray-400">#2</span>`;
+        if (index === 2) badgeRank = `🥉 <span class="font-bold text-amber-700">#3</span>`;
+
+        html += `
+          <tr class="hover:bg-gray-50">
+            <td class="p-3 font-semibold">${badgeRank}</td>
+            <td class="p-3 font-semibold text-gray-800">${item.email}</td>
+            <td class="p-3"><span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-[10px] font-bold">${item.role}</span></td>
+            <td class="p-3 text-right font-black text-red-600">${item.score} PTS</td>
+          </tr>
+        `;
+      });
+
+      tbody.innerHTML = html;
+    })
+    .catch(err => {
+      console.error(err);
+      tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-red-500">Gagal memuat leaderboard.</td></tr>`;
+    });
 }
 
 // Auto-check session saat reload
