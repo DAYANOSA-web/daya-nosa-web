@@ -19,20 +19,11 @@
 
       <div class="space-y-4">
         <div>
-          <label class="block text-sm font-semibold mb-1">Email Pengguna</label>
-          <input type="email" id="emailInput" placeholder="Masukkan email..." class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500">
+          <label class="block text-sm font-semibold mb-1">Email Terdaftar</label>
+          <input type="email" id="emailInput" placeholder="Masukkan email terdaftar..." class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500">
         </div>
 
-        <div>
-          <label class="block text-sm font-semibold mb-1">Masuk Sebagai (Role)</label>
-          <select id="roleSelect" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500">
-            <option value="Kacab">Kepala Cabang (Kacab)</option>
-            <option value="FLP">FLP Cabang</option>
-            <option value="NOS Officer">NOS Officer</option>
-          </select>
-        </div>
-
-        <button onclick="handleLogin()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg transition duration-200 shadow-lg shadow-red-200">
+        <button id="btnLogin" onclick="handleLogin()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg transition duration-200 shadow-lg shadow-red-200">
           Masuk ke Aplikasi
         </button>
       </div>
@@ -45,7 +36,10 @@
     <header class="bg-red-600 text-white px-6 py-4 shadow-md flex justify-between items-center">
       <div>
         <h1 class="text-xl font-bold">Daya NOSA</h1>
-        <span id="userRoleBadge" class="text-xs bg-red-800 px-2.5 py-0.5 rounded-full font-semibold">Role: -</span>
+        <div class="flex gap-2 items-center mt-0.5">
+          <span id="userNameBadge" class="text-xs bg-red-900 px-2.5 py-0.5 rounded-full font-semibold">User: -</span>
+          <span id="userRoleBadge" class="text-xs bg-red-800 px-2.5 py-0.5 rounded-full font-semibold">Role: -</span>
+        </div>
       </div>
       <button onclick="handleLogout()" class="bg-white text-red-600 hover:bg-gray-100 px-4 py-1.5 rounded-lg text-sm font-bold transition">
         Keluar
@@ -89,9 +83,8 @@
         </div>
       </div>
 
-      <!-- Tab Content 3: Game NOSIZU (Side-by-Side Layout) -->
+      <!-- Tab Content 3: Game NOSIZU -->
       <div id="contentNosizu" class="hidden space-y-6">
-        <!-- Header Banner -->
         <div class="bg-gradient-to-r from-red-600 to-red-800 text-white p-6 rounded-2xl shadow-lg flex justify-between items-center">
           <div>
             <span class="text-xs uppercase tracking-wider bg-red-900 px-2.5 py-1 rounded-md font-bold">Kuis Standar FLP</span>
@@ -103,15 +96,11 @@
           </div>
         </div>
 
-        <!-- Grid Container: Kuis (Kiri) & Leaderboard (Kanan) -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          
-          <!-- Area Kuis (Lebar 2 Kolom) -->
           <div id="quizBox" class="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
             <p class="text-gray-500 text-sm">Sedang menyiapkan kuis...</p>
           </div>
 
-          <!-- Area Leaderboard (Lebar 1 Kolom) -->
           <div class="lg:col-span-1 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
             <div class="flex justify-between items-center border-b pb-3">
               <h4 class="text-base font-bold text-gray-800 flex items-center gap-1.5">🏆 Top Performers</h4>
@@ -134,7 +123,6 @@
               </table>
             </div>
           </div>
-
         </div>
       </div>
     </main>
@@ -161,7 +149,8 @@
       </div>
     </div>
   </div>
-<!-- Modal Verifikasi PICA (Khusus Kacab / NOS Officer) -->
+
+  <!-- Modal Verifikasi PICA -->
   <div id="verifyModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
     <div class="bg-white p-6 rounded-2xl w-full max-w-md space-y-4 shadow-2xl">
       <h3 class="text-lg font-bold text-gray-800">Verifikasi Item PICA</h3>
@@ -174,11 +163,12 @@
 
       <div class="flex justify-end gap-2 pt-2">
         <button onclick="closeVerifyModal()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-bold rounded-lg">Batal</button>
-        <button id="btnReject" onclick="processVerification('Pending')" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg">❌ Reject (Perbaiki Lagi)</button>
-        <button id="btnApprove" onclick="processVerification('Verified')" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg">✅ Approve (Setujui)</button>
+        <button id="btnReject" onclick="processVerification('Pending')" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg">❌ Reject</button>
+        <button id="btnApprove" onclick="processVerification('Verified')" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg">✅ Approve</button>
       </div>
     </div>
   </div>
+
   <script src="script.js"></script>
 </body>
 </html>
