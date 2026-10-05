@@ -188,21 +188,6 @@ function loadPICAData() {
 }
 
 // Fetch Data Referensi Standar
-function loadReferensiData() {
-  const container = document.getElementById("referensiContainer");
-
-  fetch(`${API_URL}?action=getReferensi`)
-    .then(res => res.json())
-    .then(data => {
-      referensiDataCache = data;
-      renderReferensiCards(data);
-    })
-    .catch(err => {
-      console.error(err);
-      container.innerHTML = `<p class="text-red-500 text-sm col-span-2">Gagal memuat data referensi.</p>`;
-    });
-}
-
 function renderReferensiCards(data) {
   const container = document.getElementById("referensiContainer");
   if (!data || data.length <= 1) {
@@ -212,9 +197,17 @@ function renderReferensiCards(data) {
 
   let html = "";
   for (let i = 1; i < data.length; i++) {
-    const [id, judul, kategori, deskripsi, fungsi, instruksi] = data[i];
+    // Tambahkan targetRole (kolom G) dan gambarUrl (kolom H)
+    const [id, judul, kategori, deskripsi, fungsi, instruksi, targetRole, gambarUrl] = data[i];
+
+    // Buat tag img jika link gambar tersedia[cite: 10]
+    const imgHtml = gambarUrl && gambarUrl.trim() !== ""
+      ? `<img src="${gambarUrl}" alt="${judul || 'Referensi'}" class="w-full h-48 object-cover rounded-lg mb-3" onerror="this.style.display='none'" />`
+      : "";
+
     html += `
       <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm space-y-2">
+        ${imgHtml}
         <span class="text-xs font-bold bg-red-100 text-red-600 px-2 py-0.5 rounded">${kategori || 'Standar'}</span>
         <h4 class="font-bold text-md text-gray-800">${judul || '-'}</h4>
         <p class="text-xs text-gray-600">${deskripsi || '-'}</p>
@@ -226,15 +219,6 @@ function renderReferensiCards(data) {
     `;
   }
   container.innerHTML = html;
-}
-
-function filterReferensi() {
-  const keyword = document.getElementById("searchRef").value.toLowerCase();
-  const filtered = referensiDataCache.filter((row, index) => {
-    if (index === 0) return true;
-    return row.some(cell => String(cell).toLowerCase().includes(keyword));
-  });
-  renderReferensiCards(filtered);
 }
 
 // Modal Handlers (Upload Evidence)
