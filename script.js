@@ -8,6 +8,11 @@ let quizData = [];
 let currentQuizIndex = 0;
 let userScore = 0;
 
+// Variabel Baru untuk Ceklis NOS
+let checklistData = [];
+let currentChecklistIndex = 0;
+let selectedPilarFilter = "ALL";
+
 // Logika Login dengan Database Check
 function handleLogin() {
   const emailInput = document.getElementById("emailInput").value.trim();
@@ -71,17 +76,20 @@ function renderDashboard(user) {
   loadReferensiData();
 }
 
-// Navigasi Tab
+// Navigasi Tab (Update: Menambahkan tab 'checklists')
 function switchTab(tabName) {
   const picaBtn = document.getElementById("tabPica");
+  const checklistBtn = document.getElementById("tabChecklist");
   const refBtn = document.getElementById("tabReferensi");
   const nosizuBtn = document.getElementById("tabNosizu");
 
   const picaContent = document.getElementById("contentPica");
+  const checklistContent = document.getElementById("contentChecklist");
   const refContent = document.getElementById("contentReferensi");
   const nosizuContent = document.getElementById("contentNosizu");
 
   picaContent.classList.add("hidden");
+  if (checklistContent) checklistContent.classList.add("hidden");
   refContent.classList.add("hidden");
   nosizuContent.classList.add("hidden");
 
@@ -89,12 +97,17 @@ function switchTab(tabName) {
   const activeBtnClass = "px-4 py-2 font-bold text-sm rounded-lg bg-red-600 text-white transition";
 
   picaBtn.className = defaultBtnClass;
+  if (checklistBtn) checklistBtn.className = defaultBtnClass;
   refBtn.className = defaultBtnClass;
   nosizuBtn.className = defaultBtnClass;
 
   if (tabName === 'pica') {
     picaContent.classList.remove("hidden");
     picaBtn.className = activeBtnClass;
+  } else if (tabName === 'checklist') {
+    if (checklistContent) checklistContent.classList.remove("hidden");
+    if (checklistBtn) checklistBtn.className = activeBtnClass;
+    loadChecklistNOSData();
   } else if (tabName === 'referensi') {
     refContent.classList.remove("hidden");
     refBtn.className = activeBtnClass;
@@ -274,7 +287,7 @@ function submitEvidence() {
   })
   .then(res => res.json())
   .then(res => {
-    alert("Bukti perbaikan foto berhasil dikirim!");
+    alert("Bukti perbaikan foto berhasil dikirim dan tersimpan di Google Drive!");
     btn.innerText = "Kirim Bukti";
     btn.disabled = false;
     closeUploadModal();
@@ -488,6 +501,158 @@ function loadLeaderboard() {
       console.error(err);
       tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-red-500">Gagal memuat.</td></tr>`;
     });
+}
+
+// LOGIKA BARU: Ceklis NOS dengan Referensi Visual
+function loadChecklistNOSData() {
+  const box = document.getElementById("checklistCardBox");
+  if (!box) return;
+
+  box.innerHTML = `<p class="text-gray-500 text-sm">Sedang mengambil data Ceklis NOS...</p>`;
+
+  fetch(`${API_URL}?action=getChecklistNOS`)
+    .then(res => res.json())
+    .then(data => {
+      if (!data || data.length <= 1) {
+        box.innerHTML = `<p class="text-gray-500 text-sm p-6 text-center">Belum ada data di sheet <strong>CeklisNOS</strong>.</p>`;
+        return;
+      }
+
+      checklistData = data.slice(1);
+      currentChecklistIndex = 0;
+      renderChecklistCard();
+    })
+    .catch(err => {
+      console.error(err);
+      box.innerHTML = `<p class="text-red-500 text-sm p-6 text-center">Gagal memuat data Ceklis NOS.</p>`;
+    });
+}
+
+function filterChecklistByPilar(pilar) {
+  selectedPilarFilter = pilar;
+  currentChecklistIndex = 0;
+
+  const buttons = document.querySelectorAll(".pilar-filter-btn");
+  buttons.forEach(btn => {
+    btn.className = "pilar-filter-btn px-3 py-1.5 text-xs font-bold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition";
+  });
+  event.target.className = "pilar-filter-btn px-3 py-1.5 text-xs font-bold rounded-lg bg-gray-800 text-white transition";
+
+  renderChecklistCard();
+}
+
+function getFilteredChecklistData() {
+  if (selectedPilarFilter === "ALL") return checklistData;
+  return checklistData.filter(item => String(item[1]).toLowerCase() === selectedPilarFilter.toLowerCase());
+}
+
+function renderChecklistCard() {
+  const box = document.getElementById("checklistCardBox");
+  const filteredList = getFilteredChecklistData();
+
+  if (!filteredList || filteredList.length === 0) {
+    box.innerHTML = `<p class="text-gray-500 text-sm text-center py-12">Tidak ada item ceklis untuk pilar ini.</p>`;
+    return;
+  }
+
+  if (currentChecklistIndex >= filteredList.length) {
+    box.innerHTML = `
+      <div class="text-center py-12 space-y-4">
+        <h3 class="text-2xl font-black text-gray-800">✅ Selesai Audit!</h3>
+        <p class="text-sm text-gray-600">Semua item ceklis telah selesai diperiksa.</p>
+        <button onclick="currentChecklistIndex=0; renderChecklistCard();" class="px-6 py-2.5 bg-red-600 text-white font-bold rounded-xl text-xs hover:bg-red-700 transition">Ulangi Ceklis</button>
+      </div>
+    `;
+    return;
+  }
+
+  const row = filteredList[currentChecklistIndex];
+  const id = row[0] || '-';
+  const pilar = row[1] || 'PREMISES H1';
+  const mandatory = row[2] || 'S, G, P';
+  const standarText = row[3] || 'Tidak ada deskripsi standar';
+  const gambarUrl = row[4] || '';
+
+  box.innerHTML = `
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-200 p-6 rounded-2xl border border-gray-300 shadow-sm">
+      
+      <!-- Sisi Kiri: Pilar, Mandatory, Standar, & Tombol Pilihan -->
+      <div class="flex flex-col justify-between space-y-6">
+        <div class="space-y-3">
+          <div>
+            <h2 class="text-2xl font-black text-emerald-950 uppercase tracking-wide">${pilar}</h2>
+            <p class="text-lg font-black text-emerald-900 tracking-wider mt-0.5">${mandatory}</p>
+          </div>
+          <p class="text-base text-gray-800 font-medium leading-relaxed">${standarText}</p>
+        </div>
+
+        <div class="space-y-2 pt-2">
+          <div class="grid grid-cols-2 gap-3">
+            <button onclick="selectChecklistOption('exist, good')" class="py-4 px-2 bg-gray-300 hover:bg-emerald-600 hover:text-white text-gray-800 font-semibold text-sm rounded-lg transition text-center shadow-sm">
+              exist, good
+            </button>
+            <button onclick="selectChecklistOption('exist, not good')" class="py-4 px-2 bg-gray-300 hover:bg-amber-600 hover:text-white text-gray-800 font-semibold text-sm rounded-lg transition text-center shadow-sm">
+              exist, not good
+            </button>
+            <button onclick="selectChecklistOption('not exist')" class="py-4 px-2 bg-gray-300 hover:bg-red-600 hover:text-white text-gray-800 font-semibold text-sm rounded-lg transition text-center shadow-sm">
+              not exist
+            </button>
+            <button onclick="selectChecklistOption('N/A')" class="py-4 px-2 bg-gray-300 hover:bg-gray-500 hover:text-white text-gray-800 font-semibold text-sm rounded-lg transition text-center shadow-sm">
+              N/A
+            </button>
+          </div>
+
+          <div class="flex justify-between items-center text-xs text-gray-500 pt-2">
+            <span>Item ${currentChecklistIndex + 1} dari ${filteredList.length}</span>
+            <span>${id}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sisi Kanan: Referensi Standar Visual -->
+      <div class="bg-gray-300 p-4 rounded-xl flex flex-col justify-between space-y-3">
+        <h3 class="text-xl font-black text-emerald-950 tracking-wider uppercase">REFERENSI</h3>
+        <div class="flex-1 flex items-center justify-center overflow-hidden rounded-lg bg-gray-400 min-h-[220px]">
+          ${gambarUrl ? `<img src="${gambarUrl}" alt="Referensi Visual" class="w-full h-auto max-h-[320px] object-contain rounded-lg">` : `<span class="text-xs font-bold text-gray-600 italic">Tidak ada gambar referensi</span>`}
+        </div>
+      </div>
+
+    </div>
+  `;
+}
+
+function selectChecklistOption(optionValue) {
+  const filteredList = getFilteredChecklistData();
+  const currentItem = filteredList[currentChecklistIndex];
+
+  const pilar = currentItem[1];
+  const mandatory = currentItem[2];
+  const itemDeskripsi = currentItem[3];
+  const userCabang = localStorage.getItem("userCabang") || "Cabang Utama";
+
+  // Jika hasilnya 'exist, not good' atau 'not exist', buat PICA otomatis
+  if (optionValue === "exist, not good" || optionValue === "not exist") {
+    fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "submitAuditChecklist",
+        pilar: pilar,
+        mandatory: mandatory,
+        item: itemDeskripsi,
+        hasil: optionValue,
+        cabang: userCabang,
+        prioritas: "Tinggi"
+      })
+    })
+    .then(res => res.json())
+    .then(() => {
+      console.log("PICA Otomatis Dibuat");
+    })
+    .catch(err => console.error("Gagal simpan PICA:", err));
+  }
+
+  currentChecklistIndex++;
+  renderChecklistCard();
 }
 
 // Auto-check session saat reload
