@@ -188,8 +188,26 @@ function loadPICAData() {
 }
 
 // Fetch Data Referensi Standar
+function loadReferensiData() {
+  const container = document.getElementById("referensiContainer");
+  if (!container) return;
+
+  fetch(`${API_URL}?action=getReferensi`)
+    .then(res => res.json())
+    .then(data => {
+      referensiDataCache = data;
+      renderReferensiCards(data);
+    })
+    .catch(err => {
+      console.error(err);
+      container.innerHTML = `<p class="text-red-500 text-sm col-span-2">Gagal memuat data referensi.</p>`;
+    });
+}
+
 function renderReferensiCards(data) {
   const container = document.getElementById("referensiContainer");
+  if (!container) return;
+
   if (!data || data.length <= 1) {
     container.innerHTML = `<p class="text-gray-500 text-sm col-span-2">Belum ada data referensi.</p>`;
     return;
@@ -197,10 +215,8 @@ function renderReferensiCards(data) {
 
   let html = "";
   for (let i = 1; i < data.length; i++) {
-    // Tambahkan targetRole (kolom G) dan gambarUrl (kolom H)
     const [id, judul, kategori, deskripsi, fungsi, instruksi, targetRole, gambarUrl] = data[i];
 
-    // Buat tag img jika link gambar tersedia[cite: 10]
     const imgHtml = gambarUrl && gambarUrl.trim() !== ""
       ? `<img src="${gambarUrl}" alt="${judul || 'Referensi'}" class="w-full h-48 object-cover rounded-lg mb-3" onerror="this.style.display='none'" />`
       : "";
@@ -219,6 +235,15 @@ function renderReferensiCards(data) {
     `;
   }
   container.innerHTML = html;
+}
+
+function filterReferensi() {
+  const keyword = document.getElementById("searchRef").value.toLowerCase();
+  const filtered = referensiDataCache.filter((row, index) => {
+    if (index === 0) return true;
+    return row.some(cell => String(cell).toLowerCase().includes(keyword));
+  });
+  renderReferensiCards(filtered);
 }
 
 // Modal Handlers (Upload Evidence)
@@ -520,7 +545,9 @@ function filterChecklistByPilar(pilar) {
   buttons.forEach(btn => {
     btn.className = "pilar-filter-btn px-3 py-1.5 text-xs font-bold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition";
   });
-  event.target.className = "pilar-filter-btn px-3 py-1.5 text-xs font-bold rounded-lg bg-gray-800 text-white transition";
+  if (event && event.target) {
+    event.target.className = "pilar-filter-btn px-3 py-1.5 text-xs font-bold rounded-lg bg-gray-800 text-white transition";
+  }
 
   renderChecklistCard();
 }
@@ -532,6 +559,7 @@ function getFilteredChecklistData() {
 
 function renderChecklistCard() {
   const box = document.getElementById("checklistCardBox");
+  if (!box) return;
   const filteredList = getFilteredChecklistData();
 
   if (!filteredList || filteredList.length === 0) {
@@ -614,7 +642,6 @@ function selectChecklistOption(optionValue) {
   const itemDeskripsi = currentItem[3];
   const userCabang = localStorage.getItem("userCabang") || "Cabang Utama";
 
-  // Jika hasilnya 'exist, not good' atau 'not exist', buat PICA otomatis
   if (optionValue === "exist, not good" || optionValue === "not exist") {
     fetch(API_URL, {
       method: "POST",
