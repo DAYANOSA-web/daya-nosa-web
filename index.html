@@ -51,7 +51,7 @@
         <button type="button" id="tabModeRegister" onclick="setAuthMode('register')" class="flex-1 py-2 rounded-xl hover:text-gray-900 transition">Daftar Akun</button>
       </div>
 
-      <!-- Form Inputs -->
+<!-- Form Inputs -->
       <form id="authForm" onsubmit="handleAuthSubmit(event)" class="space-y-4">
         
         <!-- Input Nama (Hanya Saat Register) -->
@@ -86,8 +86,8 @@
           </div>
         </div>
 
-        <!-- Input Cabang (Otomatis Hidden jika PIC NOS) -->
-        <div id="cabangInputGroup">
+        <!-- Input Cabang (Hanya Muncul Saat REGISTER, Default HIDDEN saat LOGIN) -->
+        <div id="cabangInputGroup" class="hidden">
           <label class="block text-xs font-bold text-gray-600 mb-1">Nama Cabang</label>
           <input type="text" id="authCabang" placeholder="Soekarno Hatta" class="w-full px-4 py-3 rounded-2xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-daya-red text-sm font-semibold transition">
         </div>
@@ -100,9 +100,8 @@
           <a href="#" class="text-xs font-bold text-gray-400 hover:text-daya-red">lupa password?</a>
         </div>
       </form>
-    </div>
-  </div>
 
+    
   <!-- ==================== SECTION MAIN DASHBOARD ==================== -->
   <div id="dashboardSection" class="hidden min-h-screen">
     
