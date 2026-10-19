@@ -1,277 +1,182 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Daya NOSA - Network Operational Standard Audit</title>
-  <!-- Tailwind CSS CDN & Font Jakarta Sans -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            daya: {
-              red: '#D32F2F',
-              darkred: '#9A0007',
-              gold: '#E6A100',
-              bg: '#F4F5F7'
-            }
-          },
-          fontFamily: {
-            sans: ['"Plus Jakarta Sans"', 'sans-serif']
-          }
-        }
-      }
+const API_URL = "https://script.google.com/macros/s/AKfycby3Nv784S410kwfLsKDfexjrd4Mm1LJYYzzweWqgukZK-VegEhnEngNpVLN_wHUPsC5/exec";
+
+let authMode = "login";
+let selectedRole = "Kepala Cabang";
+let currentUser = null;
+
+function selectRole(role) {
+  selectedRole = role;
+  document.querySelectorAll('.role-btn').forEach(btn => btn.className = 'role-btn border-2 border-gray-200 p-2.5 rounded-2xl text-center hover:border-daya-red transition');
+  
+  const cabangGroup = document.getElementById("cabangInputGroup");
+  if (role === 'Kepala Cabang') {
+    document.getElementById("roleKacab").className = 'role-btn border-2 border-daya-red bg-red-50 p-2.5 rounded-2xl text-center transition';
+    if (cabangGroup && authMode === 'register') cabangGroup.classList.remove("hidden");
+  } else if (role === 'PIC NOS') {
+    document.getElementById("rolePic").className = 'role-btn border-2 border-daya-red bg-red-50 p-2.5 rounded-2xl text-center transition';
+    if (cabangGroup) cabangGroup.classList.add("hidden");
+  } else {
+    document.getElementById("roleFlp").className = 'role-btn border-2 border-daya-red bg-red-50 p-2.5 rounded-2xl text-center transition';
+    if (cabangGroup && authMode === 'register') cabangGroup.classList.remove("hidden");
+  }
+}
+
+function setAuthMode(mode) {
+  authMode = mode;
+  const nameGroup = document.getElementById("nameInputGroup");
+  const cabangGroup = document.getElementById("cabangInputGroup");
+  const title = document.getElementById("authTitle");
+  const btnSubmit = document.getElementById("btnSubmitAuth");
+  const tabLogin = document.getElementById("tabModeLogin");
+  const tabReg = document.getElementById("tabModeRegister");
+
+  if (mode === "register") {
+    if (nameGroup) nameGroup.classList.remove("hidden");
+    if (cabangGroup && selectedRole !== "PIC NOS") cabangGroup.classList.remove("hidden");
+    if (title) title.innerText = "daftar akun baru";
+    if (btnSubmit) btnSubmit.innerText = "daftar akun";
+    if (tabReg) tabReg.className = "flex-1 py-2 rounded-xl bg-white text-gray-900 shadow-sm transition font-bold";
+    if (tabLogin) tabLogin.className = "flex-1 py-2 rounded-xl hover:text-gray-900 transition font-bold";
+  } else {
+    if (nameGroup) nameGroup.classList.add("hidden");
+    if (cabangGroup) cabangGroup.classList.add("hidden");
+    if (title) title.innerText = "masuk/daftar";
+    if (btnSubmit) btnSubmit.innerText = "masuk";
+    if (tabLogin) tabLogin.className = "flex-1 py-2 rounded-xl bg-white text-gray-900 shadow-sm transition font-bold";
+    if (tabReg) tabReg.className = "flex-1 py-2 rounded-xl hover:text-gray-900 transition font-bold";
+  }
+}
+
+function handleAuthSubmit(e) {
+  e.preventDefault();
+  const btn = document.getElementById("btnSubmitAuth");
+  const emailInput = document.getElementById("authEmail");
+  const passInput = document.getElementById("authPassword");
+  const namaInput = document.getElementById("regNama");
+  const cabangInput = document.getElementById("authCabang");
+
+  const email = emailInput ? emailInput.value.trim() : "";
+  const password = passInput ? passInput.value.trim() : "";
+  const nama = namaInput ? namaInput.value.trim() : "";
+  const cabang = cabangInput ? cabangInput.value.trim() : "";
+
+  if (!email) {
+    alert("Silakan isi ID Karyawan / Email!");
+    return;
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerText = "Proses...";
+  }
+
+  const payload = {
+    action: authMode === "register" ? "registerUser" : "loginUser",
+    email: email,
+    password: password,
+    nama: nama,
+    role: selectedRole,
+    cabang: selectedRole === "PIC NOS" ? "Head Office" : cabang
+  };
+
+  fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload)
+  })
+  .then(res => res.json())
+  .then(res => {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = authMode === "register" ? "daftar akun" : "masuk";
     }
-  </script>
-</head>
-<body class="bg-daya-bg font-sans text-gray-800 pb-20 md:pb-0 min-h-screen">
 
-  <!-- ==================== SECTION LOGIN & REGISTER ==================== -->
-  <div id="loginSection" class="min-h-screen flex items-center justify-center p-4">
-    <div class="bg-white p-6 sm:p-8 rounded-3xl shadow-xl w-full max-w-md border border-gray-100 space-y-5">
-      
-      <!-- Brand Logo Header -->
-      <div class="text-center space-y-2">
-        <div class="flex justify-center items-center gap-2">
-          <div class="w-10 h-10 bg-daya-red text-white rounded-2xl flex items-center justify-center font-black text-xl shadow-md">DN</div>
-          <div class="text-left">
-            <h1 class="text-xl font-extrabold text-gray-900 leading-none">DAYA NOSA</h1>
-            <p class="text-[10px] font-bold text-daya-gold tracking-widest uppercase">NOS Assistant</p>
-          </div>
-        </div>
-        <h2 id="authTitle" class="text-2xl font-black text-gray-800 pt-2">masuk/daftar</h2>
-      </div>
+    if (res.status === "success") {
+      currentUser = res.userData;
+      localStorage.setItem("nosa_user", JSON.stringify(currentUser));
+      renderDashboard(currentUser);
+    } else {
+      alert(res.message || "Gagal memproses pendaftaran/login.");
+    }
+  })
+  .catch(err => {
+    console.error("Fetch Error:", err);
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = authMode === "register" ? "daftar akun" : "masuk";
+    }
+    alert("Gagal terhubung ke server backend. Pastikan koneksi internet Anda lancar.");
+  });
+}
 
-      <!-- Mode Tab Login / Register -->
-      <div class="flex bg-gray-100 p-1 rounded-2xl text-xs font-bold text-gray-500">
-        <button type="button" id="tabModeLogin" onclick="setAuthMode('login')" class="flex-1 py-2 rounded-xl bg-white text-gray-900 shadow-sm transition">Masuk</button>
-        <button type="button" id="tabModeRegister" onclick="setAuthMode('register')" class="flex-1 py-2 rounded-xl hover:text-gray-900 transition">Daftar Akun</button>
-      </div>
+function renderDashboard(user) {
+  const loginSec = document.getElementById("loginSection");
+  const dashSec = document.getElementById("dashboardSection");
+  if (loginSec) loginSec.classList.add("hidden");
+  if (dashSec) dashSec.classList.remove("hidden");
 
-<!-- Form Inputs -->
-      <form id="authForm" onsubmit="handleAuthSubmit(event)" class="space-y-4">
-        
-        <!-- Input Nama (Hanya Saat Register) -->
-        <div id="nameInputGroup" class="hidden">
-          <label class="block text-xs font-bold text-gray-600 mb-1">Nama Lengkap</label>
-          <input type="text" id="regNama" placeholder="Masukkan nama Anda..." class="w-full px-4 py-3 rounded-2xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-daya-red text-sm font-semibold transition">
-        </div>
+  const nameBadge = document.getElementById("userNameBadge");
+  const roleBadge = document.getElementById("userRoleBadge");
+  const avatar = document.getElementById("userAvatar");
+  const dashCabang = document.getElementById("dashCabangName");
 
+  if (nameBadge) nameBadge.innerText = user.nama || user.email;
+  if (roleBadge) roleBadge.innerText = user.role + " - " + (user.cabang || "Cabang Utama");
+  if (avatar) avatar.innerText = (user.nama || user.email).charAt(0).toUpperCase();
+  if (dashCabang) dashCabang.innerText = user.cabang || "Cabang Utama";
+
+  renderMenuGrid(user.role);
+}
+
+function renderMenuGrid(role) {
+  const container = document.getElementById("menuGrid");
+  if (!container) return;
+
+  let menus = [
+    { id: 'referensi', title: 'referensi standar', sub: 'cek dokumen standar NOS', icon: '📖' },
+    { id: 'pica', title: 'dashboard PICA', sub: 'lihat performa cabang anda', icon: '📊' }
+  ];
+
+  let html = '';
+  menus.forEach(m => {
+    html += `
+      <div onclick="switchTab('${m.id}')" class="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition cursor-pointer flex flex-col justify-between space-y-3">
+        <div class="text-2xl">${m.icon}</div>
         <div>
-          <label class="block text-xs font-bold text-gray-600 mb-1">ID Karyawan / Email / NIK</label>
-          <input type="text" id="authEmail" required placeholder="kacab1@daya.com" class="w-full px-4 py-3 rounded-2xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-daya-red text-sm font-semibold transition">
-        </div>
-
-        <div>
-          <label class="block text-xs font-bold text-gray-600 mb-1">Password / PIN</label>
-          <input type="password" id="authPassword" required placeholder="••••••••" class="w-full px-4 py-3 rounded-2xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-daya-red text-sm font-semibold transition">
-        </div>
-
-        <!-- Role Selector -->
-        <div>
-          <label class="block text-xs font-bold text-gray-600 mb-2">pilih peran anda</label>
-          <div class="grid grid-cols-3 gap-2">
-            <button type="button" onclick="selectRole('Kepala Cabang')" id="roleKacab" class="role-btn border-2 border-daya-red bg-red-50 p-2.5 rounded-2xl text-center hover:border-daya-red transition">
-              <span class="block text-[11px] font-extrabold text-gray-800">Kepala Cabang</span>
-            </button>
-            <button type="button" onclick="selectRole('PIC NOS')" id="rolePic" class="role-btn border-2 border-gray-200 p-2.5 rounded-2xl text-center hover:border-daya-red transition">
-              <span class="block text-[11px] font-extrabold text-gray-800">PIC NOS</span>
-            </button>
-            <button type="button" onclick="selectRole('FLP')" id="roleFlp" class="role-btn border-2 border-gray-200 p-2.5 rounded-2xl text-center hover:border-daya-red transition">
-              <span class="block text-[11px] font-extrabold text-gray-800">FLP</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Input Cabang (Hanya Muncul Saat REGISTER, Default HIDDEN saat LOGIN) -->
-        <div id="cabangInputGroup" class="hidden">
-          <label class="block text-xs font-bold text-gray-600 mb-1">Nama Cabang</label>
-          <input type="text" id="authCabang" placeholder="Soekarno Hatta" class="w-full px-4 py-3 rounded-2xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-daya-red text-sm font-semibold transition">
-        </div>
-
-        <button type="submit" id="btnSubmitAuth" class="w-full bg-daya-red hover:bg-daya-darkred text-white font-extrabold py-3.5 rounded-2xl transition duration-200 shadow-lg shadow-red-200 text-sm">
-          masuk
-        </button>
-
-        <div class="text-center pt-1">
-          <a href="#" class="text-xs font-bold text-gray-400 hover:text-daya-red">lupa password?</a>
-        </div>
-      </form>
-
-    
-  <!-- ==================== SECTION MAIN DASHBOARD ==================== -->
-  <div id="dashboardSection" class="hidden min-h-screen">
-    
-    <!-- Top Header -->
-    <header class="bg-white border-b border-gray-100 px-6 py-4 sticky top-0 z-30 flex justify-between items-center shadow-sm">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center font-black text-daya-red text-sm" id="userAvatar">R</div>
-        <div>
-          <h1 class="text-xs font-medium text-gray-500">halo, <span id="userNameBadge" class="font-extrabold text-gray-900">-</span> 👋</h1>
-          <p class="text-[11px] font-bold text-daya-gold" id="userRoleBadge">-</p>
+          <h4 class="font-extrabold text-xs text-gray-900 capitalize">${m.title}</h4>
+          <p class="text-[10px] text-gray-400 font-medium leading-tight mt-0.5">${m.sub}</p>
         </div>
       </div>
-      <button onclick="handleLogout()" class="text-xs font-bold text-gray-400 hover:text-daya-red bg-gray-100 px-3 py-1.5 rounded-xl transition">
-        Keluar
-      </button>
-    </header>
+    `;
+  });
+  container.innerHTML = html;
+}
 
-    <!-- Main Content Wrapper -->
-    <main class="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
-      
-      <!-- TAB 1: HOME GRID MENU -->
-      <div id="tabHome" class="tab-content space-y-6">
-        
-        <!-- Header Info Cabang / Summary -->
-        <div class="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex justify-between items-center">
-          <div>
-            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Cabang Aktif</p>
-            <h3 class="text-xl font-black text-gray-800" id="dashCabangName">Cabang Soekarno Hatta</h3>
-          </div>
-          <div class="text-right">
-            <span class="text-[10px] font-bold text-gray-400 uppercase">Skor NOS</span>
-            <div class="text-xs font-black bg-amber-100 text-amber-800 px-3 py-1 rounded-full" id="dashSkorNOS">GOLD / PLATINUM</div>
-          </div>
-        </div>
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+  if (tabId === 'home') {
+    document.getElementById('tabHome').classList.remove('hidden');
+  } else if (tabId === 'pica') {
+    document.getElementById('tabPica').classList.remove('hidden');
+  } else if (tabId === 'referensi') {
+    document.getElementById('tabReferensi').classList.remove('hidden');
+  }
+}
 
-        <!-- Grid Icon Menu Sesuai Role -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="menuGrid">
-          <!-- Rendered dynamically by script.js -->
-        </div>
+function handleLogout() {
+  localStorage.removeItem("nosa_user");
+  document.getElementById("dashboardSection").classList.add("hidden");
+  document.getElementById("loginSection").classList.remove("hidden");
+}
 
-        <!-- Widget Donut Performa Cabang -->
-        <div class="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-5">
-          <div class="relative w-20 h-20 flex-shrink-0 flex items-center justify-center">
-            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-              <path class="text-gray-100" stroke-width="4" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-              <path id="donutCircle" class="text-emerald-500" stroke-dasharray="85, 100" stroke-width="4" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-            </svg>
-            <span class="absolute font-black text-gray-800 text-base" id="picaPercentageText">85%</span>
-          </div>
-          <div class="flex-1 space-y-1">
-            <h3 class="font-extrabold text-xs text-gray-900 uppercase tracking-tight">PERFORMA CABANG ANDA</h3>
-            <p class="text-[11px] text-gray-500">PICA terselesaikan bulan ini</p>
-            <button onclick="switchTab('pica')" class="text-xs font-bold text-daya-red hover:underline flex items-center gap-1 pt-1">
-              Lihat Dashboard PICA &rsaquo;
-            </button>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- TAB 2: DASHBOARD PICA -->
-      <div id="tabPica" class="tab-content hidden space-y-5">
-        <div class="flex justify-between items-center">
-          <h3 class="text-xl font-black text-gray-800">Dashboard PICA</h3>
-          <button onclick="loadPICAData()" class="text-xs font-bold text-daya-red bg-red-50 px-3 py-1.5 rounded-xl hover:bg-red-100 transition">Refresh</button>
-        </div>
-
-        <!-- Metric KPI Cards -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm text-center">
-            <span class="text-[10px] font-bold text-gray-400 uppercase">Open</span>
-            <p id="kpiOpen" class="text-2xl font-black text-red-600">0</p>
-          </div>
-          <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm text-center">
-            <span class="text-[10px] font-bold text-gray-400 uppercase">Waiting Verify</span>
-            <p id="kpiWaiting" class="text-2xl font-black text-amber-500">0</p>
-          </div>
-          <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm text-center">
-            <span class="text-[10px] font-bold text-gray-400 uppercase">Closed</span>
-            <p id="kpiClosed" class="text-2xl font-black text-emerald-600">0</p>
-          </div>
-          <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm text-center">
-            <span class="text-[10px] font-bold text-gray-400 uppercase">Total Items</span>
-            <p id="kpiTotal" class="text-2xl font-black text-gray-800">0</p>
-          </div>
-        </div>
-
-        <!-- PICA Container List -->
-        <div id="picaContainer" class="space-y-3">
-          <p class="text-xs text-gray-400">Memuat item PICA...</p>
-        </div>
-      </div>
-
-      <!-- TAB 3: AUDIT GENBA CHECKLIST -->
-      <div id="tabGenba" class="tab-content hidden space-y-5">
-        <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-4">
-          <h3 class="text-xl font-black text-gray-800">Form Audit GENBA Field</h3>
-          
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-            <div>
-              <label class="font-bold text-gray-600">Nama Auditor</label>
-              <input type="text" id="genbaAuditor" class="w-full mt-1 p-3 rounded-xl border bg-gray-50" placeholder="Refan">
-            </div>
-            <div>
-              <label class="font-bold text-gray-600">Nomor WA</label>
-              <input type="text" id="genbaWA" class="w-full mt-1 p-3 rounded-xl border bg-gray-50" placeholder="+62812345678">
-            </div>
-          </div>
-
-          <hr class="border-gray-100">
-
-          <div id="genbaItemsBox" class="space-y-4">
-            <p class="text-xs text-gray-400">Menyiapkan butir audit GENBA...</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB 4: REFERENSI STANDAR VISUAL -->
-      <div id="tabReferensi" class="tab-content hidden space-y-4">
-        <div class="flex justify-between items-center">
-          <h3 class="text-xl font-black text-gray-800">Referensi Standar Visual</h3>
-          <input type="text" id="searchRef" onkeyup="filterReferensi()" placeholder="Cari standar..." class="text-xs p-2.5 rounded-xl border w-40 sm:w-60 focus:outline-none">
-        </div>
-        <div id="referensiContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <p class="text-xs text-gray-400">Memuat referensi standar...</p>
-        </div>
-      </div>
-
-      <!-- TAB 5: GAME NOSIZU -->
-      <div id="tabNosizu" class="tab-content hidden space-y-5">
-        <div class="bg-gradient-to-r from-daya-red to-red-800 text-white p-6 rounded-3xl shadow-lg flex justify-between items-center">
-          <div>
-            <span class="text-[10px] uppercase font-bold tracking-widest bg-red-900/60 px-3 py-1 rounded-full">NOSIZU Arena</span>
-            <h3 class="text-2xl font-black mt-1">Kuis Standar NOS</h3>
-          </div>
-          <div class="text-right">
-            <p class="text-xs opacity-80">Skor Anda</p>
-            <p id="nosizuScore" class="text-3xl font-black">0 XP</p>
-          </div>
-        </div>
-
-        <div id="quizCardBox" class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-4">
-          <p class="text-xs text-gray-400">Memuat soal kuis...</p>
-        </div>
-      </div>
-
-    </main>
-
-    <!-- Bottom Navigation Bar -->
-    <nav class="fixed bottom-0 inset-x-0 bg-white border-t border-gray-200 py-2 px-6 flex justify-around items-center z-40">
-      <button onclick="switchTab('home')" id="navHome" class="nav-btn flex flex-col items-center gap-1 text-daya-red font-bold text-[10px]">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-        home
-      </button>
-      <button onclick="switchTab('pica')" id="navPica" class="nav-btn flex flex-col items-center gap-1 text-gray-400 hover:text-daya-red font-bold text-[10px]">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-        PICA
-      </button>
-      <button onclick="switchTab('genba')" id="navGenba" class="nav-btn flex flex-col items-center gap-1 text-gray-400 hover:text-daya-red font-bold text-[10px]">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
-        GENBA
-      </button>
-      <button onclick="switchTab('nosizu')" id="navNosizu" class="nav-btn flex flex-col items-center gap-1 text-gray-400 hover:text-daya-red font-bold text-[10px]">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/></svg>
-        NOSIZU
-      </button>
-    </nav>
-
-  </div>
-
-  <script src="script.js"></script>
-</body>
-</html>
+window.onload = function() {
+  const saved = localStorage.getItem("nosa_user");
+  if (saved) {
+    try {
+      currentUser = JSON.parse(saved);
+      renderDashboard(currentUser);
+    } catch(e) {
+      localStorage.removeItem("nosa_user");
+    }
+  }
+};
