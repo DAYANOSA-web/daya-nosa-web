@@ -28,10 +28,11 @@ function selectRole(role) {
   }
 }
 
-// 2. TOGGLE LOGIN / REGISTER MODE
+// TOGGLE LOGIN / REGISTER MODE
 function setAuthMode(mode) {
   authMode = mode;
   const nameGroup = document.getElementById("nameInputGroup");
+  const cabangGroup = document.getElementById("cabangInputGroup");
   const title = document.getElementById("authTitle");
   const btnSubmit = document.getElementById("btnSubmitAuth");
   const tabLogin = document.getElementById("tabModeLogin");
@@ -39,12 +40,15 @@ function setAuthMode(mode) {
 
   if (mode === "register") {
     nameGroup.classList.remove("hidden");
+    if (selectedRole !== "PIC NOS") cabangGroup.classList.remove("hidden");
     title.innerText = "daftar akun baru";
     btnSubmit.innerText = "daftar akun";
     tabReg.className = "flex-1 py-2 rounded-xl bg-white text-gray-900 shadow-sm transition font-bold";
     tabLogin.className = "flex-1 py-2 rounded-xl hover:text-gray-900 transition font-bold";
   } else {
+    // Mode LOGIN: Sembunyikan Input Nama & Cabang
     nameGroup.classList.add("hidden");
+    cabangGroup.classList.add("hidden");
     title.innerText = "masuk/daftar";
     btnSubmit.innerText = "masuk";
     tabLogin.className = "flex-1 py-2 rounded-xl bg-white text-gray-900 shadow-sm transition font-bold";
@@ -52,7 +56,7 @@ function setAuthMode(mode) {
   }
 }
 
-// 3. HANDLER AUTH SUBMIT (PERBAIKAN KONEKSI STABIL)
+// HANDLER AUTH SUBMIT
 function handleAuthSubmit(e) {
   e.preventDefault();
   const btn = document.getElementById("btnSubmitAuth");
@@ -73,10 +77,39 @@ function handleAuthSubmit(e) {
     action: authMode === "register" ? "registerUser" : "loginUser",
     email: email,
     password: password,
-    nama: nama || email.split('@')[0],
+    nama: nama,
     role: selectedRole,
-    cabang: selectedRole === "PIC NOS" ? "Head Office" : (cabang || "Cabang Utama")
+    cabang: selectedRole === "PIC NOS" ? "Head Office" : cabang
   };
+
+  fetch(API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "text/plain;charset=utf-8"
+    },
+    body: JSON.stringify(payload)
+  })
+  .then(res => res.json())
+  .then(res => {
+    btn.disabled = false;
+    btn.innerText = authMode === "register" ? "daftar akun" : "masuk";
+
+    if (res.status === "success") {
+      // Murni gunakan data profil resmi dari database Google Sheets
+      currentUser = res.userData;
+      localStorage.setItem("nosa_user", JSON.stringify(currentUser));
+      renderDashboard(currentUser);
+    } else {
+      alert(res.message || "Gagal memproses pendaftaran/login.");
+    }
+  })
+  .catch(err => {
+    console.error("Fetch Error:", err);
+    btn.disabled = false;
+    btn.innerText = authMode === "register" ? "daftar akun" : "masuk";
+    alert("Gagal terhubung ke server backend. Pastikan koneksi internet stabil.");
+  });
+}
 
   // Menggunakan mode text & fallback JSON parsing agar aman dari pembatasan CORS GAS
   fetch(API_URL, {
