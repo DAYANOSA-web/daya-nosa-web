@@ -146,9 +146,9 @@ function loadReferensiData() {
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
             
             <!-- Sisi Kiri: Foto Gambar Referensi -->
-            <div class="w-full h-44 sm:h-48 rounded-xl overflow-hidden bg-gray-200/80 flex items-center justify-center border border-gray-300/50">
-              ${imgUrl ? `<img src="${imgUrl}" alt="${judul}" class="w-full h-full object-cover">` : '<span class="text-xs text-gray-400 italic">Tidak ada gambar</span>'}
-            </div>
+              <div class="w-full h-48 sm:h-56 rounded-xl overflow-hidden bg-white/90 p-2 flex items-center justify-center border border-gray-300/50 shadow-inner">
+               ${imgUrl ? `<img src="${imgUrl}" alt="${judul}" class="w-full h-full object-contain">` : '<span class="text-xs text-gray-400 italic">Tidak ada gambar</span>'}
+              </div>
 
             <!-- Sisi Kanan: Detail Informasi -->
             <div class="space-y-2">
