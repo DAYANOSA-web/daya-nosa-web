@@ -12,14 +12,14 @@
         extend: {
           colors: {
             nosa: {
-              green: '#2D5343',
+              green: '#2D5343',      /* Hijau tua aksen & teks */
               greenLight: '#3B6E59',
-              yellow: '#E5A933',
+              yellow: '#E5A933',     /* Kuning mustard badge */
               border: '#7FB08E',
               button: '#D8E2D8',
               bgRole: '#E4ECE5',
-              dashBg: '#EEF3EE',
-              cardBg: '#EAF1EA'
+              dashBg: '#EEF3EE',     /* Background dashboard */
+              cardBg: '#EAF1EA'      /* Card background */
             }
           },
           fontFamily: {
@@ -39,35 +39,28 @@
     <div class="absolute top-5 right-0 w-24 h-4 bg-nosa-yellow rounded-l-sm"></div>
 
     <div class="my-auto space-y-5 pt-2">
-      
       <div class="text-center flex justify-center items-center">
         <img src="Logo DAYA NOSA.png" alt="Daya NOSA Logo" class="h-24 w-auto object-contain mx-auto">
       </div>
 
-      <!-- Mode Selector -->
       <div class="flex bg-gray-100 p-1 rounded-2xl text-xs font-bold text-gray-500">
-        <button type="button" id="tabModeLogin" onclick="setAuthMode('login')" class="flex-1 py-1.5 rounded-xl bg-white text-gray-900 shadow-xs transition">Masuk</button>
+        <button type="button" id="tabModeLogin" onclick="setAuthMode('login')" class="flex-1 py-1.5 rounded-xl bg-white text-gray-900 shadow-xs transition font-bold">Masuk</button>
         <button type="button" id="tabModeRegister" onclick="setAuthMode('register')" class="flex-1 py-1.5 rounded-xl hover:text-gray-900 transition">Daftar Akun</button>
       </div>
 
       <form id="authForm" onsubmit="handleAuthSubmit(event)" class="space-y-3">
-        
-        <!-- Field Nama Lengkap (Khusus Register) -->
         <div id="nameInputGroup" class="hidden">
           <input type="text" id="regNama" placeholder="Nama Lengkap Pengguna" class="w-full px-4 py-2.5 rounded-2xl border-2 border-nosa-border bg-white text-sm text-gray-700 focus:outline-none">
         </div>
 
-        <!-- Field ID/Email/NIK -->
         <div class="relative flex items-center">
           <input type="text" id="authEmail" required placeholder="ID karyawan / Email / NIK" class="w-full px-4 py-2.5 rounded-2xl border-2 border-nosa-border bg-white text-sm text-gray-700 focus:outline-none">
         </div>
 
-        <!-- Field Password/PIN -->
         <div class="relative flex items-center">
           <input type="password" id="authPassword" required placeholder="Password / PIN" class="w-full px-4 py-2.5 rounded-2xl border-2 border-nosa-border bg-white text-sm text-gray-700 focus:outline-none">
         </div>
 
-        <!-- Role Selector -->
         <div class="space-y-1">
           <label class="block text-xs font-normal text-gray-700 pl-1">pilih peran anda</label>
           <div class="flex items-center justify-between border-2 border-nosa-border rounded-2xl p-1 bg-white">
@@ -79,7 +72,6 @@
           </div>
         </div>
 
-        <!-- Field Cabang (Khusus Register) -->
         <div id="cabangInputGroup" class="hidden">
           <input type="text" id="authCabang" placeholder="Nama Cabang (misal: Soekarno Hatta)" class="w-full px-4 py-2.5 rounded-2xl border-2 border-nosa-border bg-white text-sm text-gray-700 focus:outline-none">
         </div>
@@ -87,7 +79,6 @@
         <button type="submit" id="btnSubmitAuth" class="w-full py-3 bg-nosa-button hover:bg-nosa-border text-black font-extrabold text-lg rounded-2xl shadow-md border border-gray-300/40 transition-all cursor-pointer">
           masuk
         </button>
-
       </form>
     </div>
 
@@ -95,12 +86,11 @@
       <div class="w-10 h-3.5 bg-nosa-green"></div>
       <div class="w-20 h-3.5 bg-nosa-yellow"></div>
     </div>
-
   </div>
 
 
   <!-- ==================== PAGE 2: MAIN APP CONTAINER ==================== -->
-  <div id="mainContainer" class="hidden relative w-full max-w-sm bg-nosa-dashBg rounded-[32px] shadow-2xl overflow-hidden border border-gray-100 flex flex-col justify-between min-h-[680px]">
+  <div id="mainContainer" class="hidden relative w-full max-w-sm sm:max-w-md md:max-w-2xl lg:max-w-4xl bg-nosa-dashBg rounded-[32px] shadow-2xl overflow-hidden border border-gray-100 flex flex-col justify-between min-h-[680px]">
     
     <!-- HEADER APP -->
     <div class="p-5 pb-0 flex justify-between items-start">
@@ -113,7 +103,7 @@
     </div>
 
     <!-- SCROLLABLE CONTENT WRAPPER -->
-    <div class="flex-1 overflow-y-auto px-5 pb-20 pt-2 space-y-4">
+    <div class="flex-1 overflow-y-auto px-4 sm:px-6 pb-20 pt-2 space-y-4">
       
       <!-- TAB 1: DASHBOARD HOME -->
       <div id="dashboardPage" class="space-y-4">
@@ -125,38 +115,38 @@
         </div>
 
         <!-- 6 KOTAK MENU -->
-        <div class="grid grid-cols-3 gap-2.5 pt-1">
-          <div class="bg-nosa-cardBg p-3 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-1 cursor-pointer">
+        <div class="grid grid-cols-3 sm:grid-cols-3 gap-2.5 pt-1">
+          <div onclick="switchTab('referensi')" class="bg-nosa-cardBg p-3 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-1 hover:shadow-md transition cursor-pointer">
             <div class="text-3xl my-1">📖</div>
             <h4 class="font-extrabold text-[11px] text-nosa-green leading-tight">referensi standar</h4>
             <p class="text-[8px] text-gray-500 leading-tight">cek dokumen dan standar NOS</p>
           </div>
 
-          <div class="bg-nosa-cardBg p-3 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-1 cursor-pointer">
+          <div class="bg-nosa-cardBg p-3 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-1 hover:shadow-md transition cursor-pointer">
             <div class="text-3xl my-1">📊</div>
             <h4 class="font-extrabold text-[11px] text-nosa-green leading-tight">dashboard PICA</h4>
             <p class="text-[8px] text-gray-500 leading-tight">lihat performa cabang anda</p>
           </div>
 
-          <div class="bg-nosa-cardBg p-3 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-1 cursor-pointer">
+          <div class="bg-nosa-cardBg p-3 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-1 hover:shadow-md transition cursor-pointer">
             <div class="text-3xl my-1">🔔</div>
             <h4 class="font-extrabold text-[11px] text-nosa-green leading-tight">reminder</h4>
             <p class="text-[8px] text-gray-500 leading-tight">kustomisasi pengingat yang anda butuhkan</p>
           </div>
 
-          <div class="bg-nosa-cardBg p-3 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-1 cursor-pointer">
+          <div class="bg-nosa-cardBg p-3 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-1 hover:shadow-md transition cursor-pointer">
             <div class="text-3xl my-1">🎮</div>
             <h4 class="font-extrabold text-[11px] text-nosa-green leading-tight">NOSIZU</h4>
             <p class="text-[8px] text-gray-500 leading-tight">mainkan games dan tambah knowledgemu!</p>
           </div>
 
-          <div class="bg-nosa-cardBg p-3 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-1 cursor-pointer">
+          <div class="bg-nosa-cardBg p-3 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-1 hover:shadow-md transition cursor-pointer">
             <div class="text-3xl my-1">📍</div>
             <h4 class="font-extrabold text-[11px] text-nosa-green leading-tight">GENBA</h4>
             <p class="text-[8px] text-gray-500 leading-tight">ayo lakukan GENBA untuk menjaga standar</p>
           </div>
 
-          <div onclick="switchTab('profil')" class="bg-nosa-cardBg p-3 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-1 cursor-pointer">
+          <div onclick="switchTab('profil')" class="bg-nosa-cardBg p-3 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-1 hover:shadow-md transition cursor-pointer">
             <div class="text-3xl my-1">🏢</div>
             <h4 class="font-extrabold text-[11px] text-nosa-green leading-tight">profil cabang</h4>
             <p class="text-[8px] text-gray-500 leading-tight">data dan informasi cabang</p>
@@ -189,9 +179,27 @@
       </div>
 
 
-      <!-- TAB 2: PROFIL CABANG DINAMIS -->
+      <!-- TAB 2: REFERENSI STANDAR VISUAL (SESUAI ATTACHMENT) -->
+      <div id="referensiPage" class="hidden space-y-4">
+        <div class="flex justify-between items-center border-b border-gray-300/60 pb-2">
+          <div>
+            <h2 class="text-xl font-extrabold text-nosa-green tracking-tight">Referensi Standar</h2>
+            <p class="text-[10px] text-gray-500">Panduan visual dan operasional standar NOS</p>
+          </div>
+          <button onclick="loadReferensiData()" class="text-[10px] font-bold bg-white text-nosa-green px-3 py-1.5 rounded-xl border border-nosa-green/30 hover:bg-nosa-bgRole transition">
+            🔄 Refresh
+          </button>
+        </div>
+
+        <!-- GRID CONTAINING REFERENSI CARDS FROM GOOGLE SHEETS -->
+        <div id="referensiGridBox" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <p class="text-xs text-gray-400 italic col-span-full text-center py-8">Memuat data referensi standar...</p>
+        </div>
+      </div>
+
+
+      <!-- TAB 3: PROFIL CABANG -->
       <div id="profilPage" class="hidden space-y-3.5">
-        
         <div class="space-y-1 pt-1">
           <div class="flex items-center gap-1.5 text-[10px] text-gray-400 font-normal">
             <span>🏠</span> <span>JBR</span> <span>&gt;</span> <span>Cabang</span>
@@ -200,7 +208,6 @@
           <p class="text-[10px] font-bold text-gray-400">JBR</p>
         </div>
 
-        <!-- SKOR NOS SAAT INI -->
         <div class="bg-nosa-cardBg p-3.5 rounded-2xl border-2 border-indigo-400/80 shadow-xs flex items-center justify-between">
           <div class="flex items-center gap-3">
             <div class="text-2xl">🏆</div>
@@ -215,7 +222,6 @@
           </div>
         </div>
 
-        <!-- PICA YANG BELUM SELESAI (DINAMIS FROM SPREADSHEET) -->
         <div class="bg-nosa-cardBg p-3.5 rounded-2xl border border-gray-200/60 shadow-xs space-y-2.5">
           <div class="flex justify-between items-center border-b border-gray-300/50 pb-2">
             <div class="flex items-center gap-1.5 text-xs font-bold text-gray-800">
@@ -223,13 +229,11 @@
             </div>
             <a href="#" class="text-[9px] text-gray-500 hover:underline">Lihat semua &rsaquo;</a>
           </div>
-
           <div class="space-y-2 text-[10px]" id="profPicaBox">
             <p class="text-gray-400 italic">Memuat data PICA...</p>
           </div>
         </div>
 
-        <!-- TEMUAN BERULANG (DINAMIS FROM SPREADSHEET) -->
         <div class="bg-nosa-cardBg p-3.5 rounded-2xl border border-gray-200/60 shadow-xs space-y-2.5">
           <div class="flex justify-between items-center border-b border-gray-300/50 pb-2">
             <div class="flex items-center gap-1.5 text-xs font-bold text-gray-800">
@@ -237,24 +241,20 @@
             </div>
             <a href="#" class="text-[9px] text-gray-500 hover:underline">Lihat semua &rsaquo;</a>
           </div>
-
           <div class="space-y-1.5 text-[10px]" id="profTemuanBerulangBox">
             <p class="text-gray-400 italic">Memuat temuan berulang...</p>
           </div>
         </div>
 
-        <!-- 3 BESAR FLP NOSIZU (DINAMIS FROM SPREADSHEET) -->
         <div class="bg-nosa-cardBg p-3.5 rounded-2xl border border-gray-200/60 shadow-xs space-y-2.5">
           <div class="flex items-center gap-1.5 text-xs font-bold text-gray-800 border-b border-gray-300/50 pb-2">
             <span>🏆</span> <span>3 Besar FLP NOSIZU</span>
           </div>
-
           <div class="space-y-2 text-[10px]" id="profTopFlpBox">
             <p class="text-gray-400 italic">Memuat peringkat FLP...</p>
           </div>
         </div>
 
-        <!-- JADWAL GENBA BERIKUTNYA -->
         <div class="bg-nosa-cardBg p-3.5 rounded-2xl border border-gray-200/60 shadow-xs flex items-center justify-between">
           <div class="space-y-1">
             <p class="text-[10px] font-bold text-gray-700 flex items-center gap-1.5">
@@ -264,7 +264,6 @@
           </div>
           <span class="bg-emerald-300 text-emerald-900 text-[10px] font-extrabold px-3 py-1 rounded-full flex items-center gap-1">📍 Onsite</span>
         </div>
-
       </div>
 
     </div>
@@ -298,7 +297,6 @@
 
   </div>
 
-  <!-- SCRIPT INTEGRASI JAVASCRIPT -->
   <script src="script.js"></script>
 </body>
 </html>
