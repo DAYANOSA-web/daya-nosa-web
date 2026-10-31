@@ -101,7 +101,7 @@ function handleAuthSubmit(e) {
   });
 }
 
-// RENDER DASHBOARD & MEMUAT DATA DINAMIS
+// RENDER DASHBOARD
 function renderDashboard(user) {
   document.getElementById("loginPage").classList.add("hidden");
   document.getElementById("mainContainer").classList.remove("hidden");
@@ -111,15 +111,103 @@ function renderDashboard(user) {
 
   switchTab("home");
   loadProfilCabangData(user.cabang || "Soekarno Hatta");
+  loadReferensiData();
 }
 
-// PENARIKAN DATA PROFIL CABANG DARI GOOGLE SHEETS
+// -------------------------------------------------------------
+// LOGIKA PEMUATAN TAMPILAN REFERENSI STANDAR VISUAL (PRESISI)
+// -------------------------------------------------------------
+function loadReferensiData() {
+  const container = document.getElementById("referensiGridBox");
+  if (!container) return;
+
+  fetch(`${API_URL}?action=getReferensi`)
+  .then(res => res.json())
+  .then(data => {
+    if (!data || data.length <= 1) {
+      container.innerHTML = '<p class="text-xs text-gray-400 italic text-center col-span-full py-8">Belum ada data referensi standar di spreadsheet.</p>';
+      return;
+    }
+
+    const rows = data.slice(1);
+    let html = '';
+
+    rows.forEach(row => {
+      // Kolom A: ID [0], Kolom B: Kategori [1], Kolom C: Judul [2], Kolom D: Deskripsi [3], Kolom E: Instruksi [4], Kolom F: GambarUrl [5], Kolom G: LinkDownload [6]
+      const kat = row[1] || 'visual dealer';
+      const judul = row[2] || 'Judul Referensi';
+      const deskripsi = row[3] || 'Deskripsi standar';
+      const instruksi = row[4] || 'Instruksi & ketentuan standar.';
+      const imgUrl = row[5] || '';
+      const downloadUrl = row[6] || '';
+
+      html += `
+        <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/70 shadow-xs flex flex-col justify-between space-y-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
+            
+            <!-- Sisi Kiri: Foto Gambar Referensi -->
+            <div class="w-full h-44 sm:h-48 rounded-xl overflow-hidden bg-gray-200/80 flex items-center justify-center border border-gray-300/50">
+              ${imgUrl ? `<img src="${imgUrl}" alt="${judul}" class="w-full h-full object-cover">` : '<span class="text-xs text-gray-400 italic">Tidak ada gambar</span>'}
+            </div>
+
+            <!-- Sisi Kanan: Detail Informasi -->
+            <div class="space-y-2">
+              <!-- Badge Kategori (Kuning) -->
+              <span class="inline-block bg-nosa-yellow text-gray-900 text-[10px] font-extrabold px-3 py-0.5 rounded-md uppercase tracking-wider shadow-2xs">
+                ${kat}
+              </span>
+
+              <!-- Judul Utama -->
+              <h3 class="text-2xl font-black text-nosa-green tracking-tight leading-none pt-0.5">
+                ${judul}
+              </h3>
+
+              <!-- Deskripsi Singkat -->
+              <p class="text-xs text-gray-700 font-normal leading-snug">
+                ${deskripsi}
+              </p>
+
+              <!-- Sub-bagian: Instruksi dan Ketentuan -->
+              <div class="pt-2 space-y-0.5">
+                <h5 class="text-xs font-black text-nosa-green">instruksi dan ketentuan</h5>
+                <p class="text-[11px] text-gray-600 leading-normal">
+                  ${instruksi}
+                </p>
+              </div>
+
+              <!-- Link Download Google Drive -->
+              ${downloadUrl ? `
+                <div class="pt-2">
+                  <h5 class="text-xs font-black text-nosa-green">link download</h5>
+                  <a href="${downloadUrl}" target="_blank" class="text-[10px] text-blue-600 underline font-semibold break-all hover:text-blue-800 transition block pt-0.5">
+                    ${downloadUrl}
+                  </a>
+                </div>
+              ` : ''}
+
+            </div>
+
+          </div>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+  })
+  .catch(err => {
+    console.error("Error loading referensi:", err);
+    if (container) {
+      container.innerHTML = '<p class="text-xs text-red-500 text-center col-span-full py-8">Gagal memuat data referensi dari server.</p>';
+    }
+  });
+}
+
+// PENARIKAN DATA PROFIL CABANG
 function loadProfilCabangData(cabangName) {
   fetch(`${API_URL}?action=getProfilCabang&cabang=${encodeURIComponent(cabangName)}`)
   .then(res => res.json())
   .then(res => {
     if (res.status === "success") {
-      // 1. Skor NOS Badge
       if (res.info && res.info.skorNos) {
         const parts = res.info.skorNos.split('/');
         const currentScore = parts[0] ? parts[0].trim() : "GOLD";
@@ -132,12 +220,10 @@ function loadProfilCabangData(cabangName) {
         `;
       }
 
-      // 2. Jadwal GENBA
       if (res.info && res.info.jadwalGenba) {
         document.getElementById("profJadwalGenba").innerText = res.info.jadwalGenba;
       }
 
-      // 3. PICA Belum Selesai
       const picaBox = document.getElementById("profPicaBox");
       if (res.picaBelumSelesai && res.picaBelumSelesai.length > 0) {
         let picaHtml = '';
@@ -164,7 +250,6 @@ function loadProfilCabangData(cabangName) {
         picaBox.innerHTML = '<p class="text-emerald-600 font-bold">Semua PICA terselesaikan! 🎉</p>';
       }
 
-      // 4. Temuan Berulang
       const temuanBox = document.getElementById("profTemuanBerulangBox");
       if (res.temuanBerulang && res.temuanBerulang.length > 0) {
         let temuanHtml = '';
@@ -181,7 +266,6 @@ function loadProfilCabangData(cabangName) {
         temuanBox.innerHTML = '<p class="text-gray-500">Tidak ada temuan berulang.</p>';
       }
 
-      // 5. Top 3 FLP NOSIZU
       const flpBox = document.getElementById("profTopFlpBox");
       if (res.top3Flp && res.top3Flp.length > 0) {
         let flpHtml = '';
@@ -208,41 +292,51 @@ function loadProfilCabangData(cabangName) {
         flpBox.innerHTML = '<p class="text-gray-500">Belum ada skor tercatat.</p>';
       }
     }
-  })
-  .catch(err => console.error("Error loading profil cabang:", err));
+  });
 }
 
-// SWITCH TAB NAVIGATION
+// NAVIGASI TAB UTAMA
 function switchTab(tabId) {
   const dashboardPage = document.getElementById('dashboardPage');
+  const referensiPage = document.getElementById('referensiPage');
   const profilPage = document.getElementById('profilPage');
+
   const navHome = document.getElementById('navHome');
   const navProfil = document.getElementById('navProfil');
+
   const barHome = document.getElementById('barHome');
   const barProfil = document.getElementById('barProfil');
 
+  // Hide All Pages
+  dashboardPage.classList.add('hidden');
+  referensiPage.classList.add('hidden');
+  profilPage.classList.add('hidden');
+
   if (tabId === 'home') {
     dashboardPage.classList.remove('hidden');
-    profilPage.classList.add('hidden');
     navHome.classList.remove('opacity-70');
     navHome.classList.add('font-bold');
     barHome.classList.remove('hidden');
+
     navProfil.classList.add('opacity-70');
     navProfil.classList.remove('font-bold');
     barProfil.classList.add('hidden');
+  } else if (tabId === 'referensi') {
+    referensiPage.classList.remove('hidden');
+    loadReferensiData();
   } else if (tabId === 'profil') {
-    dashboardPage.classList.add('hidden');
     profilPage.classList.remove('hidden');
     navProfil.classList.remove('opacity-70');
     navProfil.classList.add('font-bold');
     barProfil.classList.remove('hidden');
+
     navHome.classList.add('opacity-70');
     navHome.classList.remove('font-bold');
     barHome.classList.add('hidden');
   }
 }
 
-// AUTO SESSION RECOVERY
+// AUTO INITIALIZE SESSION
 window.onload = function() {
   const saved = localStorage.getItem("nosa_user");
   if (saved) {
