@@ -138,7 +138,15 @@ function loadReferensiData() {
       const judul = row[2] || 'Judul Referensi';
       const deskripsi = row[3] || 'Deskripsi standar';
       const instruksi = row[4] || 'Instruksi & ketentuan standar.';
-      const imgUrl = row[5] || '';
+      // GANTI MENJADI (AUTO FORMAT LINK GOOGLE DRIVE):
+      let rawImgUrl = row[5] || '';
+      if (rawImgUrl.includes('drive.google.com') && rawImgUrl.includes('/d/')) {
+        const match = rawImgUrl.match(/\/d\/([^\/]+)/);
+        if (match && match[1]) {
+          rawImgUrl = `https://lh3.googleusercontent.com/d/${match[1]}`;
+        }
+      }
+      const imgUrl = rawImgUrl;
       const downloadUrl = row[6] || '';
 
       html += `
