@@ -198,7 +198,7 @@ function loadCeklisNOSData() {
             <!-- Kiri: Judul Kombinasi Item/Sub Item & Penjelasan -->
             <div class="bg-gray-200/60 p-3 rounded-xl space-y-1">
               <h5 class="text-xs font-extrabold text-gray-900">${headerLabel || 'Item Ceklis'}</h5>
-              <p class="text-[11px] text-gray-700 leading-snug">${penjelasan}</p>
+              <p class="text-[11px] text-gray-700 leading-relaxed whitespace-pre-line">${penjelasan}</p>
             </div>
 
             <!-- Kanan: Referensi Standar & Gambar -->
