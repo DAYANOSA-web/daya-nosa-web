@@ -145,7 +145,7 @@ function startGenbaAudit(e) {
   loadCeklisNOSData();
 }
 
-// MEMUAT KARTU CEKLIS AUDIT GENBA (LAMPIRAN 2)
+// MEMUAT KARTU CEKLIS AUDIT GENBA DENGAN DYNAMIC ITEM & SUB ITEM
 function loadCeklisNOSData() {
   const container = document.getElementById("genbaCeklisContainer");
   container.innerHTML = '<p class="text-xs text-gray-400 italic text-center py-6">Memuat item ceklis NOS...</p>';
@@ -162,19 +162,26 @@ function loadCeklisNOSData() {
     let html = '';
 
     rows.forEach((row, idx) => {
-      // Kolom A: ID [0], B: Tipe [1], C: Mandatory [2], D: SubTipe [3], E: Penjelasan [4], F: GambarReferensiUrl [5], G: IsNeedFoto [6]
+      // Kolom A: IDCeklis [0], B: Tipe [1], C: Mandatory [2], D: Item [3], E: Sub Item 1 [4], F: Sub Item 2 [5], G: Penjelasan [6], H: GambarReferensiUrl [7], I: IsNeedFoto [8]
       const tipe = row[1] || 'PREMISES H1';
       const mandatory = row[2] || 'S, G, P';
-      const subTipe = row[3] || 'Exterior';
-      const penjelasan = row[4] || 'Penjelasan item ceklis...';
       
-      let rawImg = row[5] || '';
+      const itemVal = (row[3] || '').toString().trim();
+      const subItem1 = (row[4] || '').toString().trim();
+      const subItem2 = (row[5] || '').toString().trim();
+      const penjelasan = row[6] || 'Penjelasan item ceklis...';
+
+      // Gabungkan Item, Sub Item 1, dan Sub Item 2 yang tidak kosong
+      const labelParts = [itemVal, subItem1, subItem2].filter(text => text !== '');
+      const headerLabel = labelParts.join(', ');
+
+      let rawImg = row[7] || '';
       if (rawImg.includes('drive.google.com') && rawImg.includes('/d/')) {
         const match = rawImg.match(/\/d\/([^\/]+)/);
         if (match && match[1]) rawImg = `https://lh3.googleusercontent.com/d/${match[1]}`;
       }
       const imgUrl = rawImg;
-      const isNeedFoto = (row[6] || 'Ya').toString().toLowerCase() === 'ya';
+      const isNeedFoto = (row[8] || 'Ya').toString().toLowerCase() === 'ya';
 
       html += `
         <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/80 shadow-xs space-y-3">
@@ -188,9 +195,9 @@ function loadCeklisNOSData() {
           <!-- GRID PENJELASAN (KIRI) VS REFERENSI (KANAN) -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-stretch">
             
-            <!-- Kiri: Penjelasan Item -->
+            <!-- Kiri: Judul Kombinasi Item/Sub Item & Penjelasan -->
             <div class="bg-gray-200/60 p-3 rounded-xl space-y-1">
-              <h5 class="text-xs font-extrabold text-gray-900">${subTipe}</h5>
+              <h5 class="text-xs font-extrabold text-gray-900">${headerLabel || 'Item Ceklis'}</h5>
               <p class="text-[11px] text-gray-700 leading-snug">${penjelasan}</p>
             </div>
 
@@ -204,7 +211,7 @@ function loadCeklisNOSData() {
 
           </div>
 
-          <!-- 4 TOMBOL STATUS CEKLIS (DASHBOARD PICA TRIGGER) -->
+          <!-- 4 TOMBOL STATUS CEKLIS -->
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
             <button type="button" onclick="selectAuditStatus(${idx}, 'Exist Good')" class="audit-btn-${idx} py-2 bg-gray-300 hover:bg-emerald-200 text-gray-800 text-xs font-bold rounded-xl border border-gray-400/50 transition">
               Exist Good
@@ -241,6 +248,7 @@ function loadCeklisNOSData() {
     container.innerHTML = html;
   })
   .catch(err => {
+    console.error("Error loading CeklisNOS:", err);
     container.innerHTML = '<p class="text-xs text-red-500 text-center py-6">Gagal memuat item ceklis NOS.</p>';
   });
 }
