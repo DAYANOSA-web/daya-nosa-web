@@ -196,10 +196,17 @@ function loadCeklisNOSData() {
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-stretch">
             
             <!-- Kiri: Judul Kombinasi Item/Sub Item & Penjelasan -->
-            <div class="bg-gray-200/60 p-3 rounded-xl space-y-1 max-h-48 overflow-y-auto pr-2">
-             <h5 class="text-xs font-extrabold text-gray-900 sticky top-0 bg-gray-200/60 pb-1 z-10">${headerLabel || 'Item Ceklis'}</h5>
-             <p class="text-[11px] text-gray-700 leading-relaxed whitespace-pre-line">${penjelasan}</p>
-            </div>
+<div class="bg-gray-200/60 p-3 rounded-xl space-y-2 flex flex-col h-full">
+  <!-- Judul Tetap Diam di Atas (Tidak Ikut Di-scroll) -->
+  <h5 class="text-xs font-extrabold text-gray-900 border-b border-gray-300/60 pb-1 flex-shrink-0">
+    ${headerLabel || 'Item Ceklis'}
+  </h5>
+  
+  <!-- Area Teks Penjelasan Khusus yang Di-scroll -->
+  <div class="max-h-40 overflow-y-auto pr-1 flex-1">
+    <p class="text-[11px] text-gray-700 leading-relaxed whitespace-pre-line">${penjelasan}</p>
+  </div>
+</div>
 
             <!-- Kanan: Referensi Standar & Gambar -->
             <div class="bg-gray-200/60 p-3 rounded-xl flex flex-col justify-between items-center text-center space-y-2">
