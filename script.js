@@ -5,6 +5,23 @@ let selectedRole = "Kepala Cabang";
 let currentUser = null;
 let currentAuditSession = null;
 let auditSelection = {};
+let activePicaId = null;
+
+// HELPER PARSE TANGGAL FORMAT ISO AGAR TAMPIL RAPI
+function formatDateNice(dateStr) {
+  if (!dateStr) return "-";
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    const day = String(d.getDate()).padStart(2, '0');
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    const month = months[d.getMonth()];
+    const year = d.getFullYear();
+    return `${day} ${month} ${year}`;
+  } catch (e) {
+    return dateStr;
+  }
+}
 
 // SELECT ROLE HANDLER
 function selectRole(role) {
@@ -175,28 +192,21 @@ function loadCeklisNOSData() {
       
       html += `
         <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/80 shadow-xs space-y-3">
-          
-          <!-- TIPE & MANDATORY HEADER -->
           <div class="flex justify-between items-center border-b border-gray-300/50 pb-1.5">
             <h3 class="text-sm font-black text-nosa-green tracking-wider uppercase">${tipe}</h3>
             <span class="text-xs font-black text-nosa-green tracking-wider">${mandatory}</span>
           </div>
           
-          <!-- GRID PENJELASAN (KIRI) VS REFERENSI (KANAN) -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-stretch">
-            
-            <!-- Kiri: Judul Kombinasi Item/Sub Item & Penjelasan -->
             <div class="bg-gray-200/60 p-3 rounded-xl space-y-2 flex flex-col h-full">
               <h5 class="text-xs font-extrabold text-gray-900 border-b border-gray-300/60 pb-1 flex-shrink-0">
                 ${headerLabel || 'Item Ceklis'}
               </h5>
-              
               <div class="max-h-40 overflow-y-auto pr-1 flex-1">
                 <p class="text-[11px] text-gray-700 leading-relaxed whitespace-pre-line">${penjelasan}</p>
               </div>
             </div>
 
-            <!-- Kanan: Referensi Standar & Gambar -->
             <div class="bg-gray-200/60 p-3 rounded-xl flex flex-col justify-between items-center text-center space-y-2">
               <span class="text-[10px] font-black text-nosa-green tracking-widest uppercase">REFERENSI</span>
               <div class="w-full h-28 rounded-lg bg-white overflow-hidden flex items-center justify-center border border-gray-300/40">
@@ -205,7 +215,6 @@ function loadCeklisNOSData() {
             </div>
           </div>
           
-          <!-- 4 TOMBOL STATUS CEKLIS -->
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
             <button type="button" onclick="selectAuditStatus(${idx}, 'Exist Good', '${headerLabel.replace(/'/g, "\\'")}')" class="audit-btn-${idx} py-2 bg-gray-300 hover:bg-emerald-200 text-gray-800 text-xs font-bold rounded-xl border border-gray-400/50 transition">
               Exist Good
@@ -221,7 +230,6 @@ function loadCeklisNOSData() {
             </button>
           </div>
           
-          <!-- INPUT UPLOAD FOTO EVIDENSE (KHUSUS PREMISES) -->
           ${isNeedFoto ? `
             <div class="bg-gray-200/60 p-2.5 rounded-xl flex items-center justify-between gap-2 pt-2">
               <div class="space-y-0.5">
@@ -346,10 +354,16 @@ function loadPicaDashboardData() {
     let html = '';
     data.forEach(item => {
       const isClosed = item.status === 'Closed' || item.status === 'Verified';
-      const statusBadge = isClosed ? 'bg-emerald-200 text-emerald-800' : (item.status === 'Open' ? 'bg-red-200 text-red-800' : 'bg-amber-200 text-amber-800');
+      const isOnCheck = item.status === 'On Check';
+      
+      let statusBadge = 'bg-red-200 text-red-800';
+      if (isOnCheck) statusBadge = 'bg-amber-200 text-amber-800';
+      if (isClosed) statusBadge = 'bg-emerald-200 text-emerald-800';
+
+      const formattedDueDate = formatDateNice(item.dueDate);
 
       html += `
-        <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/80 shadow-xs space-y-2">
+        <div onclick="openPicaModal('${item.idPica}', '${item.item.replace(/'/g, "\\'")}', '${item.status}', '${(item.catatanPerbaikan || '').replace(/'/g, "\\'")}')" class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/80 shadow-xs space-y-2 cursor-pointer hover:border-nosa-green transition">
           <div class="flex justify-between items-start">
             <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">${item.idPica}</span>
             <span class="${statusBadge} font-extrabold text-[9px] px-2.5 py-0.5 rounded-full">${item.status}</span>
@@ -360,7 +374,7 @@ function loadPicaDashboardData() {
 
           <div class="pt-2 flex justify-between items-center text-[10px] border-t border-gray-300/40 text-gray-500">
             <span>👤 Auditor: ${item.auditor}</span>
-            <span>📅 Due: <strong class="text-gray-800">${item.dueDate}</strong></span>
+            <span>📅 Due: <strong class="text-gray-800">${formattedDueDate}</strong></span>
           </div>
         </div>
       `;
@@ -371,6 +385,109 @@ function loadPicaDashboardData() {
   .catch(err => {
     console.error("Error loading PICA:", err);
     container.innerHTML = '<p class="text-xs text-red-500 text-center py-8">Gagal memuat data PICA dari server.</p>';
+  });
+}
+
+// ACTION MODAL POPUP PICA
+function openPicaModal(idPica, itemTitle, status, catatanPerbaikan) {
+  activePicaId = idPica;
+  document.getElementById("modalPicaTitle").innerText = `Detail PICA (${idPica})`;
+  document.getElementById("modalPicaItem").innerText = itemTitle;
+
+  const modalCabangForm = document.getElementById("modalCabangForm");
+  const modalNosForm = document.getElementById("modalNosForm");
+
+  if (status === "Open") {
+    modalCabangForm.classList.remove("hidden");
+    modalNosForm.classList.add("hidden");
+  } else if (status === "On Check") {
+    modalCabangForm.classList.add("hidden");
+    modalNosForm.classList.remove("hidden");
+    document.getElementById("modalCatatanPerbaikanView").innerText = catatanPerbaikan || "Cabang telah mengunggah bukti perbaikan.";
+  } else {
+    alert("PICA ini sudah Berstatus Closed (Selesai).");
+    return;
+  }
+
+  document.getElementById("picaActionModal").classList.remove("hidden");
+}
+
+function closePicaModal() {
+  document.getElementById("picaActionModal").classList.add("hidden");
+  activePicaId = null;
+}
+
+// KIRIM PERBAIKAN PICA DARI CABANG (OPEN -> ON CHECK)
+function submitPicaPerbaikan(newStatus) {
+  if (!activePicaId) return;
+  const catatan = document.getElementById("modalCatatanPerbaikan").value.trim();
+
+  const btn = document.getElementById("btnSubmitPerbaikan");
+  btn.disabled = true;
+  btn.innerText = "Mengirim...";
+
+  fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({
+      action: "updatePicaStatus",
+      idPica: activePicaId,
+      newStatus: newStatus,
+      catatanPerbaikan: catatan
+    })
+  })
+  .then(res => res.json())
+  .then(res => {
+    btn.disabled = false;
+    btn.innerText = "🚀 Kirim ke NOS Officer (Ubah Status ke On Check)";
+    if (res.status === "success") {
+      alert("Perbaikan berhasil dikirim! Status PICA sekarang: On Check");
+      closePicaModal();
+      loadPicaDashboardData();
+    } else {
+      alert(res.message || "Gagal mengupdate PICA.");
+    }
+  })
+  .catch(err => {
+    btn.disabled = false;
+    btn.innerText = "🚀 Kirim ke NOS Officer (Ubah Status ke On Check)";
+    alert("Gagal terhubung ke server.");
+  });
+}
+
+// VERIFIKASI PICA DARI NOS OFFICER (ON CHECK -> CLOSED)
+function submitPicaVerifikasi(newStatus) {
+  if (!activePicaId) return;
+
+  const btn = document.getElementById("btnSubmitVerifikasi");
+  btn.disabled = true;
+  btn.innerText = "Memproses...";
+
+  fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({
+      action: "updatePicaStatus",
+      idPica: activePicaId,
+      newStatus: newStatus
+    })
+  })
+  .then(res => res.json())
+  .then(res => {
+    btn.disabled = false;
+    btn.innerText = "✅ Verifikasi & Approve (Ubah Status ke Closed)";
+    if (res.status === "success") {
+      alert("PICA berhasil diverifikasi! Status PICA sekarang: Closed");
+      closePicaModal();
+      loadPicaDashboardData();
+    } else {
+      alert(res.message || "Gagal mengupdate PICA.");
+    }
+  })
+  .catch(err => {
+    btn.disabled = false;
+    btn.innerText = "✅ Verifikasi & Approve (Ubah Status ke Closed)";
+    alert("Gagal terhubung ke server.");
   });
 }
 
@@ -442,7 +559,7 @@ function loadProfilCabangData(cabangName) {
           <span class="bg-gray-300 text-gray-600 text-[10px] font-bold px-3 py-0.5 rounded-md">${parts[1] ? parts[1].trim() : "PLATINUM"}</span>
         `;
       }
-      if (res.info && res.info.jadwalGenba) document.getElementById("profJadwalGenba").innerText = res.info.jadwalGenba;
+      if (res.info && res.info.jadwalGenba) document.getElementById("profJadwalGenba").innerText = formatDateNice(res.info.jadwalGenba);
       const picaBox = document.getElementById("profPicaBox");
       if (res.picaBelumSelesai && res.picaBelumSelesai.length > 0) {
         let picaHtml = '';
@@ -455,7 +572,7 @@ function loadProfilCabangData(cabangName) {
                 <span class="font-normal text-gray-700">${item.item}</span>
               </div>
               <div class="flex items-center gap-2">
-                <span class="text-gray-500 font-bold text-[9px]">${item.dueDate}</span>
+                <span class="text-gray-500 font-bold text-[9px]">${formatDateNice(item.dueDate)}</span>
                 <span class="${badgeClass} font-bold px-2 py-0.5 rounded-full text-[9px]">${item.status}</span>
               </div>
             </div>
