@@ -1,9 +1,9 @@
-// URL BACKEND GOOGLE APPS SCRIPT
 const API_URL = "https://script.google.com/macros/s/AKfycby3Nv784S410kwfLsKDfexjrd4Mm1LJYYzzweWqgukZK-VegEhnEngNpVLN_wHUPsC5/exec";
 
 let authMode = "login";
 let selectedRole = "Kepala Cabang";
 let currentUser = null;
+let currentAuditSession = null;
 
 // SELECT ROLE HANDLER
 function selectRole(role) {
@@ -49,7 +49,7 @@ function setAuthMode(mode) {
   }
 }
 
-// HANDLER LOGIN / DAFTAR AKUN
+// HANDLER LOGIN / REGISTER
 function handleAuthSubmit(e) {
   e.preventDefault();
   const btn = document.getElementById("btnSubmitAuth");
@@ -57,11 +57,6 @@ function handleAuthSubmit(e) {
   const password = document.getElementById("authPassword").value.trim();
   const nama = document.getElementById("regNama").value.trim();
   const cabang = document.getElementById("authCabang").value.trim();
-
-  if (!email) {
-    alert("Silakan isi ID Karyawan / Email!");
-    return;
-  }
 
   btn.disabled = true;
   btn.innerText = "Proses...";
@@ -94,14 +89,12 @@ function handleAuthSubmit(e) {
     }
   })
   .catch(err => {
-    console.error("Fetch Error:", err);
     btn.disabled = false;
     btn.innerText = authMode === "register" ? "daftar akun" : "masuk";
-    alert("Gagal terhubung ke server backend.");
+    alert("Gagal terhubung ke server.");
   });
 }
 
-// RENDER DASHBOARD
 function renderDashboard(user) {
   document.getElementById("loginPage").classList.add("hidden");
   document.getElementById("mainContainer").classList.remove("hidden");
@@ -109,14 +102,170 @@ function renderDashboard(user) {
   document.getElementById("dashUserNama").innerText = user.nama || user.email;
   document.getElementById("profNamaCabang").innerText = "Cabang " + (user.cabang || "Soekarno Hatta");
 
+  // Pre-fill Form GENBA
+  document.getElementById("genbaNamaAuditor").value = user.nama || "Refan";
+  document.getElementById("genbaJabatanAuditor").value = user.role || "NOS Officer";
+
   switchTab("home");
   loadProfilCabangData(user.cabang || "Soekarno Hatta");
-  loadReferensiData();
+  loadDropdownCabang();
 }
 
-// -------------------------------------------------------------
-// LOGIKA PEMUATAN TAMPILAN REFERENSI STANDAR VISUAL (PRESISI)
-// -------------------------------------------------------------
+// LOAD DROPDOWN LIST CABANG DARI SPREADSHEET
+function loadDropdownCabang() {
+  const select = document.getElementById("genbaSelectCabang");
+  fetch(`${API_URL}?action=getCabangList`)
+  .then(res => res.json())
+  .then(data => {
+    if (Array.isArray(data) && data.length > 0) {
+      let options = '<option value="">--Pilih Cabang--</option>';
+      data.forEach(cab => {
+        options += `<option value="${cab}">${cab}</option>`;
+      });
+      select.innerHTML = options;
+      if (currentUser && currentUser.cabang) select.value = currentUser.cabang;
+    }
+  });
+}
+
+// HANDLER MEMULAI AUDIT GENBA
+function startGenbaAudit(e) {
+  e.preventDefault();
+  const cabang = document.getElementById("genbaSelectCabang").value;
+  const nama = document.getElementById("genbaNamaAuditor").value;
+  const jabatan = document.getElementById("genbaJabatanAuditor").value;
+  const noHp = document.getElementById("genbaNoHp").value;
+
+  currentAuditSession = { cabang, nama, jabatan, noHp };
+
+  document.getElementById("auditInfoCabang").innerText = "Soekarno Hatta";
+  document.getElementById("auditInfoAuditor").innerText = `${nama} (${jabatan})`;
+
+  switchTab("genbaAudit");
+  loadCeklisNOSData();
+}
+
+// MEMUAT KARTU CEKLIS AUDIT GENBA (LAMPIRAN 2)
+function loadCeklisNOSData() {
+  const container = document.getElementById("genbaCeklisContainer");
+  container.innerHTML = '<p class="text-xs text-gray-400 italic text-center py-6">Memuat item ceklis NOS...</p>';
+
+  fetch(`${API_URL}?action=getCeklisNOS`)
+  .then(res => res.json())
+  .then(data => {
+    if (!data || data.length <= 1) {
+      container.innerHTML = '<p class="text-xs text-gray-400 italic text-center py-6">Belum ada item ceklis di spreadsheet CeklisNOS.</p>';
+      return;
+    }
+
+    const rows = data.slice(1);
+    let html = '';
+
+    rows.forEach((row, idx) => {
+      // Kolom A: ID [0], B: Tipe [1], C: Mandatory [2], D: SubTipe [3], E: Penjelasan [4], F: GambarReferensiUrl [5], G: IsNeedFoto [6]
+      const tipe = row[1] || 'PREMISES H1';
+      const mandatory = row[2] || 'S, G, P';
+      const subTipe = row[3] || 'Exterior';
+      const penjelasan = row[4] || 'Penjelasan item ceklis...';
+      
+      let rawImg = row[5] || '';
+      if (rawImg.includes('drive.google.com') && rawImg.includes('/d/')) {
+        const match = rawImg.match(/\/d\/([^\/]+)/);
+        if (match && match[1]) rawImg = `https://lh3.googleusercontent.com/d/${match[1]}`;
+      }
+      const imgUrl = rawImg;
+      const isNeedFoto = (row[6] || 'Ya').toString().toLowerCase() === 'ya';
+
+      html += `
+        <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/80 shadow-xs space-y-3">
+          
+          <!-- TIPE & MANDATORY HEADER -->
+          <div class="flex justify-between items-center border-b border-gray-300/50 pb-1.5">
+            <h3 class="text-sm font-black text-nosa-green tracking-wider uppercase">${tipe}</h3>
+            <span class="text-xs font-black text-nosa-green tracking-wider">${mandatory}</span>
+          </div>
+
+          <!-- GRID PENJELASAN (KIRI) VS REFERENSI (KANAN) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-stretch">
+            
+            <!-- Kiri: Penjelasan Item -->
+            <div class="bg-gray-200/60 p-3 rounded-xl space-y-1">
+              <h5 class="text-xs font-extrabold text-gray-900">${subTipe}</h5>
+              <p class="text-[11px] text-gray-700 leading-snug">${penjelasan}</p>
+            </div>
+
+            <!-- Kanan: Referensi Standar & Gambar -->
+            <div class="bg-gray-200/60 p-3 rounded-xl flex flex-col justify-between items-center text-center space-y-2">
+              <span class="text-[10px] font-black text-nosa-green tracking-widest uppercase">REFERENSI</span>
+              <div class="w-full h-28 rounded-lg bg-white overflow-hidden flex items-center justify-center border border-gray-300/40">
+                ${imgUrl ? `<img src="${imgUrl}" class="w-full h-full object-contain p-1">` : '<span class="text-[10px] text-gray-400 italic">No Reference Image</span>'}
+              </div>
+            </div>
+
+          </div>
+
+          <!-- 4 TOMBOL STATUS CEKLIS (DASHBOARD PICA TRIGGER) -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+            <button type="button" onclick="selectAuditStatus(${idx}, 'Exist Good')" class="audit-btn-${idx} py-2 bg-gray-300 hover:bg-emerald-200 text-gray-800 text-xs font-bold rounded-xl border border-gray-400/50 transition">
+              Exist Good
+            </button>
+            <button type="button" onclick="selectAuditStatus(${idx}, 'Exist Not Good')" class="audit-btn-${idx} py-2 bg-gray-300 hover:bg-amber-200 text-gray-800 text-xs font-bold rounded-xl border border-gray-400/50 transition">
+              Exist Not Good
+            </button>
+            <button type="button" onclick="selectAuditStatus(${idx}, 'Not Exist')" class="audit-btn-${idx} py-2 bg-gray-300 hover:bg-red-200 text-gray-800 text-xs font-bold rounded-xl border border-gray-400/50 transition">
+              Not Exist
+            </button>
+            <button type="button" onclick="selectAuditStatus(${idx}, 'N/A')" class="audit-btn-${idx} py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-xs font-bold rounded-xl border border-gray-400/50 transition">
+              N/A
+            </button>
+          </div>
+
+          <!-- INPUT UPLOAD FOTO EVIDENSE (KHUSUS PREMISES) -->
+          ${isNeedFoto ? `
+            <div class="bg-gray-200/60 p-2.5 rounded-xl flex items-center justify-between gap-2 pt-2">
+              <div class="space-y-0.5">
+                <p class="text-[11px] font-bold text-gray-800 flex items-center gap-1">📸 Foto Bukti Audit (Wajib)</p>
+                <p class="text-[9px] text-gray-500">Ambil langsung via Kamera HP atau pilih file galeri</p>
+              </div>
+              <label class="bg-emerald-400 hover:bg-emerald-500 text-gray-900 font-bold text-[10px] px-3 py-1.5 rounded-xl cursor-pointer shadow-2xs transition flex items-center gap-1">
+                <span>📷 Ambil Foto/File</span>
+                <input type="file" accept="image/*" capture="environment" class="hidden" onchange="handleEvidenceUpload(event, ${idx})">
+              </label>
+            </div>
+          ` : ''}
+
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+  })
+  .catch(err => {
+    container.innerHTML = '<p class="text-xs text-red-500 text-center py-6">Gagal memuat item ceklis NOS.</p>';
+  });
+}
+
+function selectAuditStatus(index, status) {
+  const btns = document.querySelectorAll(`.audit-btn-${index}`);
+  btns.forEach(btn => {
+    btn.className = "py-2 bg-gray-300 text-gray-800 text-xs font-bold rounded-xl border border-gray-400/50 transition";
+    if (btn.innerText.trim() === status) {
+      if (status === 'Exist Good') btn.className = "py-2 bg-emerald-500 text-white text-xs font-extrabold rounded-xl shadow-xs";
+      if (status === 'Exist Not Good') btn.className = "py-2 bg-amber-500 text-white text-xs font-extrabold rounded-xl shadow-xs";
+      if (status === 'Not Exist') btn.className = "py-2 bg-red-500 text-white text-xs font-extrabold rounded-xl shadow-xs";
+      if (status === 'N/A') btn.className = "py-2 bg-gray-600 text-white text-xs font-extrabold rounded-xl shadow-xs";
+    }
+  });
+}
+
+function handleEvidenceUpload(event, index) {
+  const file = event.target.files[0];
+  if (file) {
+    alert(`Foto evidence untuk item #${index + 1} berhasil dipilih: ${file.name}`);
+  }
+}
+
+// REFERENSI STANDAR & PROFIL CABANG LOADER
 function loadReferensiData() {
   const container = document.getElementById("referensiGridBox");
   if (!container) return;
@@ -133,84 +282,48 @@ function loadReferensiData() {
     let html = '';
 
     rows.forEach(row => {
-      // Kolom A: ID [0], Kolom B: Kategori [1], Kolom C: Judul [2], Kolom D: Deskripsi [3], Kolom E: Instruksi [4], Kolom F: GambarUrl [5], Kolom G: LinkDownload [6]
       const kat = row[1] || 'visual dealer';
       const judul = row[2] || 'Judul Referensi';
       const deskripsi = row[3] || 'Deskripsi standar';
       const instruksi = row[4] || 'Instruksi & ketentuan standar.';
-      // GANTI MENJADI (AUTO FORMAT LINK GOOGLE DRIVE):
-      let rawImgUrl = row[5] || '';
-      if (rawImgUrl.includes('drive.google.com') && rawImgUrl.includes('/d/')) {
-        const match = rawImgUrl.match(/\/d\/([^\/]+)/);
-        if (match && match[1]) {
-          rawImgUrl = `https://lh3.googleusercontent.com/d/${match[1]}`;
-        }
+      
+      let rawImg = row[5] || '';
+      if (rawImg.includes('drive.google.com') && rawImg.includes('/d/')) {
+        const match = rawImg.match(/\/d\/([^\/]+)/);
+        if (match && match[1]) rawImg = `https://lh3.googleusercontent.com/d/${match[1]}`;
       }
-      const imgUrl = rawImgUrl;
+      const imgUrl = rawImg;
       const downloadUrl = row[6] || '';
 
       html += `
         <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/70 shadow-xs flex flex-col justify-between space-y-3">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
-            
-            <!-- Sisi Kiri: Foto Gambar Referensi -->
-              <div class="w-full h-48 sm:h-56 rounded-xl overflow-hidden bg-white/90 p-2 flex items-center justify-center border border-gray-300/50 shadow-inner">
-               ${imgUrl ? `<img src="${imgUrl}" alt="${judul}" class="w-full h-full object-contain">` : '<span class="text-xs text-gray-400 italic">Tidak ada gambar</span>'}
-              </div>
-
-            <!-- Sisi Kanan: Detail Informasi -->
+            <div class="w-full h-48 sm:h-56 rounded-xl overflow-hidden bg-white/90 p-2 flex items-center justify-center border border-gray-300/50 shadow-inner">
+              ${imgUrl ? `<img src="${imgUrl}" alt="${judul}" class="w-full h-full object-contain">` : '<span class="text-xs text-gray-400 italic">Tidak ada gambar</span>'}
+            </div>
             <div class="space-y-2">
-              <!-- Badge Kategori (Kuning) -->
-              <span class="inline-block bg-nosa-yellow text-gray-900 text-[10px] font-extrabold px-3 py-0.5 rounded-md uppercase tracking-wider shadow-2xs">
-                ${kat}
-              </span>
-
-              <!-- Judul Utama -->
-              <h3 class="text-2xl font-black text-nosa-green tracking-tight leading-none pt-0.5">
-                ${judul}
-              </h3>
-
-              <!-- Deskripsi Singkat -->
-              <p class="text-xs text-gray-700 font-normal leading-snug">
-                ${deskripsi}
-              </p>
-
-              <!-- Sub-bagian: Instruksi dan Ketentuan -->
+              <span class="inline-block bg-nosa-yellow text-gray-900 text-[10px] font-extrabold px-3 py-0.5 rounded-md uppercase tracking-wider">${kat}</span>
+              <h3 class="text-2xl font-black text-nosa-green tracking-tight leading-none pt-0.5">${judul}</h3>
+              <p class="text-xs text-gray-700 leading-snug">${deskripsi}</p>
               <div class="pt-2 space-y-0.5">
                 <h5 class="text-xs font-black text-nosa-green">instruksi dan ketentuan</h5>
-                <p class="text-[11px] text-gray-600 leading-normal">
-                  ${instruksi}
-                </p>
+                <p class="text-[11px] text-gray-600 leading-normal">${instruksi}</p>
               </div>
-
-              <!-- Link Download Google Drive -->
               ${downloadUrl ? `
                 <div class="pt-2">
                   <h5 class="text-xs font-black text-nosa-green">link download</h5>
-                  <a href="${downloadUrl}" target="_blank" class="text-[10px] text-blue-600 underline font-semibold break-all hover:text-blue-800 transition block pt-0.5">
-                    ${downloadUrl}
-                  </a>
+                  <a href="${downloadUrl}" target="_blank" class="text-[10px] text-blue-600 underline font-semibold break-all">${downloadUrl}</a>
                 </div>
               ` : ''}
-
             </div>
-
           </div>
         </div>
       `;
     });
-
     container.innerHTML = html;
-  })
-  .catch(err => {
-    console.error("Error loading referensi:", err);
-    if (container) {
-      container.innerHTML = '<p class="text-xs text-red-500 text-center col-span-full py-8">Gagal memuat data referensi dari server.</p>';
-    }
   });
 }
 
-// PENARIKAN DATA PROFIL CABANG
 function loadProfilCabangData(cabangName) {
   fetch(`${API_URL}?action=getProfilCabang&cabang=${encodeURIComponent(cabangName)}`)
   .then(res => res.json())
@@ -218,36 +331,27 @@ function loadProfilCabangData(cabangName) {
     if (res.status === "success") {
       if (res.info && res.info.skorNos) {
         const parts = res.info.skorNos.split('/');
-        const currentScore = parts[0] ? parts[0].trim() : "GOLD";
-        const targetScore = parts[1] ? parts[1].trim() : "PLATINUM";
-
         document.getElementById("profBadgeSkor").innerHTML = `
-          <span class="bg-amber-400 text-gray-900 text-[10px] font-extrabold px-3 py-0.5 rounded-md shadow-2xs">${currentScore}</span>
+          <span class="bg-amber-400 text-gray-900 text-[10px] font-extrabold px-3 py-0.5 rounded-md shadow-2xs">${parts[0] ? parts[0].trim() : "GOLD"}</span>
           <span class="text-gray-400 font-light text-xs">/</span>
-          <span class="bg-gray-300 text-gray-600 text-[10px] font-bold px-3 py-0.5 rounded-md">${targetScore}</span>
+          <span class="bg-gray-300 text-gray-600 text-[10px] font-bold px-3 py-0.5 rounded-md">${parts[1] ? parts[1].trim() : "PLATINUM"}</span>
         `;
       }
-
-      if (res.info && res.info.jadwalGenba) {
-        document.getElementById("profJadwalGenba").innerText = res.info.jadwalGenba;
-      }
+      if (res.info && res.info.jadwalGenba) document.getElementById("profJadwalGenba").innerText = res.info.jadwalGenba;
 
       const picaBox = document.getElementById("profPicaBox");
       if (res.picaBelumSelesai && res.picaBelumSelesai.length > 0) {
         let picaHtml = '';
         res.picaBelumSelesai.forEach(item => {
           const badgeClass = item.status === 'Open' ? 'bg-red-200 text-red-700' : 'bg-amber-200 text-amber-800';
-          const iconStatus = item.status === 'Open' ? '⚠️' : '🗓️';
-          const colorBar = item.status === 'Open' ? 'bg-red-500' : 'bg-amber-500';
-
           picaHtml += `
             <div class="flex items-center justify-between bg-white/50 p-1.5 rounded-lg">
               <div class="flex items-center gap-2">
-                <div class="w-1 h-3 ${colorBar} rounded-full"></div>
+                <div class="w-1 h-3 ${item.status === 'Open' ? 'bg-red-500' : 'bg-amber-500'} rounded-full"></div>
                 <span class="font-normal text-gray-700">${item.item}</span>
               </div>
               <div class="flex items-center gap-2">
-                <span class="text-gray-500 flex items-center gap-1">${iconStatus} ${item.dueDate}</span>
+                <span class="text-gray-500 font-bold text-[9px]">${item.dueDate}</span>
                 <span class="${badgeClass} font-bold px-2 py-0.5 rounded-full text-[9px]">${item.status}</span>
               </div>
             </div>
@@ -257,94 +361,42 @@ function loadProfilCabangData(cabangName) {
       } else {
         picaBox.innerHTML = '<p class="text-emerald-600 font-bold">Semua PICA terselesaikan! 🎉</p>';
       }
-
-      const temuanBox = document.getElementById("profTemuanBerulangBox");
-      if (res.temuanBerulang && res.temuanBerulang.length > 0) {
-        let temuanHtml = '';
-        res.temuanBerulang.forEach(item => {
-          temuanHtml += `
-            <div class="flex justify-between items-center border-b border-gray-200/40 pb-1.5">
-              <span class="text-gray-700">${item.item}</span>
-              <span class="bg-red-100 text-red-600 font-bold px-2.5 py-0.5 rounded-full text-[9px]">${item.jumlah}</span>
-            </div>
-          `;
-        });
-        temuanBox.innerHTML = temuanHtml;
-      } else {
-        temuanBox.innerHTML = '<p class="text-gray-500">Tidak ada temuan berulang.</p>';
-      }
-
-      const flpBox = document.getElementById("profTopFlpBox");
-      if (res.top3Flp && res.top3Flp.length > 0) {
-        let flpHtml = '';
-        const medals = ['🥇', '🥈', '🥉'];
-        const avatarBg = ['bg-blue-400', 'bg-emerald-400', 'bg-orange-400'];
-
-        res.top3Flp.forEach((item, idx) => {
-          flpHtml += `
-            <div class="flex items-center justify-between bg-white/70 p-2 rounded-xl border border-gray-200/60">
-              <div class="flex items-center gap-2">
-                <span class="text-base">${medals[idx] || '🎖️'}</span>
-                <div class="w-7 h-7 rounded-full ${avatarBg[idx] || 'bg-gray-400'} flex items-center justify-center text-white text-xs font-bold">👤</div>
-                <div>
-                  <h5 class="font-extrabold text-gray-800 leading-none">${item.nama}</h5>
-                  <p class="text-[8px] text-gray-400 mt-0.5">${item.role}</p>
-                </div>
-              </div>
-              <span class="font-black text-red-600">${item.skor} XP</span>
-            </div>
-          `;
-        });
-        flpBox.innerHTML = flpHtml;
-      } else {
-        flpBox.innerHTML = '<p class="text-gray-500">Belum ada skor tercatat.</p>';
-      }
     }
   });
 }
 
-// NAVIGASI TAB UTAMA
+// NAVIGASI SWITCH TAB
 function switchTab(tabId) {
-  const dashboardPage = document.getElementById('dashboardPage');
-  const referensiPage = document.getElementById('referensiPage');
-  const profilPage = document.getElementById('profilPage');
+  const pages = ['dashboardPage', 'referensiPage', 'genbaFormPage', 'genbaAuditPage', 'profilPage'];
+  pages.forEach(p => document.getElementById(p).classList.add('hidden'));
 
   const navHome = document.getElementById('navHome');
   const navProfil = document.getElementById('navProfil');
-
   const barHome = document.getElementById('barHome');
   const barProfil = document.getElementById('barProfil');
 
-  // Hide All Pages
-  dashboardPage.classList.add('hidden');
-  referensiPage.classList.add('hidden');
-  profilPage.classList.add('hidden');
-
   if (tabId === 'home') {
-    dashboardPage.classList.remove('hidden');
+    document.getElementById('dashboardPage').classList.remove('hidden');
     navHome.classList.remove('opacity-70');
-    navHome.classList.add('font-bold');
     barHome.classList.remove('hidden');
-
     navProfil.classList.add('opacity-70');
-    navProfil.classList.remove('font-bold');
     barProfil.classList.add('hidden');
   } else if (tabId === 'referensi') {
-    referensiPage.classList.remove('hidden');
+    document.getElementById('referensiPage').classList.remove('hidden');
     loadReferensiData();
+  } else if (tabId === 'genbaForm') {
+    document.getElementById('genbaFormPage').classList.remove('hidden');
+  } else if (tabId === 'genbaAudit') {
+    document.getElementById('genbaAuditPage').classList.remove('hidden');
   } else if (tabId === 'profil') {
-    profilPage.classList.remove('hidden');
+    document.getElementById('profilPage').classList.remove('hidden');
     navProfil.classList.remove('opacity-70');
-    navProfil.classList.add('font-bold');
     barProfil.classList.remove('hidden');
-
     navHome.classList.add('opacity-70');
-    navHome.classList.remove('font-bold');
     barHome.classList.add('hidden');
   }
 }
 
-// AUTO INITIALIZE SESSION
 window.onload = function() {
   const saved = localStorage.getItem("nosa_user");
   if (saved) {
