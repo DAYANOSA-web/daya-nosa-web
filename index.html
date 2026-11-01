@@ -31,29 +31,24 @@
   </script>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-2 sm:p-4 font-sans text-gray-800">
-
   <!-- ==================== PAGE 1: AUTH PAGE (LOGIN & REGISTER) ==================== -->
   <div id="loginPage" class="relative w-full max-w-sm bg-white rounded-[32px] shadow-2xl overflow-hidden border border-gray-100 px-6 py-8 flex flex-col justify-between min-h-[640px]">
     <div class="absolute top-16 left-0 w-3.5 h-16 bg-nosa-green rounded-r-md"></div>
     <div class="absolute top-5 right-0 w-24 h-4 bg-nosa-yellow rounded-l-sm"></div>
-
     <div class="my-auto space-y-5 pt-2">
       <div class="text-center flex justify-center items-center">
         <img src="Logo DAYA NOSA.png" alt="Daya NOSA Logo" class="h-24 w-auto object-contain mx-auto">
       </div>
-
       <div class="flex bg-gray-100 p-1 rounded-2xl text-xs font-bold text-gray-500">
         <button type="button" id="tabModeLogin" onclick="setAuthMode('login')" class="flex-1 py-1.5 rounded-xl bg-white text-gray-900 shadow-xs font-bold">Masuk</button>
         <button type="button" id="tabModeRegister" onclick="setAuthMode('register')" class="flex-1 py-1.5 rounded-xl hover:text-gray-900">Daftar Akun</button>
       </div>
-
       <form id="authForm" onsubmit="handleAuthSubmit(event)" class="space-y-3">
         <div id="nameInputGroup" class="hidden">
           <input type="text" id="regNama" placeholder="Nama Lengkap Pengguna" class="w-full px-4 py-2.5 rounded-2xl border-2 border-nosa-border bg-white text-sm text-gray-700 focus:outline-none">
         </div>
         <input type="text" id="authEmail" required placeholder="ID karyawan / Email / NIK" class="w-full px-4 py-2.5 rounded-2xl border-2 border-nosa-border bg-white text-sm text-gray-700 focus:outline-none">
         <input type="password" id="authPassword" required placeholder="Password / PIN" class="w-full px-4 py-2.5 rounded-2xl border-2 border-nosa-border bg-white text-sm text-gray-700 focus:outline-none">
-
         <div class="space-y-1">
           <label class="block text-xs font-normal text-gray-700 pl-1">pilih peran anda</label>
           <div class="flex items-center justify-between border-2 border-nosa-border rounded-2xl p-1 bg-white">
@@ -64,23 +59,19 @@
             <button type="button" onclick="selectRole('FLP')" id="btnRoleFlp" class="flex-1 py-1.5 px-1 text-gray-600 text-[10px] font-normal">FLP</button>
           </div>
         </div>
-
         <div id="cabangInputGroup" class="hidden">
           <input type="text" id="authCabang" placeholder="Nama Cabang (misal: Soekarno Hatta)" class="w-full px-4 py-2.5 rounded-2xl border-2 border-nosa-border bg-white text-sm text-gray-700 focus:outline-none">
         </div>
-
         <button type="submit" id="btnSubmitAuth" class="w-full py-3 bg-nosa-button hover:bg-nosa-border text-black font-extrabold text-lg rounded-2xl shadow-md cursor-pointer">
           masuk
         </button>
       </form>
     </div>
-
     <div class="absolute bottom-0 left-0 flex items-center">
       <div class="w-10 h-3.5 bg-nosa-green"></div>
       <div class="w-20 h-3.5 bg-nosa-yellow"></div>
     </div>
   </div>
-
 
   <!-- ==================== PAGE 2: MAIN APP CONTAINER ==================== -->
   <div id="mainContainer" class="hidden relative w-full max-w-sm sm:max-w-md md:max-w-2xl lg:max-w-4xl h-[90vh] max-h-[850px] bg-nosa-dashBg rounded-[32px] shadow-2xl overflow-hidden border border-gray-100 flex flex-col justify-between">
@@ -106,46 +97,39 @@
           </h2>
           <p class="text-xs text-gray-600 font-normal">selamat datang kembali!</p>
         </div>
-
         <div class="grid grid-cols-3 gap-2.5 pt-1">
           <div onclick="switchTab('referensi')" class="bg-nosa-cardBg p-3 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-1 cursor-pointer">
             <div class="text-3xl my-1">📖</div>
             <h4 class="font-extrabold text-[11px] text-nosa-green leading-tight">referensi standar</h4>
             <p class="text-[8px] text-gray-500 leading-tight">cek dokumen dan standar NOS</p>
           </div>
-
-          <div class="bg-nosa-cardBg p-3 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-1 cursor-pointer">
+          <div onclick="switchTab('pica')" class="bg-nosa-cardBg p-3 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-1 cursor-pointer hover:border-nosa-green transition">
             <div class="text-3xl my-1">📊</div>
             <h4 class="font-extrabold text-[11px] text-nosa-green leading-tight">dashboard PICA</h4>
             <p class="text-[8px] text-gray-500 leading-tight">lihat performa cabang anda</p>
           </div>
-
           <div class="bg-nosa-cardBg p-3 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-1 cursor-pointer">
             <div class="text-3xl my-1">🔔</div>
             <h4 class="font-extrabold text-[11px] text-nosa-green leading-tight">reminder</h4>
             <p class="text-[8px] text-gray-500 leading-tight">kustomisasi pengingat yang anda butuhkan</p>
           </div>
-
           <div class="bg-nosa-cardBg p-3 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-1 cursor-pointer">
             <div class="text-3xl my-1">🎮</div>
             <h4 class="font-extrabold text-[11px] text-nosa-green leading-tight">NOSIZU</h4>
             <p class="text-[8px] text-gray-500 leading-tight">mainkan games dan tambah knowledgemu!</p>
           </div>
-
           <!-- TOMBOL GENBA -->
           <div onclick="switchTab('genbaForm')" class="bg-nosa-cardBg p-3 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-1 cursor-pointer hover:border-nosa-green transition">
             <div class="text-3xl my-1">📍</div>
             <h4 class="font-extrabold text-[11px] text-nosa-green leading-tight">GENBA</h4>
             <p class="text-[8px] text-gray-500 leading-tight">ayo lakukan GENBA untuk menjaga standar</p>
           </div>
-
           <div onclick="switchTab('profil')" class="bg-nosa-cardBg p-3 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-1 cursor-pointer">
             <div class="text-3xl my-1">🏢</div>
             <h4 class="font-extrabold text-[11px] text-nosa-green leading-tight">profil cabang</h4>
             <p class="text-[8px] text-gray-500 leading-tight">data dan informasi cabang</p>
           </div>
         </div>
-
         <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs space-y-3">
           <div class="flex items-center justify-between gap-2">
             <div class="relative w-16 h-16 flex-shrink-0 flex items-center justify-center">
@@ -168,7 +152,6 @@
         </div>
       </div>
 
-
       <!-- TAB 2: REFERENSI STANDAR VISUAL -->
       <div id="referensiPage" class="hidden space-y-4">
         <div class="flex justify-between items-center border-b border-gray-300/60 pb-2">
@@ -183,14 +166,12 @@
         </div>
       </div>
 
-
-      <!-- TAB 3: FORM INISIASI GENBA (ATTACHMENT 1) -->
+      <!-- TAB 3: FORM INISIASI GENBA -->
       <div id="genbaFormPage" class="hidden space-y-5 max-w-md mx-auto py-4">
         <div class="text-center space-y-2">
           <h2 class="text-2xl font-black text-gray-900 tracking-tight">Audit & Self Assessment</h2>
           <p class="text-xs text-gray-600">Pilih cabang dan ketik nama auditor untuk memuat profil otomatis</p>
         </div>
-
         <form onsubmit="startGenbaAudit(event)" class="space-y-3.5">
           <div>
             <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">1. PILIH CABANG</label>
@@ -198,22 +179,18 @@
               <option value="">--Pilih Cabang--</option>
             </select>
           </div>
-
           <div>
             <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">2. NAMA AUDITOR</label>
             <input type="text" id="genbaNamaAuditor" required placeholder="Refan" class="w-full px-4 py-3 rounded-2xl border-2 border-nosa-border bg-gray-50 text-sm font-semibold text-gray-800 focus:outline-none">
           </div>
-
           <div>
             <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">3. JABATAN AUDITOR</label>
             <input type="text" id="genbaJabatanAuditor" required placeholder="NOS Officer" class="w-full px-4 py-3 rounded-2xl border-2 border-nosa-border bg-gray-50 text-sm font-semibold text-gray-800 focus:outline-none">
           </div>
-
           <div>
             <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">4. NOMOR WHATSAPP/TELEPON</label>
             <input type="tel" id="genbaNoHp" required placeholder="+6281256792" class="w-full px-4 py-3 rounded-2xl border-2 border-nosa-border bg-gray-50 text-sm font-semibold text-gray-800 focus:outline-none">
           </div>
-
           <button type="submit" class="w-full py-3.5 bg-nosa-button hover:bg-nosa-border text-black font-extrabold text-base rounded-2xl shadow-md border border-gray-300/40 transition cursor-pointer flex items-center justify-center gap-2">
             <span>lanjutkan audit</span>
             <span class="text-xl">&rarr;</span>
@@ -221,33 +198,51 @@
         </form>
       </div>
 
-
-      <!-- TAB 4: HALAMAN CEKLIS AUDIT GENBA (ATTACHMENT 2) -->
+      <!-- TAB 4: HALAMAN CEKLIS AUDIT GENBA -->
       <div id="genbaAuditPage" class="hidden space-y-4">
-        
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
-          
           <!-- KOTAK PROFIL KIRI ATAS -->
-          <div class="md:col-span-1 bg-nosa-cardBg p-3.5 rounded-2xl border border-gray-200 shadow-xs space-y-1 sticky top-0">
-            <p class="text-[10px] text-gray-500 font-medium">Cabang</p>
-            <h4 class="text-sm font-black text-gray-900 leading-tight" id="auditInfoCabang">Soekarno Hatta</h4>
-            <div class="pt-2">
+          <div class="md:col-span-1 bg-nosa-cardBg p-3.5 rounded-2xl border border-gray-200 shadow-xs space-y-3 sticky top-0">
+            <div>
+              <p class="text-[10px] text-gray-500 font-medium">Cabang</p>
+              <h4 class="text-sm font-black text-gray-900 leading-tight" id="auditInfoCabang">Soekarno Hatta</h4>
+            </div>
+            <div>
               <p class="text-[10px] text-gray-500 font-medium">Auditor</p>
               <h5 class="text-xs font-bold text-gray-800" id="auditInfoAuditor">Refan (NOS Officer)</h5>
             </div>
+            
+            <button type="button" onclick="submitGenbaForm()" id="btnSubmitGenbaAudit" class="w-full py-2.5 bg-nosa-green hover:bg-nosa-greenLight text-white font-extrabold text-xs rounded-xl shadow-md transition cursor-pointer">
+              💾 Submit Audit
+            </button>
           </div>
 
           <!-- LIST ITEM CEKLIS KANAN -->
           <div class="md:col-span-3 space-y-4" id="genbaCeklisContainer">
             <p class="text-xs text-gray-400 italic text-center py-6">Memuat item ceklis NOS...</p>
           </div>
-
         </div>
-
       </div>
 
+      <!-- TAB 5: DASHBOARD PICA -->
+      <div id="picaDashboardPage" class="hidden space-y-4">
+        <div class="flex justify-between items-center border-b border-gray-300/60 pb-2">
+          <div>
+            <h2 class="text-xl font-extrabold text-nosa-green tracking-tight">Dashboard PICA</h2>
+            <p class="text-[10px] text-gray-500">Daftar temuan audit yang memerlukan tindakan perbaikan</p>
+          </div>
+          <button onclick="loadPicaDashboardData()" class="text-[10px] font-bold bg-white text-nosa-green px-3 py-1.5 rounded-xl border border-nosa-green/30 hover:bg-nosa-bgRole transition">
+            🔄 Refresh
+          </button>
+        </div>
 
-      <!-- TAB 5: PROFIL CABANG -->
+        <!-- CONTAINER CARDS PICA -->
+        <div id="picaCardsContainer" class="space-y-3">
+          <p class="text-xs text-gray-400 italic text-center py-8">Memuat data PICA...</p>
+        </div>
+      </div>
+
+      <!-- TAB 6: PROFIL CABANG -->
       <div id="profilPage" class="hidden space-y-3.5">
         <div class="space-y-1 pt-1">
           <div class="flex items-center gap-1.5 text-[10px] text-gray-400 font-normal">
@@ -256,7 +251,6 @@
           <h2 class="text-xl font-extrabold text-gray-900 tracking-tight" id="profNamaCabang">Cabang Soekarno Hatta</h2>
           <p class="text-[10px] font-bold text-gray-400">JBR</p>
         </div>
-
         <div class="bg-nosa-cardBg p-3.5 rounded-2xl border-2 border-indigo-400/80 shadow-xs flex items-center justify-between">
           <div class="flex items-center gap-3">
             <div class="text-2xl">🏆</div>
@@ -270,19 +264,17 @@
             </div>
           </div>
         </div>
-
         <div class="bg-nosa-cardBg p-3.5 rounded-2xl border border-gray-200/60 shadow-xs space-y-2.5">
           <div class="flex justify-between items-center border-b border-gray-300/50 pb-2">
             <div class="flex items-center gap-1.5 text-xs font-bold text-gray-800">
               <span>📋</span> <span>PICA yang belum selesai</span>
             </div>
-            <a href="#" class="text-[9px] text-gray-500 hover:underline">Lihat semua &rsaquo;</a>
+            <a href="#" onclick="switchTab('pica')" class="text-[9px] text-gray-500 hover:underline">Lihat semua &rsaquo;</a>
           </div>
           <div class="space-y-2 text-[10px]" id="profPicaBox">
             <p class="text-gray-400 italic">Memuat data PICA...</p>
           </div>
         </div>
-
         <div class="bg-nosa-cardBg p-3.5 rounded-2xl border border-gray-200/60 shadow-xs space-y-2.5">
           <div class="flex justify-between items-center border-b border-gray-300/50 pb-2">
             <div class="flex items-center gap-1.5 text-xs font-bold text-gray-800">
@@ -294,7 +286,6 @@
             <p class="text-gray-400 italic">Memuat temuan berulang...</p>
           </div>
         </div>
-
         <div class="bg-nosa-cardBg p-3.5 rounded-2xl border border-gray-200/60 shadow-xs space-y-2.5">
           <div class="flex items-center gap-1.5 text-xs font-bold text-gray-800 border-b border-gray-300/50 pb-2">
             <span>🏆</span> <span>3 Besar FLP NOSIZU</span>
@@ -303,7 +294,6 @@
             <p class="text-gray-400 italic">Memuat peringkat FLP...</p>
           </div>
         </div>
-
         <div class="bg-nosa-cardBg p-3.5 rounded-2xl border border-gray-200/60 shadow-xs flex items-center justify-between">
           <div class="space-y-1">
             <p class="text-[10px] font-bold text-gray-700 flex items-center gap-1.5">
@@ -314,7 +304,6 @@
           <span class="bg-emerald-300 text-emerald-900 text-[10px] font-extrabold px-3 py-1 rounded-full flex items-center gap-1">📍 Onsite</span>
         </div>
       </div>
-
     </div>
 
     <!-- BOTTOM NAVIGATION BAR -->
@@ -324,28 +313,23 @@
         <span>home</span>
         <div id="barHome" class="w-4 h-0.5 bg-nosa-green rounded-full mt-0.5"></div>
       </button>
-
-      <button class="flex flex-col items-center gap-0.5 text-nosa-green opacity-70 hover:opacity-100 font-normal text-[10px] cursor-pointer">
+      <button onclick="switchTab('pica')" id="navPica" class="flex flex-col items-center gap-0.5 text-nosa-green opacity-70 hover:opacity-100 font-normal text-[10px] cursor-pointer">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
         <span>PICA</span>
         <div id="barPica" class="w-4 h-0.5 bg-nosa-green rounded-full mt-0.5 hidden"></div>
       </button>
-
       <button class="flex flex-col items-center gap-0.5 text-nosa-green opacity-70 hover:opacity-100 font-normal text-[10px] cursor-pointer">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
         <span>leaderboard</span>
         <div id="barLeaderboard" class="w-4 h-0.5 bg-nosa-green rounded-full mt-0.5 hidden"></div>
       </button>
-
       <button onclick="switchTab('profil')" id="navProfil" class="flex flex-col items-center gap-0.5 text-nosa-green font-normal opacity-70 hover:opacity-100 text-[10px] cursor-pointer">
         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
         <span>profil</span>
         <div id="barProfil" class="w-4 h-0.5 bg-nosa-green rounded-full mt-0.5 hidden"></div>
       </button>
     </div>
-
   </div>
-
   <script src="script.js"></script>
 </body>
 </html>
