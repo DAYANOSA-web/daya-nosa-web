@@ -89,7 +89,6 @@
         <img src="Logo DAYA NOSA.png" alt="Logo Daya NOSA" class="h-10 sm:h-12 w-auto object-contain">
       </div>
       
-      <!-- KANAN: MASKOT + TOMBOL LOGOUT -->
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0">
           <img src="MASKOT DAYA NOSA.png" alt="Maskot Daya NOSA" class="w-full h-full object-contain">
@@ -327,38 +326,76 @@
         </div>
       </div>
 
-      <!-- TAB 8: PROFIL -->
-      <div id="profilPage" class="hidden space-y-3.5">
+      <!-- TAB 8: PROFIL CABANG (LENGKAP SEMUA KOTAK PROFIL) -->
+      <div id="profilPage" class="hidden space-y-4 max-w-2xl mx-auto">
         <div class="space-y-1 pt-1">
-          <div class="flex items-center gap-1.5 text-[10px] text-gray-400 font-normal">
+          <div class="flex items-center gap-1.5 text-xs text-gray-400 font-normal">
             <span>🏠</span> <span>JBR</span> <span>&gt;</span> <span>Cabang</span>
           </div>
-          <h2 class="text-xl font-extrabold text-gray-900 tracking-tight" id="profNamaCabang">Cabang Soekarno Hatta</h2>
-          <p class="text-[10px] font-bold text-gray-400">JBR</p>
+          <h2 class="text-2xl font-black text-gray-900 tracking-tight" id="profNamaCabang">Cabang Soekarno Hatta</h2>
+          <p class="text-xs font-bold text-gray-400">JBR</p>
         </div>
-        <div class="bg-nosa-cardBg p-3.5 rounded-2xl border-2 border-indigo-400/80 shadow-xs flex items-center justify-between">
+
+        <!-- SKOR NOS -->
+        <div class="bg-nosa-cardBg p-4 rounded-2xl border-2 border-indigo-400/80 shadow-xs flex items-center justify-between">
           <div class="flex items-center gap-3">
-            <div class="text-2xl">🏆</div>
+            <div class="text-3xl">🏆</div>
             <div>
-              <p class="text-[10px] font-bold text-gray-800">Skor NOS saat ini</p>
+              <p class="text-xs font-bold text-gray-800">Skor NOS saat ini</p>
               <div class="flex items-center gap-1.5 mt-1" id="profBadgeSkor">
-                <span class="bg-amber-400 text-gray-900 text-[10px] font-extrabold px-3 py-0.5 rounded-md shadow-2xs">GOLD</span>
+                <span class="bg-amber-400 text-gray-900 text-xs font-extrabold px-3 py-0.5 rounded-md shadow-2xs">GOLD</span>
                 <span class="text-gray-400 font-light text-xs">/</span>
-                <span class="bg-gray-300 text-gray-600 text-[10px] font-bold px-3 py-0.5 rounded-md">PLATINUM</span>
+                <span class="bg-gray-300 text-gray-600 text-xs font-bold px-3 py-0.5 rounded-md">PLATINUM</span>
               </div>
             </div>
           </div>
         </div>
-        <div class="bg-nosa-cardBg p-3.5 rounded-2xl border border-gray-200/60 shadow-xs space-y-2.5">
+
+        <!-- PICA BELUM SELESAI -->
+        <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs space-y-3">
           <div class="flex justify-between items-center border-b border-gray-300/50 pb-2">
-            <div class="flex items-center gap-1.5 text-xs font-bold text-gray-800">
+            <div class="flex items-center gap-2 text-xs sm:text-sm font-extrabold text-gray-800">
               <span>📋</span> <span>PICA yang belum selesai</span>
             </div>
-            <a href="#" onclick="switchTab('pica')" class="text-[9px] text-gray-500 hover:underline">Lihat semua &rsaquo;</a>
+            <a href="#" onclick="switchTab('pica')" class="text-xs text-gray-500 hover:underline">Lihat semua &rsaquo;</a>
           </div>
-          <div class="space-y-2 text-[10px]" id="profPicaBox">
+          <div class="space-y-2 text-xs" id="profPicaBox">
             <p class="text-gray-400 italic">Memuat data PICA...</p>
           </div>
+        </div>
+
+        <!-- TEMUAN BERULANG -->
+        <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs space-y-3">
+          <div class="flex justify-between items-center border-b border-gray-300/50 pb-2">
+            <div class="flex items-center gap-2 text-xs sm:text-sm font-extrabold text-gray-800">
+              <span class="text-red-500">🔄</span> <span>Temuan Berulang</span>
+            </div>
+            <a href="#" onclick="switchTab('pica')" class="text-xs text-gray-500 hover:underline">Lihat semua &rsaquo;</a>
+          </div>
+          <div class="space-y-2 text-xs" id="profTemuanBerulangBox">
+            <p class="text-gray-400 italic">Memuat temuan berulang...</p>
+          </div>
+        </div>
+
+        <!-- 3 BESAR FLP NOSIZU -->
+        <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs space-y-3">
+          <div class="flex items-center gap-2 text-xs sm:text-sm font-extrabold text-gray-800 border-b border-gray-300/50 pb-2">
+            <span>🏆</span> <span>3 Besar FLP NOSIZU</span>
+          </div>
+          <div class="space-y-2 text-xs" id="profTopFlpBox">
+            <p class="text-gray-400 italic">Memuat peringkat FLP...</p>
+          </div>
+        </div>
+
+        <!-- JADWAL GENBA -->
+        <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs flex items-center justify-between">
+          <div class="space-y-1">
+            <p class="text-xs font-bold text-gray-700 flex items-center gap-1.5">
+              <span>📅</span> Jadwal GENBA berikutnya
+            </p>
+            <h4 class="text-lg font-black text-gray-900" id="profJadwalGenba">25 Okt 2026</h4>
+          </div>
+          <span class="bg-emerald-300 text-emerald-900 text-xs font-extrabold px-3 py-1 rounded-full flex items-center gap-1">📍 Onsite</span>
         </div>
       </div>
 
