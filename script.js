@@ -23,7 +23,7 @@ function formatDateNice(dateStr) {
   }
 }
 
-// LOGIKA AUTHENTIKASI
+// LOGIKA AUTHENTIKASI & ROLE
 function selectRole(role) {
   selectedRole = role;
   const btnKacab = document.getElementById('btnRoleKacab');
@@ -101,6 +101,18 @@ function handleAuthSubmit(e) {
   });
 }
 
+function handleLogout() {
+  if (confirm("Apakah Anda yakin ingin keluar dari akun ini?")) {
+    localStorage.removeItem("nosa_user");
+    currentUser = null;
+    document.getElementById("mainContainer").classList.add("hidden");
+    document.getElementById("loginPage").classList.remove("hidden");
+    document.getElementById("authEmail").value = "";
+    document.getElementById("authPassword").value = "";
+    setAuthMode("login");
+  }
+}
+
 function renderDashboard(user) {
   document.getElementById("loginPage").classList.add("hidden");
   document.getElementById("mainContainer").classList.remove("hidden");
@@ -131,9 +143,7 @@ function loadDropdownCabang() {
   });
 }
 
-// ----------------------------------------------------
-// FUNGSI MEMUAT REFERENSI STANDAR (YANG TADI TERHAPUS)
-// ----------------------------------------------------
+// FUNGSI REFERENSI STANDAR
 function loadReferensiData() {
   const container = document.getElementById("referensiGridBox");
   if (!container) return;
@@ -199,7 +209,7 @@ function loadReferensiData() {
   });
 }
 
-// LOGIKA GENBA AUDIT
+// LOGIKA AUDIT GENBA
 function startGenbaAudit(e) {
   e.preventDefault();
   const cabang = document.getElementById("genbaSelectCabang").value;
@@ -214,24 +224,6 @@ function startGenbaAudit(e) {
   
   switchTab("genbaAudit");
   loadCeklisNOSData();
-}
-
-// FUNGSI LOGOUT / KELUAR AKUN
-function handleLogout() {
-  if (confirm("Apakah Anda yakin ingin keluar dari akun ini?")) {
-    // 1. Hapus data user tersimpan di browser
-    localStorage.removeItem("nosa_user");
-    currentUser = null;
-
-    // 2. Sembunyikan aplikasi utama, tampilkan halaman login
-    document.getElementById("mainContainer").classList.add("hidden");
-    document.getElementById("loginPage").classList.remove("hidden");
-
-    // 3. Reset form login
-    document.getElementById("authEmail").value = "";
-    document.getElementById("authPassword").value = "";
-    setAuthMode("login");
-  }
 }
 
 function loadCeklisNOSData() {
@@ -702,7 +694,16 @@ function loadLeaderboardData() {
   });
 }
 
+// FUNGSI PROFIL CABANG DINAMIS
 function loadProfilCabangData(cabangName) {
+  const picaBox = document.getElementById("profPicaBox");
+  const berulangBox = document.getElementById("profTemuanBerulangBox");
+  const topFlpBox = document.getElementById("profTopFlpBox");
+
+  if (picaBox) picaBox.innerHTML = '<p class="text-gray-400 italic">Memuat data PICA...</p>';
+  if (berulangBox) berulangBox.innerHTML = '<p class="text-gray-400 italic">Memuat temuan berulang...</p>';
+  if (topFlpBox) topFlpBox.innerHTML = '<p class="text-gray-400 italic">Memuat peringkat FLP...</p>';
+
   fetch(`${API_URL}?action=getProfilCabang&cabang=${encodeURIComponent(cabangName)}`)
   .then(res => res.json())
   .then(res => {
@@ -710,34 +711,86 @@ function loadProfilCabangData(cabangName) {
       if (res.info && res.info.skorNos) {
         const parts = res.info.skorNos.split('/');
         document.getElementById("profBadgeSkor").innerHTML = `
-          <span class="bg-amber-400 text-gray-900 text-[10px] font-extrabold px-3 py-0.5 rounded-md shadow-2xs">${parts[0] ? parts[0].trim() : "GOLD"}</span>
+          <span class="bg-amber-400 text-gray-900 text-xs font-extrabold px-3 py-0.5 rounded-md shadow-2xs">${parts[0] ? parts[0].trim() : "GOLD"}</span>
           <span class="text-gray-400 font-light text-xs">/</span>
-          <span class="bg-gray-300 text-gray-600 text-[10px] font-bold px-3 py-0.5 rounded-md">${parts[1] ? parts[1].trim() : "PLATINUM"}</span>
+          <span class="bg-gray-300 text-gray-600 text-xs font-bold px-3 py-0.5 rounded-md">${parts[1] ? parts[1].trim() : "PLATINUM"}</span>
         `;
       }
-      const picaBox = document.getElementById("profPicaBox");
+      
+      if (res.info && res.info.jadwalGenba) {
+        document.getElementById("profJadwalGenba").innerText = formatDateNice(res.info.jadwalGenba);
+      }
+
+      // PICA Belum Selesai
       if (res.picaBelumSelesai && res.picaBelumSelesai.length > 0) {
         let picaHtml = '';
         res.picaBelumSelesai.forEach(item => {
           const badgeClass = item.status === 'Open' ? 'bg-red-200 text-red-700' : 'bg-amber-200 text-amber-800';
           picaHtml += `
-            <div class="flex items-center justify-between bg-white/50 p-1.5 rounded-lg">
+            <div class="flex items-center justify-between bg-white/60 p-2 rounded-xl">
               <div class="flex items-center gap-2">
-                <div class="w-1 h-3 ${item.status === 'Open' ? 'bg-red-500' : 'bg-amber-500'} rounded-full"></div>
-                <span class="font-normal text-gray-700">${item.item}</span>
+                <div class="w-1.5 h-4 ${item.status === 'Open' ? 'bg-red-500' : 'bg-amber-500'} rounded-full"></div>
+                <span class="font-bold text-gray-800 text-xs">${item.item}</span>
               </div>
               <div class="flex items-center gap-2">
-                <span class="text-gray-500 font-bold text-[9px]">${formatDateNice(item.dueDate)}</span>
-                <span class="${badgeClass} font-bold px-2 py-0.5 rounded-full text-[9px]">${item.status}</span>
+                <span class="text-gray-500 font-semibold text-[10px]">${formatDateNice(item.dueDate)}</span>
+                <span class="${badgeClass} font-extrabold px-2.5 py-0.5 rounded-full text-[10px]">${item.status}</span>
               </div>
             </div>
           `;
         });
         picaBox.innerHTML = picaHtml;
       } else {
-        picaBox.innerHTML = '<p class="text-emerald-600 font-bold">Semua PICA terselesaikan! 🎉</p>';
+        picaBox.innerHTML = '<p class="text-emerald-600 font-bold text-xs">Semua PICA terselesaikan! 🎉</p>';
+      }
+
+      // Temuan Berulang
+      if (res.temuanBerulang && res.temuanBerulang.length > 0) {
+        let berulangHtml = '';
+        res.temuanBerulang.forEach(tb => {
+          berulangHtml += `
+            <div class="flex items-center justify-between bg-white/60 p-2 rounded-xl">
+              <span class="font-bold text-gray-800 text-xs">${tb.item}</span>
+              <span class="bg-red-100 text-red-700 border border-red-200 font-extrabold px-2.5 py-0.5 rounded-full text-[10px]">${tb.jumlah}</span>
+            </div>
+          `;
+        });
+        berulangBox.innerHTML = berulangHtml;
+      } else {
+        berulangBox.innerHTML = '<p class="text-gray-500 italic text-xs">Tidak ada temuan berulang.</p>';
+      }
+
+      // 3 Besar FLP NOSIZU Per Cabang
+      if (res.top3Flp && res.top3Flp.length > 0) {
+        let flpHtml = '';
+        res.top3Flp.forEach((flp, index) => {
+          let badge = `<span class="font-extrabold text-gray-400 text-xs w-5">${index + 1}</span>`;
+          if (index === 0) badge = `<span class="text-base">🥇</span>`;
+          if (index === 1) badge = `<span class="text-base">🥈</span>`;
+          if (index === 2) badge = `<span class="text-base">🥉</span>`;
+
+          flpHtml += `
+            <div class="flex items-center justify-between bg-white/60 p-2.5 rounded-xl">
+              <div class="flex items-center gap-2.5">
+                ${badge}
+                <div>
+                  <h5 class="font-extrabold text-gray-900 text-xs leading-tight">${flp.nama}</h5>
+                  <p class="text-[10px] text-gray-500 font-medium">${flp.role || "FLP"}</p>
+                </div>
+              </div>
+              <span class="font-extrabold text-red-600 text-xs">${flp.xp} XP</span>
+            </div>
+          `;
+        });
+        topFlpBox.innerHTML = flpHtml;
+      } else {
+        topFlpBox.innerHTML = '<p class="text-gray-500 italic text-xs">Belum ada peringkat FLP di cabang ini.</p>';
       }
     }
+  })
+  .catch(err => {
+    console.error("Error loading Profil Cabang:", err);
+    if (picaBox) picaBox.innerHTML = '<p class="text-red-500 text-xs">Gagal memuat profil cabang.</p>';
   });
 }
 
@@ -780,6 +833,9 @@ function switchTab(tabId) {
   } else if (tabId === 'profil') {
     document.getElementById('profilPage').classList.remove('hidden');
     navProfil.classList.remove('opacity-70');
+    if (currentUser && currentUser.cabang) {
+      loadProfilCabangData(currentUser.cabang);
+    }
   }
 }
 
