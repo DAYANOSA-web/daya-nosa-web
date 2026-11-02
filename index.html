@@ -83,17 +83,25 @@
   <!-- ==================== PAGE 2: MAIN APP FULLSCREEN ==================== -->
   <div id="mainContainer" class="hidden min-h-screen w-full flex flex-col justify-between relative bg-nosa-dashBg">
     
-    <!-- 1. FIXED HEADER FULL WIDTH (DI ATAS WEBSITE) -->
+    <!-- 1. FIXED HEADER FULL WIDTH -->
     <header class="fixed top-0 inset-x-0 bg-nosa-dashBg/90 backdrop-blur-md z-30 px-4 sm:px-8 py-3 flex justify-between items-center border-b border-gray-200/50 shadow-xs">
       <div class="flex items-center gap-2">
         <img src="Logo DAYA NOSA.png" alt="Logo Daya NOSA" class="h-10 sm:h-12 w-auto object-contain">
       </div>
-      <div class="w-12 h-12 sm:w-14 sm:h-14 flex-shrink-0">
-        <img src="MASKOT DAYA NOSA.png" alt="Maskot Daya NOSA" class="w-full h-full object-contain">
+      
+      <!-- KANAN: MASKOT + TOMBOL LOGOUT -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0">
+          <img src="MASKOT DAYA NOSA.png" alt="Maskot Daya NOSA" class="w-full h-full object-contain">
+        </div>
+        <button onclick="handleLogout()" title="Keluar / Ganti Akun" class="flex items-center gap-1.5 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-extrabold px-3 py-2 rounded-xl transition border border-red-200/60 cursor-pointer">
+          <span>🚪</span>
+          <span class="hidden sm:inline">Keluar</span>
+        </button>
       </div>
     </header>
 
-    <!-- 2. SCROLLABLE MAIN CONTENT AREA (KONTEN TENGAH) -->
+    <!-- 2. SCROLLABLE MAIN CONTENT AREA -->
     <main class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-8 pt-20 pb-24 space-y-6">
       
       <!-- TAB 1: DASHBOARD HOME -->
@@ -356,7 +364,7 @@
 
     </main>
 
-    <!-- 3. FIXED BOTTOM NAVIGATION BAR FULL WIDTH (DI BAWAH WEBSITE) -->
+    <!-- 3. FIXED BOTTOM NAVIGATION BAR FULL WIDTH -->
     <nav class="fixed bottom-0 inset-x-0 bg-nosa-cardBg/95 backdrop-blur-md border-t border-gray-200/80 py-2.5 px-6 flex justify-around items-center z-30 shadow-lg">
       <button onclick="switchTab('home')" id="navHome" class="flex flex-col items-center gap-1 text-nosa-green font-bold text-xs cursor-pointer hover:scale-105 transition">
         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
