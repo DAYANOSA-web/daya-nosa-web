@@ -216,6 +216,24 @@ function startGenbaAudit(e) {
   loadCeklisNOSData();
 }
 
+// FUNGSI LOGOUT / KELUAR AKUN
+function handleLogout() {
+  if (confirm("Apakah Anda yakin ingin keluar dari akun ini?")) {
+    // 1. Hapus data user tersimpan di browser
+    localStorage.removeItem("nosa_user");
+    currentUser = null;
+
+    // 2. Sembunyikan aplikasi utama, tampilkan halaman login
+    document.getElementById("mainContainer").classList.add("hidden");
+    document.getElementById("loginPage").classList.remove("hidden");
+
+    // 3. Reset form login
+    document.getElementById("authEmail").value = "";
+    document.getElementById("authPassword").value = "";
+    setAuthMode("login");
+  }
+}
+
 function loadCeklisNOSData() {
   const container = document.getElementById("genbaCeklisContainer");
   container.innerHTML = '<p class="text-xs text-gray-400 italic text-center py-6">Memuat item ceklis NOS...</p>';
