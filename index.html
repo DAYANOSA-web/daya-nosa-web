@@ -19,7 +19,8 @@
               button: '#D8E2D8',
               bgRole: '#E4ECE5',
               dashBg: '#EEF3EE',
-              cardBg: '#EAF1EA'
+              cardBg: '#EAF1EA',
+              red: '#E53935'
             }
           },
           fontFamily: {
@@ -32,7 +33,7 @@
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-2 sm:p-4 font-sans text-gray-800">
 
-  <!-- ==================== PAGE 1: AUTH PAGE (LOGIN & REGISTER) ==================== -->
+  <!-- ==================== PAGE 1: AUTH PAGE ==================== -->
   <div id="loginPage" class="relative w-full max-w-sm bg-white rounded-[32px] shadow-2xl overflow-hidden border border-gray-100 px-6 py-8 flex flex-col justify-between min-h-[640px]">
     <div class="absolute top-16 left-0 w-3.5 h-16 bg-nosa-green rounded-r-md"></div>
     <div class="absolute top-5 right-0 w-24 h-4 bg-nosa-yellow rounded-l-sm"></div>
@@ -114,12 +115,11 @@
             <h4 class="font-extrabold text-[11px] text-nosa-green leading-tight">reminder</h4>
             <p class="text-[8px] text-gray-500 leading-tight">kustomisasi pengingat yang anda butuhkan</p>
           </div>
-          <div class="bg-nosa-cardBg p-3 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-1 cursor-pointer">
+          <div onclick="switchTab('nosizu')" class="bg-nosa-cardBg p-3 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-1 cursor-pointer hover:border-nosa-green transition">
             <div class="text-3xl my-1">🎮</div>
             <h4 class="font-extrabold text-[11px] text-nosa-green leading-tight">NOSIZU</h4>
             <p class="text-[8px] text-gray-500 leading-tight">mainkan games dan tambah knowledgemu!</p>
           </div>
-          <!-- TOMBOL GENBA -->
           <div onclick="switchTab('genbaForm')" class="bg-nosa-cardBg p-3 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-1 cursor-pointer hover:border-nosa-green transition">
             <div class="text-3xl my-1">📍</div>
             <h4 class="font-extrabold text-[11px] text-nosa-green leading-tight">GENBA</h4>
@@ -153,7 +153,7 @@
         </div>
       </div>
 
-      <!-- TAB 2: REFERENSI STANDAR VISUAL -->
+      <!-- TAB REFERENSI & GENBA (TETAP SAMA) -->
       <div id="referensiPage" class="hidden space-y-4">
         <div class="flex justify-between items-center border-b border-gray-300/60 pb-2">
           <div>
@@ -167,7 +167,6 @@
         </div>
       </div>
 
-      <!-- TAB 3: FORM INISIASI GENBA -->
       <div id="genbaFormPage" class="hidden space-y-5 max-w-md mx-auto py-4">
         <div class="text-center space-y-2">
           <h2 class="text-2xl font-black text-gray-900 tracking-tight">Audit & Self Assessment</h2>
@@ -199,10 +198,8 @@
         </form>
       </div>
 
-      <!-- TAB 4: HALAMAN CEKLIS AUDIT GENBA -->
       <div id="genbaAuditPage" class="hidden space-y-4">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
-          <!-- KOTAK PROFIL KIRI ATAS -->
           <div class="md:col-span-1 bg-nosa-cardBg p-3.5 rounded-2xl border border-gray-200 shadow-xs space-y-3 sticky top-0">
             <div>
               <p class="text-[10px] text-gray-500 font-medium">Cabang</p>
@@ -212,20 +209,16 @@
               <p class="text-[10px] text-gray-500 font-medium">Auditor</p>
               <h5 class="text-xs font-bold text-gray-800" id="auditInfoAuditor">Refan (NOS Officer)</h5>
             </div>
-            
             <button type="button" onclick="submitGenbaForm()" id="btnSubmitGenbaAudit" class="w-full py-2.5 bg-nosa-green hover:bg-nosa-greenLight text-white font-extrabold text-xs rounded-xl shadow-md transition cursor-pointer">
               💾 Submit Audit
             </button>
           </div>
-
-          <!-- LIST ITEM CEKLIS KANAN -->
           <div class="md:col-span-3 space-y-4" id="genbaCeklisContainer">
             <p class="text-xs text-gray-400 italic text-center py-6">Memuat item ceklis NOS...</p>
           </div>
         </div>
       </div>
 
-      <!-- TAB 5: DASHBOARD PICA -->
       <div id="picaDashboardPage" class="hidden space-y-4">
         <div class="flex justify-between items-center border-b border-gray-300/60 pb-2">
           <div>
@@ -236,14 +229,100 @@
             🔄 Refresh
           </button>
         </div>
-
-        <!-- CONTAINER CARDS PICA -->
         <div id="picaCardsContainer" class="space-y-3">
           <p class="text-xs text-gray-400 italic text-center py-8">Memuat data PICA...</p>
         </div>
       </div>
 
-      <!-- TAB 6: PROFIL CABANG -->
+
+      <!-- ==================== TAB NOSIZU (GAMIFIKASI DUOLINGO STYLE) ==================== -->
+      <div id="nosizuPage" class="hidden space-y-4 max-w-md mx-auto">
+        
+        <!-- HEADER STATS NOSIZU -->
+        <div class="flex items-center justify-between bg-white p-3 rounded-2xl shadow-xs border border-gray-200 text-xs font-black">
+          <div class="flex items-center gap-1.5 text-amber-500">
+            <span>🔥</span> <span id="nosStreakVal">1</span> <span class="text-[9px] text-gray-400 font-bold">Hari</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-blue-500">
+            <span>💎</span> <span id="nosXpVal">0</span> <span class="text-[9px] text-gray-400 font-bold">XP</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-red-500">
+            <span>❤️</span> <span id="nosLivesVal">5</span> <span class="text-[9px] text-gray-400 font-bold">Nyawa</span>
+          </div>
+        </div>
+
+        <!-- PATH MAP DUOLINGO STYLE -->
+        <div class="bg-red-600 text-white p-4 rounded-3xl shadow-lg relative overflow-hidden">
+          <h3 class="text-xs font-black uppercase tracking-wider text-red-200">Unit 1</h3>
+          <h2 class="text-lg font-black leading-tight">Standar Kebersihan & Area Servis</h2>
+          <div class="mt-4 flex flex-col items-center space-y-4 relative py-2" id="nosizuPathMap">
+            <!-- Node Level Disusun Zig-Zag oleh JS -->
+          </div>
+        </div>
+
+      </div>
+
+
+      <!-- ==================== PLAYING QUIZ MODAL CONTAINER ==================== -->
+      <div id="nosizuQuizContainer" class="hidden space-y-4 max-w-md mx-auto bg-white p-5 rounded-3xl border border-gray-200 shadow-xl">
+        
+        <!-- TOP PROGRESS & LIVES BAR -->
+        <div class="flex justify-between items-center gap-3">
+          <button onclick="exitQuiz()" class="text-gray-400 font-black text-lg">&times;</button>
+          <div class="flex-1 bg-gray-200 h-3 rounded-full overflow-hidden">
+            <div id="quizProgressBar" class="bg-red-500 h-full w-0 transition-all duration-300"></div>
+          </div>
+          <div class="flex items-center gap-1 text-red-500 font-black text-xs">
+            <span>❤️</span> <span id="quizLivesCount">5</span>
+          </div>
+        </div>
+
+        <!-- SOAL HEADER -->
+        <div class="space-y-1">
+          <span class="text-[10px] font-extrabold text-red-500 uppercase tracking-widest" id="quizTypeBadge">1. PILIH JAWABAN TEPAT</span>
+          <h3 class="text-sm font-extrabold text-gray-900 leading-snug" id="quizQuestionText">Pertanyaan kuis akan tampil di sini...</h3>
+        </div>
+
+        <!-- WADAH PILIHAN JAWABAN (DINAMIS DIBENTUK JS KARENA 3 TIPE) -->
+        <div id="quizAnswersBox" class="space-y-2 pt-2">
+          <!-- Opsi A/B/C/D, Perbandingan Gambar, atau Benar/Salah -->
+        </div>
+
+        <!-- TOMBOL PERIKSA -->
+        <button type="button" onclick="checkAnswer()" id="btnCheckAnswer" class="w-full py-3.5 bg-red-600 hover:bg-red-700 text-white font-extrabold text-sm rounded-2xl shadow-md transition cursor-pointer">
+          Periksa
+        </button>
+
+        <!-- FEEDBACK / PEMBAHASAN PANEL (Sembunyi sebelum diperiksa) -->
+        <div id="quizFeedbackPanel" class="hidden p-4 rounded-2xl border space-y-2">
+          <div class="flex items-center gap-2">
+            <span id="feedbackIcon" class="text-xl">✅</span>
+            <h4 id="feedbackTitle" class="text-sm font-extrabold">Hebat!</h4>
+          </div>
+          <p id="feedbackText" class="text-xs leading-relaxed whitespace-pre-line text-gray-700">Pembahasan soal akan tampil di sini...</p>
+          <button type="button" onclick="nextQuestion()" class="w-full py-2.5 bg-gray-900 hover:bg-black text-white font-bold text-xs rounded-xl shadow-xs mt-2">
+            Lanjut &rarr;
+          </button>
+        </div>
+
+      </div>
+
+
+      <!-- TAB LEADERBOARD NOSIZU -->
+      <div id="leaderboardPage" class="hidden space-y-4">
+        <div class="flex justify-between items-center border-b border-gray-300/60 pb-2">
+          <div>
+            <h2 class="text-xl font-extrabold text-nosa-green tracking-tight">Leaderboard NOSIZU</h2>
+            <p class="text-[10px] text-gray-500">Peringkat XP terbanyak di seluruh dealer</p>
+          </div>
+          <button onclick="loadLeaderboardData()" class="text-[10px] font-bold bg-white text-nosa-green px-3 py-1.5 rounded-xl border border-nosa-green/30">🔄 Refresh</button>
+        </div>
+        <div id="leaderboardListBox" class="space-y-2.5">
+          <p class="text-xs text-gray-400 italic text-center py-8">Memuat klasemen...</p>
+        </div>
+      </div>
+
+      <!-- TAB PROFIL (TETAP SAMA) -->
       <div id="profilPage" class="hidden space-y-3.5">
         <div class="space-y-1 pt-1">
           <div class="flex items-center gap-1.5 text-[10px] text-gray-400 font-normal">
@@ -276,35 +355,8 @@
             <p class="text-gray-400 italic">Memuat data PICA...</p>
           </div>
         </div>
-        <div class="bg-nosa-cardBg p-3.5 rounded-2xl border border-gray-200/60 shadow-xs space-y-2.5">
-          <div class="flex justify-between items-center border-b border-gray-300/50 pb-2">
-            <div class="flex items-center gap-1.5 text-xs font-bold text-gray-800">
-              <span class="text-red-500">🔄</span> <span>Temuan Berulang</span>
-            </div>
-            <a href="#" class="text-[9px] text-gray-500 hover:underline">Lihat semua &rsaquo;</a>
-          </div>
-          <div class="space-y-1.5 text-[10px]" id="profTemuanBerulangBox">
-            <p class="text-gray-400 italic">Memuat temuan berulang...</p>
-          </div>
-        </div>
-        <div class="bg-nosa-cardBg p-3.5 rounded-2xl border border-gray-200/60 shadow-xs space-y-2.5">
-          <div class="flex items-center gap-1.5 text-xs font-bold text-gray-800 border-b border-gray-300/50 pb-2">
-            <span>🏆</span> <span>3 Besar FLP NOSIZU</span>
-          </div>
-          <div class="space-y-2 text-[10px]" id="profTopFlpBox">
-            <p class="text-gray-400 italic">Memuat peringkat FLP...</p>
-          </div>
-        </div>
-        <div class="bg-nosa-cardBg p-3.5 rounded-2xl border border-gray-200/60 shadow-xs flex items-center justify-between">
-          <div class="space-y-1">
-            <p class="text-[10px] font-bold text-gray-700 flex items-center gap-1.5">
-              <span>📅</span> Jadwal GENBA berikutnya
-            </p>
-            <h4 class="text-lg font-black text-gray-900" id="profJadwalGenba">25 Okt 2026</h4>
-          </div>
-          <span class="bg-emerald-300 text-emerald-900 text-[10px] font-extrabold px-3 py-1 rounded-full flex items-center gap-1">📍 Onsite</span>
-        </div>
       </div>
+
     </div>
 
     <!-- BOTTOM NAVIGATION BAR -->
@@ -319,7 +371,7 @@
         <span>PICA</span>
         <div id="barPica" class="w-4 h-0.5 bg-nosa-green rounded-full mt-0.5 hidden"></div>
       </button>
-      <button class="flex flex-col items-center gap-0.5 text-nosa-green opacity-70 hover:opacity-100 font-normal text-[10px] cursor-pointer">
+      <button onclick="switchTab('leaderboard')" id="navLeaderboard" class="flex flex-col items-center gap-0.5 text-nosa-green opacity-70 hover:opacity-100 font-normal text-[10px] cursor-pointer">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
         <span>leaderboard</span>
         <div id="barLeaderboard" class="w-4 h-0.5 bg-nosa-green rounded-full mt-0.5 hidden"></div>
@@ -332,20 +384,17 @@
     </div>
   </div>
 
-  <!-- MODAL POPUP FIX / UPDATE PICA -->
+  <!-- MODAL POPUP FIX / UPDATE PICA (TETAP SAMA) -->
   <div id="picaActionModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
     <div class="bg-white w-full max-w-md rounded-3xl p-5 space-y-4 shadow-2xl border border-gray-100">
       <div class="flex justify-between items-center border-b border-gray-200 pb-2">
         <h3 class="text-base font-black text-gray-900" id="modalPicaTitle">Detail Tindakan PICA</h3>
         <button onclick="closePicaModal()" class="text-gray-400 hover:text-gray-700 text-lg font-bold">&times;</button>
       </div>
-
       <div class="space-y-2 text-xs">
         <p class="font-extrabold text-nosa-green text-sm" id="modalPicaItem">Kebersihan Network</p>
         <p class="text-gray-500" id="modalPicaCatatan">Temuan dari Audit GENBA</p>
       </div>
-
-      <!-- FORM DARI SIS CABANG (STATUS OPEN) -->
       <div id="modalCabangForm" class="space-y-3 pt-2 border-t border-gray-100">
         <div>
           <label class="block text-[10px] font-bold text-gray-600 uppercase mb-1">Upload Bukti Perbaikan (Foto)</label>
@@ -359,8 +408,6 @@
           🚀 Kirim ke NOS Officer (Ubah Status ke On Check)
         </button>
       </div>
-
-      <!-- FORM DARI SISI NOS OFFICER (STATUS ON CHECK) -->
       <div id="modalNosForm" class="space-y-3 pt-2 border-t border-gray-100 hidden">
         <div class="bg-amber-50 p-3 rounded-xl border border-amber-200 text-xs space-y-1">
           <p class="font-bold text-amber-900">Perbaikan telah diajukan Cabang</p>
