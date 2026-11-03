@@ -107,22 +107,17 @@
       <div id="dashboardPage" class="space-y-6">
         <div class="space-y-0.5">
           <h2 class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
-            halo, <span id="dashUserNama">pak Rendi</span> 👋
+            halo, <span id="dashUserNama">pak Refan</span> 👋
           </h2>
-          <p class="text-xs sm:text-sm text-gray-600 font-normal">selamat datang kembali!</p>
+          <p class="text-xs sm:text-sm text-gray-600 font-normal">selamat datang kembali! apa yang mau anda input hari ini?</p>
         </div>
 
+        <!-- GRID 6 KARTU MENU UTAMA -->
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 sm:gap-4 pt-1">
           <div onclick="switchTab('referensi')" class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-2 cursor-pointer hover:border-nosa-green hover:shadow-md transition">
             <div class="text-3xl sm:text-4xl">📖</div>
             <h4 class="font-extrabold text-xs sm:text-sm text-nosa-green leading-tight">referensi standar</h4>
             <p class="text-[9px] sm:text-[10px] text-gray-500 leading-tight">cek dokumen dan standar NOS</p>
-          </div>
-
-          <div onclick="switchTab('pica')" class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-2 cursor-pointer hover:border-nosa-green hover:shadow-md transition">
-            <div class="text-3xl sm:text-4xl">📊</div>
-            <h4 class="font-extrabold text-xs sm:text-sm text-nosa-green leading-tight">dashboard PICA</h4>
-            <p class="text-[9px] sm:text-[10px] text-gray-500 leading-tight">lihat performa cabang anda</p>
           </div>
 
           <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-2 cursor-pointer hover:border-nosa-green hover:shadow-md transition">
@@ -131,16 +126,23 @@
             <p class="text-[9px] sm:text-[10px] text-gray-500 leading-tight">kustomisasi pengingat yang anda butuhkan</p>
           </div>
 
+          <div onclick="switchTab('genbaForm')" class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-2 cursor-pointer hover:border-nosa-green hover:shadow-md transition">
+            <div class="text-3xl sm:text-4xl">📍</div>
+            <h4 class="font-extrabold text-xs sm:text-sm text-nosa-green leading-tight">GENBA</h4>
+            <p class="text-[9px] sm:text-[10px] text-gray-500 leading-tight">ayo lakukan GENBA untuk menjaga standar</p>
+          </div>
+
           <div onclick="switchTab('nosizu')" class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-2 cursor-pointer hover:border-nosa-green hover:shadow-md transition">
             <div class="text-3xl sm:text-4xl">🎮</div>
             <h4 class="font-extrabold text-xs sm:text-sm text-nosa-green leading-tight">NOSIZU</h4>
             <p class="text-[9px] sm:text-[10px] text-gray-500 leading-tight">mainkan games dan tambah knowledgemu!</p>
           </div>
 
-          <div onclick="switchTab('genbaForm')" class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-2 cursor-pointer hover:border-nosa-green hover:shadow-md transition">
-            <div class="text-3xl sm:text-4xl">📍</div>
-            <h4 class="font-extrabold text-xs sm:text-sm text-nosa-green leading-tight">GENBA</h4>
-            <p class="text-[9px] sm:text-[10px] text-gray-500 leading-tight">ayo lakukan GENBA untuk menjaga standar</p>
+          <!-- KARTU ONBOARDING FLP (SESUAI UI DESAIN REVISI) -->
+          <div onclick="switchTab('onboarding')" class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-2 cursor-pointer hover:border-nosa-green hover:shadow-md transition">
+            <div class="text-3xl sm:text-4xl">📋</div>
+            <h4 class="font-extrabold text-xs sm:text-sm text-nosa-green leading-tight">onboarding FLP</h4>
+            <p class="text-[9px] sm:text-[10px] text-gray-500 leading-tight">baru bergabung? ayo kita sama-sama belajar</p>
           </div>
 
           <div onclick="switchTab('profil')" class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-2 cursor-pointer hover:border-nosa-green hover:shadow-md transition">
@@ -160,8 +162,12 @@
               <span class="absolute font-extrabold text-gray-800 text-sm sm:text-base">85%</span>
             </div>
             <div class="flex-1 space-y-1 pl-2">
-              <h3 class="font-extrabold text-xs sm:text-sm text-nosa-green tracking-wider uppercase">PERFORMA CABANG ANDA</h3>
+              <h3 class="font-extrabold text-xs sm:text-sm text-nosa-green tracking-wider uppercase">PERFORMA AREA ANDA</h3>
               <p class="text-xs text-gray-600 leading-tight">Baik! Terus pertahankan standar terbaik anda.</p>
+              <button onclick="switchTab('pica')" class="inline-flex items-center gap-1.5 mt-2 bg-white/80 hover:bg-white text-nosa-green border border-nosa-green/30 text-xs font-bold px-3 py-1.5 rounded-xl shadow-2xs transition">
+                <span>Lihat Dashboard</span>
+                <span>&rsaquo;</span>
+              </button>
             </div>
             <div class="w-12 h-8 text-emerald-500 flex items-center justify-center">
               <svg class="w-full h-full" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
@@ -183,6 +189,28 @@
         </div>
         <div id="referensiGridBox" class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <p class="text-xs text-gray-400 italic col-span-full text-center py-8">Memuat data referensi standar...</p>
+        </div>
+      </div>
+
+      <!-- TAB ONBOARDING FLP (NEW FITUR MOOC VIDEO LEARNING) -->
+      <div id="onboardingPage" class="hidden space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-300/60 pb-3">
+          <div>
+            <h2 class="text-xl sm:text-2xl font-extrabold text-nosa-green tracking-tight">Onboarding FLP</h2>
+            <p class="text-xs text-gray-500">Kumpulan video materi pembelajaran dan orientasi standar untuk FLP baru</p>
+          </div>
+          <button onclick="loadOnboardingData()" class="text-xs font-bold bg-white text-nosa-green px-3.5 py-2 rounded-xl border border-nosa-green/30 hover:bg-nosa-bgRole transition self-start sm:self-auto">🔄 Refresh</button>
+        </div>
+
+        <!-- SEARCH BAR UNTUK CARI JUDUL VIDEO -->
+        <div class="relative w-full max-w-xl">
+          <input type="text" id="searchVideoInput" onkeyup="filterOnboardingVideo()" placeholder="🔎 Cari judul video materi..." class="w-full px-4 py-3 pl-10 rounded-2xl border-2 border-nosa-border bg-white text-sm text-gray-800 font-medium focus:outline-none focus:border-nosa-green transition shadow-2xs">
+          <span class="absolute left-3.5 top-3.5 text-gray-400 text-sm">🔍</span>
+        </div>
+
+        <!-- GRID CONTAINER DAFTAR VIDEO -->
+        <div id="onboardingGridBox" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <p class="text-xs text-gray-400 italic col-span-full text-center py-8">Memuat materi video onboarding...</p>
         </div>
       </div>
 
@@ -307,7 +335,7 @@
           </div>
           <p id="feedbackText" class="text-xs leading-relaxed whitespace-pre-line text-gray-700">Pembahasan soal akan tampil di sini...</p>
           <button type="button" onclick="nextQuestion()" class="w-full py-2.5 bg-gray-900 hover:bg-black text-white font-bold text-xs rounded-xl shadow-xs mt-2">
-            Lanjut &rarr;
+            Lanjut &rsaquo;
           </button>
         </div>
       </div>
@@ -326,7 +354,7 @@
         </div>
       </div>
 
-      <!-- TAB 8: PROFIL CABANG (LENGKAP SEMUA KOTAK PROFIL) -->
+      <!-- TAB 8: PROFIL CABANG -->
       <div id="profilPage" class="hidden space-y-4 max-w-2xl mx-auto">
         <div class="space-y-1 pt-1">
           <div class="flex items-center gap-1.5 text-xs text-gray-400 font-normal">
