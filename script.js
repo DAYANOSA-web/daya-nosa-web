@@ -10,6 +10,9 @@ let currentQuestionList = [];
 let quizIndex = 0;
 let userSelectedAnswer = null;
 
+// GLOBAL LIST UNTUK FITUR ONBOARDING SEARCH
+let allOnboardingVideos = [];
+
 function formatDateNice(dateStr) {
   if (!dateStr) return "-";
   try {
@@ -207,6 +210,104 @@ function loadReferensiData() {
     console.error("Error loading Referensi:", err);
     container.innerHTML = '<p class="text-xs text-red-500 text-center col-span-full py-8">Gagal memuat data referensi standar.</p>';
   });
+}
+
+// FUNGSI MEMUAT & FILTER VIDEO ONBOARDING FLP
+function loadOnboardingData() {
+  const container = document.getElementById("onboardingGridBox");
+  if (!container) return;
+  container.innerHTML = '<p class="text-xs text-gray-400 italic col-span-full text-center py-8">Memuat materi video onboarding...</p>';
+
+  fetch(`${API_URL}?action=getOnboardingFLP`)
+  .then(res => res.json())
+  .then(data => {
+    if (!data || data.length <= 1) {
+      container.innerHTML = '<p class="text-xs text-gray-400 italic col-span-full text-center py-8">Belum ada materi video onboarding di spreadsheet OnboardingFLP.</p>';
+      return;
+    }
+
+    const rows = data.slice(1);
+    allOnboardingVideos = rows.map(r => ({
+      id: r[0],
+      judul: r[1] || 'Judul Video Materi',
+      deskripsi: r[2] || 'Deskripsi materi pembelajaran...',
+      videoUrl: r[3] || '',
+      kategori: r[4] || 'Training FLP'
+    }));
+
+    renderOnboardingVideos(allOnboardingVideos);
+  })
+  .catch(err => {
+    console.error("Error loading Onboarding FLP:", err);
+    container.innerHTML = '<p class="text-xs text-red-500 col-span-full text-center py-8">Gagal memuat materi video onboarding.</p>';
+  });
+}
+
+function renderOnboardingVideos(videoList) {
+  const container = document.getElementById("onboardingGridBox");
+  if (!container) return;
+
+  if (videoList.length === 0) {
+    container.innerHTML = '<p class="text-xs text-gray-400 italic col-span-full text-center py-8">Video tidak ditemukan sesuai kata kunci pencarian.</p>';
+    return;
+  }
+
+  let html = '';
+  videoList.forEach(vid => {
+    const embedUrl = formatEmbedVideoUrl(vid.videoUrl);
+
+    html += `
+      <div class="bg-nosa-cardBg p-4 rounded-3xl border border-gray-200/80 shadow-xs flex flex-col justify-between space-y-3 hover:border-nosa-green transition">
+        <div class="space-y-3">
+          <div class="w-full h-48 rounded-2xl overflow-hidden bg-black flex items-center justify-center border border-gray-300 shadow-inner">
+            ${embedUrl ? `
+              <iframe class="w-full h-full" src="${embedUrl}" title="${vid.judul}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            ` : `
+              <div class="text-center p-4">
+                <span class="text-3xl">🎬</span>
+                <p class="text-[11px] text-gray-400 mt-1">Link video tidak valid</p>
+              </div>
+            `}
+          </div>
+          <div class="space-y-1">
+            <span class="inline-block bg-nosa-yellow text-gray-900 text-[9px] font-extrabold px-2.5 py-0.5 rounded-md uppercase tracking-wider">${vid.kategori}</span>
+            <h3 class="text-base font-extrabold text-nosa-green leading-snug">${vid.judul}</h3>
+            <p class="text-xs text-gray-600 leading-normal whitespace-pre-line">${vid.deskripsi}</p>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+  container.innerHTML = html;
+}
+
+function filterOnboardingVideo() {
+  const query = document.getElementById("searchVideoInput").value.toLowerCase().trim();
+  const filtered = allOnboardingVideos.filter(v => 
+    v.judul.toLowerCase().includes(query) || v.deskripsi.toLowerCase().includes(query) || v.kategori.toLowerCase().includes(query)
+  );
+  renderOnboardingVideos(filtered);
+}
+
+function formatEmbedVideoUrl(url) {
+  if (!url) return '';
+  let str = url.trim();
+  // Format Youtube watch URL
+  if (str.includes("youtube.com/watch?v=")) {
+    const vidId = str.split("v=")[1].split("&")[0];
+    return `https://www.youtube.com/embed/${vidId}`;
+  }
+  // Format Youtube Short URL (youtu.be)
+  if (str.includes("youtu.be/")) {
+    const vidId = str.split("youtu.be/")[1].split("?")[0];
+    return `https://www.youtube.com/embed/${vidId}`;
+  }
+  // Format Google Drive Video
+  if (str.includes("drive.google.com") && str.includes("/file/d/")) {
+    const match = str.match(/\/d\/([^\/]+)/);
+    if (match && match[1]) return `https://drive.google.com/file/d/${match[1]}/preview`;
+  }
+  return str;
 }
 
 // LOGIKA AUDIT GENBA
@@ -796,7 +897,7 @@ function loadProfilCabangData(cabangName) {
 
 // SWITCH TAB NAVIGATION
 function switchTab(tabId) {
-  const pages = ['dashboardPage', 'referensiPage', 'genbaFormPage', 'genbaAuditPage', 'picaDashboardPage', 'nosizuPage', 'leaderboardPage', 'profilPage'];
+  const pages = ['dashboardPage', 'referensiPage', 'onboardingPage', 'genbaFormPage', 'genbaAuditPage', 'picaDashboardPage', 'nosizuPage', 'leaderboardPage', 'profilPage'];
   pages.forEach(p => {
     const el = document.getElementById(p);
     if (el) el.classList.add('hidden');
@@ -815,6 +916,9 @@ function switchTab(tabId) {
   } else if (tabId === 'referensi') {
     document.getElementById('referensiPage').classList.remove('hidden');
     loadReferensiData();
+  } else if (tabId === 'onboarding') {
+    document.getElementById('onboardingPage').classList.remove('hidden');
+    loadOnboardingData();
   } else if (tabId === 'genbaForm') {
     document.getElementById('genbaFormPage').classList.remove('hidden');
   } else if (tabId === 'genbaAudit') {
