@@ -13,6 +13,53 @@ let userSelectedAnswer = null;
 // GLOBAL LIST UNTUK FITUR ONBOARDING SEARCH
 let allOnboardingVideos = [];
 
+// ENGINE GUIDED TOUR PANDUAN MASKOT
+let currentTourStep = 0;
+const tourSteps = [
+  {
+    badge: "PANDUAN NOSA (1/7)",
+    targetId: null,
+    tab: "home",
+    text: "Halo! Aku Daya NOSA 👋. Selamat datang! Yuk, aku ajak keliling sebentar untuk mengenali setiap fitur hebat di Daya NOSA."
+  },
+  {
+    badge: "REFERENSI STANDAR (2/7)",
+    targetId: "cardRef",
+    tab: "home",
+    text: "Menu Referensi Standar berisi dokumen visual dan panduan operasional NOS terbaru sebagai acuan standar dealer Anda."
+  },
+  {
+    badge: "GENBA AUDIT (3/7)",
+    targetId: "cardGenba",
+    tab: "home",
+    text: "Di sini Anda bisa melakukan GENBA Audit & Self Assessment secara digital dan mengunggah foto bukti temuan lapangan."
+  },
+  {
+    badge: "DASHBOARD PICA (4/7)",
+    targetId: "cardPerforma",
+    tab: "home",
+    text: "Pantau performa area Anda dan tindak lanjuti temuan PICA (Open, On Check, hingga Closed/Verified) di sini."
+  },
+  {
+    badge: "NOSIZU GAME (5/7)",
+    targetId: "cardNosizu",
+    tab: "home",
+    text: "Sambil senggang, asah pengetahuan standar NOS Anda melalui game kuis interaktif NOSIZU dan kumpulkan XP-nya!"
+  },
+  {
+    badge: "ONBOARDING FLP (6/7)",
+    targetId: "cardOnboarding",
+    tab: "home",
+    text: "Menu ini menyediakan video-video materi orientasi & pelatihan khusus FLP baru yang bisa Anda tonton langsung!"
+  },
+  {
+    badge: "PROFIL CABANG (7/7)",
+    targetId: "cardProfil",
+    tab: "home",
+    text: "Terakhir, cek Skor NOS Cabang Anda, daftar temuan berulang, serta peringkat Top 3 FLP NOSIZU di menu Profil Cabang. Selamat bekerja!"
+  }
+];
+
 function formatDateNice(dateStr) {
   if (!dateStr) return "-";
   try {
@@ -24,6 +71,75 @@ function formatDateNice(dateStr) {
   } catch (e) {
     return dateStr;
   }
+}
+
+// LOGIKA GUIDED TOUR MASKOT DAYA NOSA
+function startAppTour(isManual = false) {
+  const hasToured = localStorage.getItem("nosa_has_toured");
+  if (!isManual && hasToured === "true") return;
+
+  currentTourStep = 0;
+  document.getElementById("tourOverlay").classList.remove("hidden");
+  renderTourStep();
+}
+
+function renderTourStep() {
+  const step = tourSteps[currentTourStep];
+  switchTab(step.tab);
+
+  document.getElementById("tourStepBadge").innerText = step.badge;
+  document.getElementById("tourDialogText").innerText = step.text;
+
+  // Reset Highlight
+  document.querySelectorAll('.ring-4').forEach(el => el.classList.remove('ring-4', 'ring-yellow-400', 'scale-105'));
+
+  // Sorot Elemen Target
+  if (step.targetId) {
+    const target = document.getElementById(step.targetId);
+    if (target) {
+      target.classList.add('ring-4', 'ring-yellow-400', 'scale-105');
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
+  // Atur Tombol Navigasi Tour
+  const btnPrev = document.getElementById("btnTourPrev");
+  const btnNext = document.getElementById("btnTourNext");
+
+  if (currentTourStep === 0) {
+    btnPrev.classList.add("hidden");
+  } else {
+    btnPrev.classList.remove("hidden");
+  }
+
+  if (currentTourStep === tourSteps.length - 1) {
+    btnNext.innerText = "Selesai ✨";
+  } else {
+    btnNext.innerText = "Lanjut \u203A";
+  }
+}
+
+function nextTourStep() {
+  if (currentTourStep < tourSteps.length - 1) {
+    currentTourStep++;
+    renderTourStep();
+  } else {
+    endAppTour();
+  }
+}
+
+function prevTourStep() {
+  if (currentTourStep > 0) {
+    currentTourStep--;
+    renderTourStep();
+  }
+}
+
+function endAppTour() {
+  document.querySelectorAll('.ring-4').forEach(el => el.classList.remove('ring-4', 'ring-yellow-400', 'scale-105'));
+  document.getElementById("tourOverlay").classList.add("hidden");
+  localStorage.setItem("nosa_has_toured", "true");
+  switchTab("home");
 }
 
 // LOGIKA AUTHENTIKASI & ROLE
@@ -107,6 +223,7 @@ function handleAuthSubmit(e) {
 function handleLogout() {
   if (confirm("Apakah Anda yakin ingin keluar dari akun ini?")) {
     localStorage.removeItem("nosa_user");
+    localStorage.removeItem("nosa_has_toured");
     currentUser = null;
     document.getElementById("mainContainer").classList.add("hidden");
     document.getElementById("loginPage").classList.remove("hidden");
@@ -128,6 +245,11 @@ function renderDashboard(user) {
   switchTab("home");
   loadProfilCabangData(user.cabang || "Soekarno Hatta");
   loadDropdownCabang();
+
+  // Pemicu Otomatis Tour untuk Pengguna Pertama Kali
+  setTimeout(() => {
+    startAppTour(false);
+  }, 600);
 }
 
 function loadDropdownCabang() {
@@ -292,17 +414,14 @@ function filterOnboardingVideo() {
 function formatEmbedVideoUrl(url) {
   if (!url) return '';
   let str = url.trim();
-  // Format Youtube watch URL
   if (str.includes("youtube.com/watch?v=")) {
     const vidId = str.split("v=")[1].split("&")[0];
     return `https://www.youtube.com/embed/${vidId}`;
   }
-  // Format Youtube Short URL (youtu.be)
   if (str.includes("youtu.be/")) {
     const vidId = str.split("youtu.be/")[1].split("?")[0];
     return `https://www.youtube.com/embed/${vidId}`;
   }
-  // Format Google Drive Video
   if (str.includes("drive.google.com") && str.includes("/file/d/")) {
     const match = str.match(/\/d\/([^\/]+)/);
     if (match && match[1]) return `https://drive.google.com/file/d/${match[1]}/preview`;
