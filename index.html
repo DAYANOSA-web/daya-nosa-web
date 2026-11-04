@@ -83,16 +83,25 @@
   <!-- ==================== PAGE 2: MAIN APP FULLSCREEN ==================== -->
   <div id="mainContainer" class="hidden min-h-screen w-full flex flex-col justify-between relative bg-nosa-dashBg">
     
-    <!-- 1. FIXED HEADER FULL WIDTH -->
+    <!-- FIXED HEADER -->
     <header class="fixed top-0 inset-x-0 bg-nosa-dashBg/90 backdrop-blur-md z-30 px-4 sm:px-8 py-3 flex justify-between items-center border-b border-gray-200/50 shadow-xs">
       <div class="flex items-center gap-2">
         <img src="Logo DAYA NOSA.png" alt="Logo Daya NOSA" class="h-10 sm:h-12 w-auto object-contain">
       </div>
       
-      <div class="flex items-center gap-3">
+      <!-- TOMBOL KANAN: MASKOT + HELP + LOGOUT -->
+      <div class="flex items-center gap-2 sm:gap-3">
         <div class="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0">
           <img src="MASKOT DAYA NOSA.png" alt="Maskot Daya NOSA" class="w-full h-full object-contain">
         </div>
+        
+        <!-- TOMBOL HELP PANDUAN SINGKAT -->
+        <button onclick="startAppTour(true)" title="Panduan Singkat Aplikasi" class="flex items-center gap-1 bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-extrabold px-3 py-2 rounded-xl transition border border-amber-300/60 cursor-pointer">
+          <span>❓</span>
+          <span class="hidden sm:inline">Help</span>
+        </button>
+
+        <!-- TOMBOL LOGOUT -->
         <button onclick="handleLogout()" title="Keluar / Ganti Akun" class="flex items-center gap-1.5 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-extrabold px-3 py-2 rounded-xl transition border border-red-200/60 cursor-pointer">
           <span>🚪</span>
           <span class="hidden sm:inline">Keluar</span>
@@ -100,7 +109,7 @@
       </div>
     </header>
 
-    <!-- 2. SCROLLABLE MAIN CONTENT AREA -->
+    <!-- SCROLLABLE MAIN CONTENT -->
     <main class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-8 pt-20 pb-24 space-y-6">
       
       <!-- TAB 1: DASHBOARD HOME -->
@@ -114,45 +123,44 @@
 
         <!-- GRID 6 KARTU MENU UTAMA -->
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 sm:gap-4 pt-1">
-          <div onclick="switchTab('referensi')" class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-2 cursor-pointer hover:border-nosa-green hover:shadow-md transition">
+          <div id="cardRef" onclick="switchTab('referensi')" class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-2 cursor-pointer hover:border-nosa-green hover:shadow-md transition">
             <div class="text-3xl sm:text-4xl">📖</div>
             <h4 class="font-extrabold text-xs sm:text-sm text-nosa-green leading-tight">referensi standar</h4>
             <p class="text-[9px] sm:text-[10px] text-gray-500 leading-tight">cek dokumen dan standar NOS</p>
           </div>
 
-          <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-2 cursor-pointer hover:border-nosa-green hover:shadow-md transition">
+          <div id="cardRem" class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-2 cursor-pointer hover:border-nosa-green hover:shadow-md transition">
             <div class="text-3xl sm:text-4xl">🔔</div>
             <h4 class="font-extrabold text-xs sm:text-sm text-nosa-green leading-tight">reminder</h4>
             <p class="text-[9px] sm:text-[10px] text-gray-500 leading-tight">kustomisasi pengingat yang anda butuhkan</p>
           </div>
 
-          <div onclick="switchTab('genbaForm')" class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-2 cursor-pointer hover:border-nosa-green hover:shadow-md transition">
+          <div id="cardGenba" onclick="switchTab('genbaForm')" class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-2 cursor-pointer hover:border-nosa-green hover:shadow-md transition">
             <div class="text-3xl sm:text-4xl">📍</div>
             <h4 class="font-extrabold text-xs sm:text-sm text-nosa-green leading-tight">GENBA</h4>
             <p class="text-[9px] sm:text-[10px] text-gray-500 leading-tight">ayo lakukan GENBA untuk menjaga standar</p>
           </div>
 
-          <div onclick="switchTab('nosizu')" class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-2 cursor-pointer hover:border-nosa-green hover:shadow-md transition">
+          <div id="cardNosizu" onclick="switchTab('nosizu')" class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-2 cursor-pointer hover:border-nosa-green hover:shadow-md transition">
             <div class="text-3xl sm:text-4xl">🎮</div>
             <h4 class="font-extrabold text-xs sm:text-sm text-nosa-green leading-tight">NOSIZU</h4>
             <p class="text-[9px] sm:text-[10px] text-gray-500 leading-tight">mainkan games dan tambah knowledgemu!</p>
           </div>
 
-          <!-- KARTU ONBOARDING FLP (SESUAI UI DESAIN REVISI) -->
-          <div onclick="switchTab('onboarding')" class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-2 cursor-pointer hover:border-nosa-green hover:shadow-md transition">
+          <div id="cardOnboarding" onclick="switchTab('onboarding')" class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-2 cursor-pointer hover:border-nosa-green hover:shadow-md transition">
             <div class="text-3xl sm:text-4xl">📋</div>
             <h4 class="font-extrabold text-xs sm:text-sm text-nosa-green leading-tight">onboarding FLP</h4>
             <p class="text-[9px] sm:text-[10px] text-gray-500 leading-tight">baru bergabung? ayo kita sama-sama belajar</p>
           </div>
 
-          <div onclick="switchTab('profil')" class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-2 cursor-pointer hover:border-nosa-green hover:shadow-md transition">
+          <div id="cardProfil" onclick="switchTab('profil')" class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-2 cursor-pointer hover:border-nosa-green hover:shadow-md transition">
             <div class="text-3xl sm:text-4xl">🏢</div>
             <h4 class="font-extrabold text-xs sm:text-sm text-nosa-green leading-tight">profil cabang</h4>
             <p class="text-[9px] sm:text-[10px] text-gray-500 leading-tight">data dan informasi cabang</p>
           </div>
         </div>
 
-        <div class="bg-nosa-cardBg p-5 sm:p-6 rounded-3xl border border-gray-200/60 shadow-xs space-y-3">
+        <div id="cardPerforma" class="bg-nosa-cardBg p-5 sm:p-6 rounded-3xl border border-gray-200/60 shadow-xs space-y-3">
           <div class="flex items-center justify-between gap-4">
             <div class="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 flex items-center justify-center">
               <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
@@ -192,7 +200,7 @@
         </div>
       </div>
 
-      <!-- TAB ONBOARDING FLP (NEW FITUR MOOC VIDEO LEARNING) -->
+      <!-- TAB ONBOARDING FLP -->
       <div id="onboardingPage" class="hidden space-y-5">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-300/60 pb-3">
           <div>
@@ -202,13 +210,11 @@
           <button onclick="loadOnboardingData()" class="text-xs font-bold bg-white text-nosa-green px-3.5 py-2 rounded-xl border border-nosa-green/30 hover:bg-nosa-bgRole transition self-start sm:self-auto">🔄 Refresh</button>
         </div>
 
-        <!-- SEARCH BAR UNTUK CARI JUDUL VIDEO -->
         <div class="relative w-full max-w-xl">
           <input type="text" id="searchVideoInput" onkeyup="filterOnboardingVideo()" placeholder="🔎 Cari judul video materi..." class="w-full px-4 py-3 pl-10 rounded-2xl border-2 border-nosa-border bg-white text-sm text-gray-800 font-medium focus:outline-none focus:border-nosa-green transition shadow-2xs">
           <span class="absolute left-3.5 top-3.5 text-gray-400 text-sm">🔍</span>
         </div>
 
-        <!-- GRID CONTAINER DAFTAR VIDEO -->
         <div id="onboardingGridBox" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           <p class="text-xs text-gray-400 italic col-span-full text-center py-8">Memuat materi video onboarding...</p>
         </div>
@@ -364,7 +370,6 @@
           <p class="text-xs font-bold text-gray-400">JBR</p>
         </div>
 
-        <!-- SKOR NOS -->
         <div class="bg-nosa-cardBg p-4 rounded-2xl border-2 border-indigo-400/80 shadow-xs flex items-center justify-between">
           <div class="flex items-center gap-3">
             <div class="text-3xl">🏆</div>
@@ -379,7 +384,6 @@
           </div>
         </div>
 
-        <!-- PICA BELUM SELESAI -->
         <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs space-y-3">
           <div class="flex justify-between items-center border-b border-gray-300/50 pb-2">
             <div class="flex items-center gap-2 text-xs sm:text-sm font-extrabold text-gray-800">
@@ -392,7 +396,6 @@
           </div>
         </div>
 
-        <!-- TEMUAN BERULANG -->
         <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs space-y-3">
           <div class="flex justify-between items-center border-b border-gray-300/50 pb-2">
             <div class="flex items-center gap-2 text-xs sm:text-sm font-extrabold text-gray-800">
@@ -405,7 +408,6 @@
           </div>
         </div>
 
-        <!-- 3 BESAR FLP NOSIZU -->
         <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs space-y-3">
           <div class="flex items-center gap-2 text-xs sm:text-sm font-extrabold text-gray-800 border-b border-gray-300/50 pb-2">
             <span>🏆</span> <span>3 Besar FLP NOSIZU</span>
@@ -415,7 +417,6 @@
           </div>
         </div>
 
-        <!-- JADWAL GENBA -->
         <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs flex items-center justify-between">
           <div class="space-y-1">
             <p class="text-xs font-bold text-gray-700 flex items-center gap-1.5">
@@ -429,7 +430,7 @@
 
     </main>
 
-    <!-- 3. FIXED BOTTOM NAVIGATION BAR FULL WIDTH -->
+    <!-- FIXED BOTTOM NAVIGATION BAR -->
     <nav class="fixed bottom-0 inset-x-0 bg-nosa-cardBg/95 backdrop-blur-md border-t border-gray-200/80 py-2.5 px-6 flex justify-around items-center z-30 shadow-lg">
       <button onclick="switchTab('home')" id="navHome" class="flex flex-col items-center gap-1 text-nosa-green font-bold text-xs cursor-pointer hover:scale-105 transition">
         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
@@ -458,7 +459,7 @@
 
   </div>
 
-  <!-- MODAL POPUP PICA ACTION -->
+  <!-- MODAL PICA ACTION -->
   <div id="picaActionModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
     <div class="bg-white w-full max-w-md rounded-3xl p-5 space-y-4 shadow-2xl border border-gray-100">
       <div class="flex justify-between items-center border-b border-gray-200 pb-2">
@@ -491,6 +492,35 @@
           ✅ Verifikasi & Approve (Ubah Status ke Closed)
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- ==================== OVERLAY & DIALOG PANDUAN MASKOT DAYA NOSA ==================== -->
+  <div id="tourOverlay" class="hidden fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-xs transition-all">
+    <div class="relative bg-white w-full max-w-lg rounded-3xl p-5 shadow-2xl border-2 border-nosa-green space-y-4 animate-bounce-short">
+      
+      <!-- BALON DIALOG DENGAN GAMBAR MASKOT -->
+      <div class="flex items-start gap-3">
+        <div class="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 animate-pulse">
+          <img src="MASKOT DAYA NOSA.png" alt="Maskot Daya NOSA" class="w-full h-full object-contain">
+        </div>
+        <div class="flex-1 bg-nosa-dashBg p-3.5 rounded-2xl border border-nosa-border/60 relative space-y-1">
+          <h4 class="text-xs font-black text-nosa-green uppercase tracking-wider" id="tourStepBadge">PANDUAN NOSA (1/7)</h4>
+          <p class="text-xs font-bold text-gray-800 leading-snug" id="tourDialogText">
+            Halo! Aku Daya NOSA. Selamat datang di aplikasi Daya NOSA! Yuk, aku antar keliling untuk mengenali setiap fitur di sini.
+          </p>
+        </div>
+      </div>
+
+      <!-- KONTROL NAVIGASI TOUR -->
+      <div class="flex justify-between items-center pt-2 border-t border-gray-200">
+        <button onclick="endAppTour()" class="text-xs font-bold text-gray-400 hover:text-gray-600 px-2 py-1">Lewati Tour</button>
+        <div class="flex gap-2">
+          <button id="btnTourPrev" onclick="prevTourStep()" class="hidden bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-bold px-3 py-1.5 rounded-xl transition">&lsaquo; Kembali</button>
+          <button id="btnTourNext" onclick="nextTourStep()" class="bg-nosa-green hover:bg-nosa-greenLight text-white text-xs font-extrabold px-4 py-1.5 rounded-xl shadow-md transition">Lanjut &rsaquo;</button>
+        </div>
+      </div>
+
     </div>
   </div>
 
