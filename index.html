@@ -89,19 +89,16 @@
         <img src="Logo DAYA NOSA.png" alt="Logo Daya NOSA" class="h-10 sm:h-12 w-auto object-contain">
       </div>
       
-      <!-- TOMBOL KANAN: MASKOT + HELP + LOGOUT -->
       <div class="flex items-center gap-2 sm:gap-3">
         <div class="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0">
           <img src="MASKOT DAYA NOSA.png" alt="Maskot Daya NOSA" class="w-full h-full object-contain">
         </div>
         
-        <!-- TOMBOL HELP PANDUAN SINGKAT -->
         <button onclick="startAppTour(true)" title="Panduan Singkat Aplikasi" class="flex items-center gap-1 bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-extrabold px-3 py-2 rounded-xl transition border border-amber-300/60 cursor-pointer">
           <span>❓</span>
           <span class="hidden sm:inline">Help</span>
         </button>
 
-        <!-- TOMBOL LOGOUT -->
         <button onclick="handleLogout()" title="Keluar / Ganti Akun" class="flex items-center gap-1.5 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-extrabold px-3 py-2 rounded-xl transition border border-red-200/60 cursor-pointer">
           <span>🚪</span>
           <span class="hidden sm:inline">Keluar</span>
@@ -129,7 +126,7 @@
             <p class="text-[9px] sm:text-[10px] text-gray-500 leading-tight">cek dokumen dan standar NOS</p>
           </div>
 
-          <div id="cardRem" class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-2 cursor-pointer hover:border-nosa-green hover:shadow-md transition">
+          <div id="cardRem" onclick="switchTab('reminder')" class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-2 cursor-pointer hover:border-nosa-green hover:shadow-md transition">
             <div class="text-3xl sm:text-4xl">🔔</div>
             <h4 class="font-extrabold text-xs sm:text-sm text-nosa-green leading-tight">reminder</h4>
             <p class="text-[9px] sm:text-[10px] text-gray-500 leading-tight">kustomisasi pengingat yang anda butuhkan</p>
@@ -198,6 +195,99 @@
         <div id="referensiGridBox" class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <p class="text-xs text-gray-400 italic col-span-full text-center py-8">Memuat data referensi standar...</p>
         </div>
+      </div>
+
+      <!-- TAB REMINDER (SESUAI ATTACHMENT UI) -->
+      <div id="reminderPage" class="hidden space-y-6 max-w-2xl mx-auto">
+        
+        <!-- SECTION 1: PRATINJAU NOTIFIKASI -->
+        <div class="space-y-2">
+          <h2 class="text-xl font-black text-gray-900 tracking-tight">pratinjau notifikasi</h2>
+          <div class="bg-emerald-50/70 p-4 rounded-2xl border border-emerald-200/80 shadow-2xs">
+            <p class="text-xs text-gray-700 leading-relaxed font-medium" id="reminderPreviewText">
+              Pengingat: PICA "Display hero stage tidak sesuai lineup bulanan" jatuh tempo besok, 8 Oktober 2026. Status Open. Mohon lakukan update progress
+            </p>
+          </div>
+        </div>
+
+        <!-- SECTION 2: ATURAN PENGINGAT -->
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xl font-black text-gray-900 tracking-tight">aturan pengingat</h2>
+            <button onclick="triggerTestNotification()" class="text-xs font-bold bg-nosa-green hover:bg-nosa-greenLight text-white px-3 py-1.5 rounded-xl shadow-xs transition">
+              🔔 Tes Kirim Notifikasi
+            </button>
+          </div>
+
+          <div class="space-y-3">
+            
+            <!-- ATURAN 1: PICA MENDEKATI DUE DATE -->
+            <div class="bg-nosa-cardBg p-3.5 sm:p-4 rounded-2xl border border-gray-200/70 shadow-xs flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-nosa-green flex items-center justify-center text-amber-400 text-lg flex-shrink-0 shadow-2xs">
+                  🔔
+                </div>
+                <div>
+                  <h4 class="text-xs sm:text-sm font-black text-gray-900">PICA mendekati due date</h4>
+                  <p class="text-[10px] sm:text-xs text-gray-500 font-medium">Kirim H-2 sebelum jatuh tempo</p>
+                </div>
+              </div>
+              <button type="button" id="btnRule1" onclick="toggleReminderRule('rule1')" class="px-4 py-1.5 rounded-xl text-xs font-extrabold shadow-2xs transition bg-emerald-400 text-emerald-950">
+                Aktif
+              </button>
+            </div>
+
+            <!-- ATURAN 2: PICA LEWAT DUE DATE -->
+            <div class="bg-nosa-cardBg p-3.5 sm:p-4 rounded-2xl border border-gray-200/70 shadow-xs flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-nosa-green flex items-center justify-center text-red-400 text-lg flex-shrink-0 shadow-2xs">
+                  🔕
+                </div>
+                <div>
+                  <h4 class="text-xs sm:text-sm font-black text-gray-900">PICA lewat due date</h4>
+                  <p class="text-[10px] sm:text-xs text-gray-500 font-medium">Kirim harian sampai status diupdate</p>
+                </div>
+              </div>
+              <button type="button" id="btnRule2" onclick="toggleReminderRule('rule2')" class="px-4 py-1.5 rounded-xl text-xs font-extrabold shadow-2xs transition bg-red-300 text-red-950">
+                Non-Aktif
+              </button>
+            </div>
+
+            <!-- ATURAN 3: JADWAL GENBA BERIKUTNYA -->
+            <div class="bg-nosa-cardBg p-3.5 sm:p-4 rounded-2xl border border-gray-200/70 shadow-xs flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-nosa-green flex items-center justify-center text-white text-lg flex-shrink-0 shadow-2xs">
+                  📅
+                </div>
+                <div>
+                  <h4 class="text-xs sm:text-sm font-black text-gray-900">Jadwal GENBA berikutnya</h4>
+                  <p class="text-[10px] sm:text-xs text-gray-500 font-medium">Kirim H-3 sebelum jadwal</p>
+                </div>
+              </div>
+              <button type="button" id="btnRule3" onclick="toggleReminderRule('rule3')" class="px-4 py-1.5 rounded-xl text-xs font-extrabold shadow-2xs transition bg-emerald-400 text-emerald-950">
+                Aktif
+              </button>
+            </div>
+
+            <!-- ATURAN 4: PERINGKAT TERENDAH NOSIZU -->
+            <div class="bg-nosa-cardBg p-3.5 sm:p-4 rounded-2xl border border-gray-200/70 shadow-xs flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-nosa-green flex items-center justify-center text-yellow-300 text-lg flex-shrink-0 shadow-2xs">
+                  📊
+                </div>
+                <div>
+                  <h4 class="text-xs sm:text-sm font-black text-gray-900">Peringkat terendah NOSIZU</h4>
+                  <p class="text-[10px] sm:text-xs text-gray-500 font-medium">Kirim saat cabang menyentuh posisi terakhir se-nasional</p>
+                </div>
+              </div>
+              <button type="button" id="btnRule4" onclick="toggleReminderRule('rule4')" class="px-4 py-1.5 rounded-xl text-xs font-extrabold shadow-2xs transition bg-emerald-400 text-emerald-950">
+                Aktif
+              </button>
+            </div>
+
+          </div>
+        </div>
+
       </div>
 
       <!-- TAB ONBOARDING FLP -->
@@ -495,11 +585,10 @@
     </div>
   </div>
 
-  <!-- ==================== OVERLAY & DIALOG PANDUAN MASKOT DAYA NOSA ==================== -->
+  <!-- OVERLAY DIALOG PANDUAN MASKOT DAYA NOSA -->
   <div id="tourOverlay" class="hidden fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-xs transition-all">
     <div class="relative bg-white w-full max-w-lg rounded-3xl p-5 shadow-2xl border-2 border-nosa-green space-y-4 animate-bounce-short">
       
-      <!-- BALON DIALOG DENGAN GAMBAR MASKOT -->
       <div class="flex items-start gap-3">
         <div class="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 animate-pulse">
           <img src="MASKOT DAYA NOSA.png" alt="Maskot Daya NOSA" class="w-full h-full object-contain">
@@ -512,7 +601,6 @@
         </div>
       </div>
 
-      <!-- KONTROL NAVIGASI TOUR -->
       <div class="flex justify-between items-center pt-2 border-t border-gray-200">
         <button onclick="endAppTour()" class="text-xs font-bold text-gray-400 hover:text-gray-600 px-2 py-1">Lewati Tour</button>
         <div class="flex gap-2">
