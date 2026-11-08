@@ -132,7 +132,7 @@
             <p class="text-[9px] sm:text-[10px] text-gray-500 leading-tight">kustomisasi pengingat yang anda butuhkan</p>
           </div>
 
-          <div id="cardGenba" onclick="switchTab('genbaForm')" class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-2 cursor-pointer hover:border-nosa-green hover:shadow-md transition">
+          <div id="cardGenba" onclick="switchTab('genbaAudit')" class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-2 cursor-pointer hover:border-nosa-green hover:shadow-md transition">
             <div class="text-3xl sm:text-4xl">📍</div>
             <h4 class="font-extrabold text-xs sm:text-sm text-nosa-green leading-tight">GENBA</h4>
             <p class="text-[9px] sm:text-[10px] text-gray-500 leading-tight">ayo lakukan GENBA untuk menjaga standar</p>
@@ -188,7 +188,7 @@
         <div class="flex justify-between items-center border-b border-gray-300/60 pb-3">
           <div>
             <h2 class="text-xl sm:text-2xl font-extrabold text-nosa-green tracking-tight">Referensi Standar</h2>
-            <p class="text-xs text-gray-500">Panduan visual dan operasional standar NOS</p>
+            <p class="text-xs text-gray-500">Panduan visual dan operasional standar NOS (Klik gambar untuk rotasi 3D)</p>
           </div>
           <button onclick="loadReferensiData()" class="text-xs font-bold bg-white text-nosa-green px-3.5 py-2 rounded-xl border border-nosa-green/30 hover:bg-nosa-bgRole transition">🔄 Refresh</button>
         </div>
@@ -197,97 +197,71 @@
         </div>
       </div>
 
-      <!-- TAB REMINDER (IN-APP TOAST INTEGRATED) -->
+      <!-- TAB REMINDER -->
       <div id="reminderPage" class="hidden space-y-6 max-w-2xl mx-auto">
-        
-        <!-- SECTION 1: PRATINJAU NOTIFIKASI -->
         <div class="space-y-2">
           <h2 class="text-xl font-black text-gray-900 tracking-tight">pratinjau notifikasi</h2>
           <div class="bg-emerald-50/70 p-4 rounded-2xl border border-emerald-200/80 shadow-2xs">
             <p class="text-xs text-gray-700 leading-relaxed font-medium" id="reminderPreviewText">
-              Pengingat: PICA "Display hero stage tidak sesuai lineup bulanan" jatuh tempo besok, 8 Oktober 2026. Status Open. Mohon lakukan update progress
+              Mengecek jadwal dan due date real-time cabang Anda...
             </p>
           </div>
         </div>
 
-        <!-- SECTION 2: ATURAN PENGINGAT -->
         <div class="space-y-4">
           <div class="flex items-center justify-between">
             <h2 class="text-xl font-black text-gray-900 tracking-tight">aturan pengingat</h2>
-            <button onclick="showInAppReminderToast('rule1')" class="text-xs font-bold bg-nosa-green hover:bg-nosa-greenLight text-white px-3 py-1.5 rounded-xl shadow-xs transition">
-              🔔 Tes Kirim Notifikasi
+            <button onclick="evaluateRealtimeReminders(true)" class="text-xs font-bold bg-nosa-green hover:bg-nosa-greenLight text-white px-3 py-1.5 rounded-xl shadow-xs transition">
+              🔔 Cek Tanggal & Tes Notifikasi
             </button>
           </div>
 
           <div class="space-y-3">
-            
-            <!-- ATURAN 1: PICA MENDEKATI DUE DATE -->
             <div class="bg-nosa-cardBg p-3.5 sm:p-4 rounded-2xl border border-gray-200/70 shadow-xs flex items-center justify-between gap-3">
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-nosa-green flex items-center justify-center text-amber-400 text-lg flex-shrink-0 shadow-2xs">
-                  🔔
-                </div>
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-nosa-green flex items-center justify-center text-amber-400 text-lg flex-shrink-0 shadow-2xs">🔔</div>
                 <div>
                   <h4 class="text-xs sm:text-sm font-black text-gray-900">PICA mendekati due date</h4>
                   <p class="text-[10px] sm:text-xs text-gray-500 font-medium">Kirim H-2 sebelum jatuh tempo</p>
                 </div>
               </div>
-              <button type="button" id="btnRule1" onclick="toggleReminderRule('rule1')" class="px-4 py-1.5 rounded-xl text-xs font-extrabold shadow-2xs transition bg-emerald-400 text-emerald-950">
-                Aktif
-              </button>
+              <button type="button" id="btnRule1" onclick="toggleReminderRule('rule1')" class="px-4 py-1.5 rounded-xl text-xs font-extrabold shadow-2xs transition bg-emerald-400 text-emerald-950">Aktif</button>
             </div>
 
-            <!-- ATURAN 2: PICA LEWAT DUE DATE -->
             <div class="bg-nosa-cardBg p-3.5 sm:p-4 rounded-2xl border border-gray-200/70 shadow-xs flex items-center justify-between gap-3">
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-nosa-green flex items-center justify-center text-red-400 text-lg flex-shrink-0 shadow-2xs">
-                  🔕
-                </div>
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-nosa-green flex items-center justify-center text-red-400 text-lg flex-shrink-0 shadow-2xs">🔕</div>
                 <div>
                   <h4 class="text-xs sm:text-sm font-black text-gray-900">PICA lewat due date</h4>
                   <p class="text-[10px] sm:text-xs text-gray-500 font-medium">Kirim harian sampai status diupdate</p>
                 </div>
               </div>
-              <button type="button" id="btnRule2" onclick="toggleReminderRule('rule2')" class="px-4 py-1.5 rounded-xl text-xs font-extrabold shadow-2xs transition bg-red-300 text-red-950">
-                Non-Aktif
-              </button>
+              <button type="button" id="btnRule2" onclick="toggleReminderRule('rule2')" class="px-4 py-1.5 rounded-xl text-xs font-extrabold shadow-2xs transition bg-red-300 text-red-950">Non-Aktif</button>
             </div>
 
-            <!-- ATURAN 3: JADWAL GENBA BERIKUTNYA -->
             <div class="bg-nosa-cardBg p-3.5 sm:p-4 rounded-2xl border border-gray-200/70 shadow-xs flex items-center justify-between gap-3">
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-nosa-green flex items-center justify-center text-white text-lg flex-shrink-0 shadow-2xs">
-                  📅
-                </div>
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-nosa-green flex items-center justify-center text-white text-lg flex-shrink-0 shadow-2xs">📅</div>
                 <div>
                   <h4 class="text-xs sm:text-sm font-black text-gray-900">Jadwal GENBA berikutnya</h4>
                   <p class="text-[10px] sm:text-xs text-gray-500 font-medium">Kirim H-3 sebelum jadwal</p>
                 </div>
               </div>
-              <button type="button" id="btnRule3" onclick="toggleReminderRule('rule3')" class="px-4 py-1.5 rounded-xl text-xs font-extrabold shadow-2xs transition bg-emerald-400 text-emerald-950">
-                Aktif
-              </button>
+              <button type="button" id="btnRule3" onclick="toggleReminderRule('rule3')" class="px-4 py-1.5 rounded-xl text-xs font-extrabold shadow-2xs transition bg-emerald-400 text-emerald-950">Aktif</button>
             </div>
 
-            <!-- ATURAN 4: PERINGKAT TERENDAH NOSIZU -->
             <div class="bg-nosa-cardBg p-3.5 sm:p-4 rounded-2xl border border-gray-200/70 shadow-xs flex items-center justify-between gap-3">
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-nosa-green flex items-center justify-center text-yellow-300 text-lg flex-shrink-0 shadow-2xs">
-                  📊
-                </div>
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-nosa-green flex items-center justify-center text-yellow-300 text-lg flex-shrink-0 shadow-2xs">📊</div>
                 <div>
                   <h4 class="text-xs sm:text-sm font-black text-gray-900">Peringkat terendah NOSIZU</h4>
                   <p class="text-[10px] sm:text-xs text-gray-500 font-medium">Kirim saat cabang menyentuh posisi terakhir se-nasional</p>
                 </div>
               </div>
-              <button type="button" id="btnRule4" onclick="toggleReminderRule('rule4')" class="px-4 py-1.5 rounded-xl text-xs font-extrabold shadow-2xs transition bg-emerald-400 text-emerald-950">
-                Aktif
-              </button>
+              <button type="button" id="btnRule4" onclick="toggleReminderRule('rule4')" class="px-4 py-1.5 rounded-xl text-xs font-extrabold shadow-2xs transition bg-emerald-400 text-emerald-950">Aktif</button>
             </div>
-
           </div>
         </div>
-
       </div>
 
       <!-- TAB ONBOARDING FLP -->
@@ -310,58 +284,40 @@
         </div>
       </div>
 
-      <!-- TAB 3: FORM INISIASI GENBA -->
-      <div id="genbaFormPage" class="hidden space-y-5 max-w-lg mx-auto py-4">
-        <div class="text-center space-y-2">
-          <h2 class="text-2xl font-black text-gray-900 tracking-tight">Audit & Self Assessment</h2>
-          <p class="text-xs text-gray-600">Pilih cabang dan ketik nama auditor untuk memuat profil otomatis</p>
-        </div>
-        <form onsubmit="startGenbaAudit(event)" class="space-y-4">
-          <div>
-            <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">1. PILIH CABANG</label>
-            <select id="genbaSelectCabang" required class="w-full px-4 py-3 rounded-2xl border-2 border-nosa-border bg-white text-sm text-gray-800 font-semibold focus:outline-none">
-              <option value="">--Pilih Cabang--</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">2. NAMA AUDITOR</label>
-            <input type="text" id="genbaNamaAuditor" required placeholder="Refan" class="w-full px-4 py-3 rounded-2xl border-2 border-nosa-border bg-gray-50 text-sm font-semibold text-gray-800 focus:outline-none">
-          </div>
-          <div>
-            <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">3. JABATAN AUDITOR</label>
-            <input type="text" id="genbaJabatanAuditor" required placeholder="NOS Officer" class="w-full px-4 py-3 rounded-2xl border-2 border-nosa-border bg-gray-50 text-sm font-semibold text-gray-800 focus:outline-none">
-          </div>
-          <div>
-            <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">4. NOMOR WHATSAPP/TELEPON</label>
-            <input type="tel" id="genbaNoHp" required placeholder="+6281256792" class="w-full px-4 py-3 rounded-2xl border-2 border-nosa-border bg-gray-50 text-sm font-semibold text-gray-800 focus:outline-none">
-          </div>
-          <button type="submit" class="w-full py-3.5 bg-nosa-button hover:bg-nosa-border text-black font-extrabold text-base rounded-2xl shadow-md border border-gray-300/40 transition cursor-pointer flex items-center justify-center gap-2">
-            <span>lanjutkan audit</span>
-            <span class="text-xl">&rarr;</span>
-          </button>
-        </form>
-      </div>
-
-      <!-- TAB 4: HALAMAN CEKLIS AUDIT GENBA -->
+      <!-- TAB 4: HALAMAN AUDIT GENBA DIRECT & KATEGORISASI (H1/H23) -->
       <div id="genbaAuditPage" class="hidden space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
-          <div class="md:col-span-1 bg-nosa-cardBg p-4 rounded-2xl border border-gray-200 shadow-xs space-y-3 sticky top-20 z-10">
-            <div>
-              <p class="text-[10px] text-gray-500 font-medium">Cabang</p>
-              <h4 class="text-sm font-black text-gray-900 leading-tight" id="auditInfoCabang">Soekarno Hatta</h4>
+        
+        <!-- HEADER AUDITOR AUTO DETECT -->
+        <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/80 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div class="space-y-0.5">
+            <span class="text-[10px] font-extrabold text-nosa-green uppercase tracking-wider">SESI AUDIT DIREK</span>
+            <h3 class="text-lg font-black text-gray-900" id="auditInfoCabang">Cabang Soekarno Hatta</h3>
+            <p class="text-xs text-gray-600 font-medium" id="auditInfoAuditor">Auditor: Refan (Kepala Cabang)</p>
+          </div>
+          <div class="flex items-center gap-2 w-full sm:w-auto">
+            <div class="text-right hidden sm:block">
+              <p class="text-[10px] text-gray-500">Status Kelengkapan</p>
+              <p class="text-xs font-extrabold text-nosa-green" id="auditProgressText">0/0 Diselesaikan</p>
             </div>
-            <div>
-              <p class="text-[10px] text-gray-500 font-medium">Auditor</p>
-              <h5 class="text-xs font-bold text-gray-800" id="auditInfoAuditor">Refan (NOS Officer)</h5>
-            </div>
-            <button type="button" onclick="submitGenbaForm()" id="btnSubmitGenbaAudit" class="w-full py-2.5 bg-nosa-green hover:bg-nosa-greenLight text-white font-extrabold text-xs rounded-xl shadow-md transition cursor-pointer">
-              💾 Submit Audit
+            <button type="button" onclick="submitGenbaForm()" id="btnSubmitGenbaAudit" disabled class="flex-1 sm:flex-initial py-2.5 px-5 bg-gray-300 text-gray-500 font-extrabold text-xs rounded-xl shadow-xs transition cursor-not-allowed">
+              🔒 Submit Audit (Lengkapi Semua)
             </button>
           </div>
+        </div>
 
-          <div class="md:col-span-3 space-y-4" id="genbaCeklisContainer">
-            <p class="text-xs text-gray-400 italic text-center py-6">Memuat item ceklis NOS...</p>
-          </div>
+        <!-- TAB NAVIGASI KATEGORI CHECKLIST (H1 & H23) -->
+        <div class="flex overflow-x-auto gap-2 pb-2 scrollbar-none border-b border-gray-200">
+          <button onclick="filterGenbaCategory('PREMISES H1')" id="tabCat-PREMISESH1" class="px-3.5 py-2 rounded-xl text-xs font-extrabold whitespace-nowrap bg-nosa-green text-white shadow-xs transition">Premises H1</button>
+          <button onclick="filterGenbaCategory('PROCESS H1')" id="tabCat-PROCESSH1" class="px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-white text-gray-600 hover:bg-gray-100 transition">Process H1</button>
+          <button onclick="filterGenbaCategory('PEOPLE H1')" id="tabCat-PEOPLEH1" class="px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-white text-gray-600 hover:bg-gray-100 transition">People H1</button>
+          <button onclick="filterGenbaCategory('PREMISES H23')" id="tabCat-PREMISESH23" class="px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-white text-gray-600 hover:bg-gray-100 transition">Premises H23</button>
+          <button onclick="filterGenbaCategory('PROCESS H23')" id="tabCat-PROCESSH23" class="px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-white text-gray-600 hover:bg-gray-100 transition">Process H23</button>
+          <button onclick="filterGenbaCategory('PEOPLE H23')" id="tabCat-PEOPLEH23" class="px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-white text-gray-600 hover:bg-gray-100 transition">People H23</button>
+        </div>
+
+        <!-- CONTAINER ITEM CHECKLIST -->
+        <div class="space-y-4" id="genbaCeklisContainer">
+          <p class="text-xs text-gray-400 italic text-center py-6">Memuat item ceklis NOS...</p>
         </div>
       </div>
 
@@ -612,7 +568,29 @@
     </div>
   </div>
 
-  <!-- ==================== IN-APP TOAST REMINDER (MELAYANG DI KANAN BAWAH) ==================== -->
+  <!-- MODAL 3D VIEWER ROTASI GAMBAR REFERENSI -->
+  <div id="modal3DViewer" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50">
+    <div class="bg-white w-full max-w-lg rounded-3xl p-5 space-y-4 shadow-2xl border border-gray-700 relative text-center">
+      <div class="flex justify-between items-center border-b border-gray-200 pb-2">
+        <h3 class="text-sm font-black text-nosa-green uppercase tracking-wider" id="modal3DTitle">Viewer 3D Interaktif</h3>
+        <button onclick="close3DViewer()" class="text-gray-400 hover:text-gray-700 text-xl font-bold">&times;</button>
+      </div>
+
+      <!-- KONTEN ROTASI 3D -->
+      <div class="w-full h-64 sm:h-80 bg-gray-100 rounded-2xl flex items-center justify-center overflow-hidden relative cursor-grab active:cursor-grabbing border border-gray-300" id="spin3DContainer">
+        <img id="modal3DImage" src="" class="max-w-full max-h-full object-contain pointer-events-none transition-transform duration-75">
+        <div class="absolute bottom-2 inset-x-0 text-center">
+          <span class="bg-black/60 text-white text-[10px] font-bold px-3 py-1 rounded-full backdrop-blur-xs">
+            🔄 Geser/Drag Horizontal untuk Memutar 3D
+          </span>
+        </div>
+      </div>
+
+      <p class="text-xs text-gray-600 font-medium leading-snug" id="modal3DDesc">Simulasi tampilan visual 3D referensi standar NOS.</p>
+    </div>
+  </div>
+
+  <!-- IN-APP TOAST REMINDER -->
   <div id="inAppReminderToast" class="hidden fixed bottom-20 right-4 sm:bottom-6 sm:right-6 max-w-sm w-[calc(100%-2rem)] bg-white rounded-2xl p-4 shadow-2xl border-2 border-nosa-green z-40 transition-all duration-300 transform translate-y-0">
     <div class="flex items-start gap-3">
       <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-xl flex-shrink-0 border border-amber-300/60 shadow-2xs">
