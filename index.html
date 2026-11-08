@@ -197,7 +197,7 @@
         </div>
       </div>
 
-      <!-- TAB REMINDER (SESUAI ATTACHMENT UI) -->
+      <!-- TAB REMINDER (IN-APP TOAST INTEGRATED) -->
       <div id="reminderPage" class="hidden space-y-6 max-w-2xl mx-auto">
         
         <!-- SECTION 1: PRATINJAU NOTIFIKASI -->
@@ -214,7 +214,7 @@
         <div class="space-y-4">
           <div class="flex items-center justify-between">
             <h2 class="text-xl font-black text-gray-900 tracking-tight">aturan pengingat</h2>
-            <button onclick="triggerTestNotification()" class="text-xs font-bold bg-nosa-green hover:bg-nosa-greenLight text-white px-3 py-1.5 rounded-xl shadow-xs transition">
+            <button onclick="showInAppReminderToast('rule1')" class="text-xs font-bold bg-nosa-green hover:bg-nosa-greenLight text-white px-3 py-1.5 rounded-xl shadow-xs transition">
               🔔 Tes Kirim Notifikasi
             </button>
           </div>
@@ -609,6 +609,30 @@
         </div>
       </div>
 
+    </div>
+  </div>
+
+  <!-- ==================== IN-APP TOAST REMINDER (MELAYANG DI KANAN BAWAH) ==================== -->
+  <div id="inAppReminderToast" class="hidden fixed bottom-20 right-4 sm:bottom-6 sm:right-6 max-w-sm w-[calc(100%-2rem)] bg-white rounded-2xl p-4 shadow-2xl border-2 border-nosa-green z-40 transition-all duration-300 transform translate-y-0">
+    <div class="flex items-start gap-3">
+      <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-xl flex-shrink-0 border border-amber-300/60 shadow-2xs">
+        🔔
+      </div>
+      <div class="flex-1 space-y-1">
+        <div class="flex justify-between items-start">
+          <h5 class="text-xs font-extrabold text-nosa-green uppercase tracking-wider" id="toastCabangBadge">Cabang Soekarno Hatta</h5>
+          <button onclick="dismissInAppToast()" class="text-gray-400 hover:text-gray-600 font-bold text-sm leading-none pl-1">&times;</button>
+        </div>
+        <p class="text-xs text-gray-800 font-semibold leading-snug" id="toastMessageContent">
+          Pengingat: Ada 2 temuan PICA yang mendekati jatuh tempo.
+        </p>
+        <div class="pt-2 flex justify-end gap-2">
+          <button onclick="dismissInAppToast()" class="text-[11px] font-bold text-gray-500 hover:text-gray-700 px-2 py-1">Nanti</button>
+          <button onclick="handleToastAction()" class="text-[11px] font-extrabold bg-nosa-green hover:bg-nosa-greenLight text-white px-3 py-1 rounded-xl shadow-xs transition">
+            Lihat Detail &rsaquo;
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
