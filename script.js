@@ -60,6 +60,14 @@ const tourSteps = [
   }
 ];
 
+// ENGINE FITUR REMINDER
+let reminderState = {
+  rule1: true,   // PICA mendekati due date
+  rule2: false,  // PICA lewat due date
+  rule3: true,   // Jadwal GENBA berikutnya
+  rule4: true    // Peringkat terendah NOSIZU
+};
+
 function formatDateNice(dateStr) {
   if (!dateStr) return "-";
   try {
@@ -90,10 +98,8 @@ function renderTourStep() {
   document.getElementById("tourStepBadge").innerText = step.badge;
   document.getElementById("tourDialogText").innerText = step.text;
 
-  // Reset Highlight
   document.querySelectorAll('.ring-4').forEach(el => el.classList.remove('ring-4', 'ring-yellow-400', 'scale-105'));
 
-  // Sorot Elemen Target
   if (step.targetId) {
     const target = document.getElementById(step.targetId);
     if (target) {
@@ -102,7 +108,6 @@ function renderTourStep() {
     }
   }
 
-  // Atur Tombol Navigasi Tour
   const btnPrev = document.getElementById("btnTourPrev");
   const btnNext = document.getElementById("btnTourNext");
 
@@ -140,6 +145,87 @@ function endAppTour() {
   document.getElementById("tourOverlay").classList.add("hidden");
   localStorage.setItem("nosa_has_toured", "true");
   switchTab("home");
+}
+
+// LOGIKA FITUR REMINDER & WEBNOTIFICATION
+function initReminderUI() {
+  const saved = localStorage.getItem("nosa_reminder_state");
+  if (saved) {
+    try { reminderState = JSON.parse(saved); } catch (e) {}
+  }
+  updateReminderButtons();
+}
+
+function toggleReminderRule(ruleKey) {
+  if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
+    Notification.requestPermission().then(permission => {
+      if (permission === "granted") {
+        new Notification("Daya NOSA Reminder", {
+          body: "Notifikasi pengingat berhasil diaktifkan!",
+          icon: "MASKOT DAYA NOSA.png"
+        });
+      }
+    });
+  }
+
+  reminderState[ruleKey] = !reminderState[ruleKey];
+  localStorage.setItem("nosa_reminder_state", JSON.stringify(reminderState));
+  updateReminderButtons();
+  updateReminderPreviewText(ruleKey);
+}
+
+function updateReminderButtons() {
+  const rules = ['rule1', 'rule2', 'rule3', 'rule4'];
+  rules.forEach((rKey, idx) => {
+    const btn = document.getElementById(`btnRule${idx + 1}`);
+    if (!btn) return;
+    if (reminderState[rKey]) {
+      btn.innerText = "Aktif";
+      btn.className = "px-4 py-1.5 rounded-xl text-xs font-extrabold shadow-2xs transition bg-emerald-400 text-emerald-950";
+    } else {
+      btn.innerText = "Non-Aktif";
+      btn.className = "px-4 py-1.5 rounded-xl text-xs font-extrabold shadow-2xs transition bg-red-300 text-red-950";
+    }
+  });
+}
+
+function updateReminderPreviewText(activeKey) {
+  const preview = document.getElementById("reminderPreviewText");
+  if (!preview) return;
+
+  if (activeKey === 'rule1') {
+    preview.innerText = 'Pengingat: PICA "Display hero stage tidak sesuai lineup bulanan" jatuh tempo besok, 8 Oktober 2026. Status Open. Mohon lakukan update progress';
+  } else if (activeKey === 'rule2') {
+    preview.innerText = 'Peringatan: PICA "Cover jok & handgrip belum terpasang" telah LEWAT JATUH TEMPO (Due Date: 5 Okt 2026). Segera selesaikan dan unggah foto perbaikan!';
+  } else if (activeKey === 'rule3') {
+    preview.innerText = 'Pengingat GENBA: Audit GENBA Onsite berikutnya dijadwalkan pada 25 Oktober 2026. Mohon persiapkan area dealer dan dokumen ceklis.';
+  } else if (activeKey === 'rule4') {
+    preview.innerText = 'Perhatian NOSIZU: Skor rata-rata FLP cabang Anda berada di peringkat 3 terendah se-nasional. Ayo dorong tim untuk belajar via NOSIZU!';
+  }
+}
+
+function triggerTestNotification() {
+  if ("Notification" in window) {
+    if (Notification.permission === "granted") {
+      new Notification("Daya NOSA - Pengingat PICA", {
+        body: "Pengingat: PICA 'Display hero stage' jatuh tempo besok, 8 Oktober 2026. Status Open.",
+        icon: "MASKOT DAYA NOSA.png"
+      });
+    } else if (Notification.permission !== "denied") {
+      Notification.requestPermission().then(permission => {
+        if (permission === "granted") {
+          new Notification("Daya NOSA - Pengingat PICA", {
+            body: "Pengingat: PICA 'Display hero stage' jatuh tempo besok, 8 Oktober 2026. Status Open.",
+            icon: "MASKOT DAYA NOSA.png"
+          });
+        }
+      });
+    } else {
+      alert("Izin notifikasi diblokir pada browser Anda. Silakan izinkan notifikasi pada setelan browser.");
+    }
+  } else {
+    alert("Browser Anda tidak mendukung Web Notification API.");
+  }
 }
 
 // LOGIKA AUTHENTIKASI & ROLE
@@ -245,8 +331,8 @@ function renderDashboard(user) {
   switchTab("home");
   loadProfilCabangData(user.cabang || "Soekarno Hatta");
   loadDropdownCabang();
+  initReminderUI();
 
-  // Pemicu Otomatis Tour untuk Pengguna Pertama Kali
   setTimeout(() => {
     startAppTour(false);
   }, 600);
@@ -1016,7 +1102,7 @@ function loadProfilCabangData(cabangName) {
 
 // SWITCH TAB NAVIGATION
 function switchTab(tabId) {
-  const pages = ['dashboardPage', 'referensiPage', 'onboardingPage', 'genbaFormPage', 'genbaAuditPage', 'picaDashboardPage', 'nosizuPage', 'leaderboardPage', 'profilPage'];
+  const pages = ['dashboardPage', 'referensiPage', 'reminderPage', 'onboardingPage', 'genbaFormPage', 'genbaAuditPage', 'picaDashboardPage', 'nosizuPage', 'leaderboardPage', 'profilPage'];
   pages.forEach(p => {
     const el = document.getElementById(p);
     if (el) el.classList.add('hidden');
@@ -1035,6 +1121,9 @@ function switchTab(tabId) {
   } else if (tabId === 'referensi') {
     document.getElementById('referensiPage').classList.remove('hidden');
     loadReferensiData();
+  } else if (tabId === 'reminder') {
+    document.getElementById('reminderPage').classList.remove('hidden');
+    initReminderUI();
   } else if (tabId === 'onboarding') {
     document.getElementById('onboardingPage').classList.remove('hidden');
     loadOnboardingData();
