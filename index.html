@@ -284,24 +284,47 @@
         </div>
       </div>
 
-      <!-- TAB 4: HALAMAN AUDIT GENBA DIRECT & KATEGORISASI (H1/H23) -->
+      <!-- TAB 4: HALAMAN AUDIT GENBA DIRECT & KATEGORISASI (H1/H23) + RESULT CALCULATOR -->
       <div id="genbaAuditPage" class="hidden space-y-4">
         
-        <!-- HEADER AUDITOR AUTO DETECT -->
-        <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/80 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-          <div class="space-y-0.5">
-            <span class="text-[10px] font-extrabold text-nosa-green uppercase tracking-wider">SESI AUDIT DIREK</span>
-            <h3 class="text-lg font-black text-gray-900" id="auditInfoCabang">Cabang Soekarno Hatta</h3>
-            <p class="text-xs text-gray-600 font-medium" id="auditInfoAuditor">Auditor: Refan (Kepala Cabang)</p>
-          </div>
-          <div class="flex items-center gap-2 w-full sm:w-auto">
-            <div class="text-right hidden sm:block">
-              <p class="text-[10px] text-gray-500">Status Kelengkapan</p>
-              <p class="text-xs font-extrabold text-nosa-green" id="auditProgressText">0/0 Diselesaikan</p>
+        <!-- HEADER AUDITOR AUTO DETECT & SUMMARY RESULT -->
+        <div class="bg-nosa-cardBg p-4 sm:p-5 rounded-3xl border border-gray-200/80 shadow-xs space-y-4">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-gray-300/50 pb-3">
+            <div class="space-y-0.5">
+              <span class="text-[10px] font-extrabold text-nosa-green uppercase tracking-wider">SESI AUDIT GENBA</span>
+              <h3 class="text-lg sm:text-xl font-black text-gray-900" id="auditInfoCabang">Cabang Soekarno Hatta</h3>
+              <p class="text-xs text-gray-600 font-medium" id="auditInfoAuditor">Auditor: Refan (Kepala Cabang)</p>
             </div>
-            <button type="button" onclick="submitGenbaForm()" id="btnSubmitGenbaAudit" disabled class="flex-1 sm:flex-initial py-2.5 px-5 bg-gray-300 text-gray-500 font-extrabold text-xs rounded-xl shadow-xs transition cursor-not-allowed">
-              🔒 Submit Audit (Lengkapi Semua)
-            </button>
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+              <div class="text-right hidden sm:block">
+                <p class="text-[10px] text-gray-500 font-medium">Kelengkapan Form</p>
+                <p class="text-xs font-extrabold text-nosa-green" id="auditProgressText">0/0 Diselesaikan</p>
+              </div>
+              <button type="button" onclick="submitGenbaForm()" id="btnSubmitGenbaAudit" disabled class="flex-1 sm:flex-initial py-2.5 px-5 bg-gray-300 text-gray-500 font-extrabold text-xs rounded-xl shadow-xs transition cursor-not-allowed">
+                🔒 Submit Audit (Lengkapi Semua)
+              </button>
+            </div>
+          </div>
+
+          <!-- PANEL CALCULATOR RESULT PER PILAR (REAL-TIME) -->
+          <div class="grid grid-cols-3 gap-2 sm:gap-4 text-center">
+            <div class="bg-white/80 p-3 rounded-2xl border border-gray-200 space-y-1">
+              <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">Premises Result</span>
+              <h4 class="text-lg sm:text-2xl font-black text-nosa-green" id="resPremisesVal">0%</h4>
+              <p class="text-[9px] text-gray-400 font-semibold" id="ptsPremisesVal">0 / 0 Poin</p>
+            </div>
+
+            <div class="bg-white/80 p-3 rounded-2xl border border-gray-200 space-y-1">
+              <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">Process Result</span>
+              <h4 class="text-lg sm:text-2xl font-black text-nosa-green" id="resProcessVal">0%</h4>
+              <p class="text-[9px] text-gray-400 font-semibold" id="ptsProcessVal">0 / 0 Poin</p>
+            </div>
+
+            <div class="bg-white/80 p-3 rounded-2xl border border-gray-200 space-y-1">
+              <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">People Result</span>
+              <h4 class="text-lg sm:text-2xl font-black text-nosa-green" id="resPeopleVal">0%</h4>
+              <p class="text-[9px] text-gray-400 font-semibold" id="ptsPeopleVal">0 / 0 Poin</p>
+            </div>
           </div>
         </div>
 
