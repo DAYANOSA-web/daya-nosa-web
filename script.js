@@ -4,70 +4,40 @@ let authMode = "login";
 let selectedRole = "Kepala Cabang";
 let currentUser = null;
 
+// ENGINE GENBA & DIRECT AUDIT
+let allCeklisNOSData = [];
+let activeGenbaCategory = "PREMISES H1";
+let currentAuditSession = null;
+let auditSelection = {};
+
+// ENGINE ROTASI 3D VIEWER
+let isSpinning3D = false;
+let startX3D = 0;
+let currentRotationY = 0;
+
 // ENGINE DATA NOSIZU
 let nosUserStats = { xp: 0, streak: 1, nyawa: 5, unit: 1 };
 let currentQuestionList = [];
 let quizIndex = 0;
 let userSelectedAnswer = null;
 
-// GLOBAL LIST UNTUK FITUR ONBOARDING SEARCH
+// GLOBAL LIST VIDEO ONBOARDING
 let allOnboardingVideos = [];
 
 // ENGINE GUIDED TOUR PANDUAN MASKOT
 let currentTourStep = 0;
 const tourSteps = [
-  {
-    badge: "PANDUAN NOSA (1/7)",
-    targetId: null,
-    tab: "home",
-    text: "Halo! Aku Daya NOSA 👋. Selamat datang! Yuk, aku ajak keliling sebentar untuk mengenali setiap fitur hebat di Daya NOSA."
-  },
-  {
-    badge: "REFERENSI STANDAR (2/7)",
-    targetId: "cardRef",
-    tab: "home",
-    text: "Menu Referensi Standar berisi dokumen visual dan panduan operasional NOS terbaru sebagai acuan standar dealer Anda."
-  },
-  {
-    badge: "GENBA AUDIT (3/7)",
-    targetId: "cardGenba",
-    tab: "home",
-    text: "Di sini Anda bisa melakukan GENBA Audit & Self Assessment secara digital dan mengunggah foto bukti temuan lapangan."
-  },
-  {
-    badge: "DASHBOARD PICA (4/7)",
-    targetId: "cardPerforma",
-    tab: "home",
-    text: "Pantau performa area Anda dan tindak lanjuti temuan PICA (Open, On Check, hingga Closed/Verified) di sini."
-  },
-  {
-    badge: "NOSIZU GAME (5/7)",
-    targetId: "cardNosizu",
-    tab: "home",
-    text: "Sambil senggang, asah pengetahuan standar NOS Anda melalui game kuis interaktif NOSIZU dan kumpulkan XP-nya!"
-  },
-  {
-    badge: "ONBOARDING FLP (6/7)",
-    targetId: "cardOnboarding",
-    tab: "home",
-    text: "Menu ini menyediakan video-video materi orientasi & pelatihan khusus FLP baru yang bisa Anda tonton langsung!"
-  },
-  {
-    badge: "PROFIL CABANG (7/7)",
-    targetId: "cardProfil",
-    tab: "home",
-    text: "Terakhir, cek Skor NOS Cabang Anda, daftar temuan berulang, serta peringkat Top 3 FLP NOSIZU di menu Profil Cabang. Selamat bekerja!"
-  }
+  { badge: "PANDUAN NOSA (1/7)", targetId: null, tab: "home", text: "Halo! Aku Daya NOSA 👋. Selamat datang! Yuk, aku ajak keliling sebentar untuk mengenali setiap fitur hebat di Daya NOSA." },
+  { badge: "REFERENSI STANDAR (2/7)", targetId: "cardRef", tab: "home", text: "Menu Referensi Standar berisi dokumen visual & 3D interaktif sebagai acuan standar dealer Anda." },
+  { badge: "GENBA AUDIT (3/7)", targetId: "cardGenba", tab: "home", text: "Di sini Anda bisa langsung melakukan GENBA Audit per kategori (H1 & H23) tanpa perlu input ulang data!" },
+  { badge: "DASHBOARD PICA (4/7)", targetId: "cardPerforma", tab: "home", text: "Pantau performa area Anda dan tindak lanjuti temuan PICA di sini." },
+  { badge: "NOSIZU GAME (5/7)", targetId: "cardNosizu", tab: "home", text: "Sambil senggang, asah pengetahuan standar NOS Anda melalui game kuis interaktif NOSIZU!" },
+  { badge: "ONBOARDING FLP (6/7)", targetId: "cardOnboarding", tab: "home", text: "Menu ini menyediakan video-video materi orientasi & pelatihan khusus FLP baru." },
+  { badge: "PROFIL CABANG (7/7)", targetId: "cardProfil", tab: "home", text: "Terakhir, cek Skor NOS Cabang Anda, daftar temuan berulang, serta peringkat Top 3 FLP NOSIZU di menu Profil Cabang." }
 ];
 
-// ENGINE FITUR REMINDER (IN-APP TOAST WEBSITE)
-let reminderState = {
-  rule1: true,   // PICA mendekati due date
-  rule2: false,  // PICA lewat due date
-  rule3: true,   // Jadwal GENBA berikutnya
-  rule4: true    // Peringkat terendah NOSIZU
-};
-
+// ENGINE REMINDER
+let reminderState = { rule1: true, rule2: true, rule3: true, rule4: true };
 let activeToastTargetTab = "pica";
 
 function formatDateNice(dateStr) {
@@ -83,159 +53,360 @@ function formatDateNice(dateStr) {
   }
 }
 
-// LOGIKA GUIDED TOUR MASKOT DAYA NOSA
-function startAppTour(isManual = false) {
-  const hasToured = localStorage.getItem("nosa_has_toured");
-  if (!isManual && hasToured === "true") return;
+// LOGIKA REMINDERS REAL-TIME MATCHING TANGGAL & DUE DATE
+function evaluateRealtimeReminders(isManualClick = false) {
+  const userCabang = currentUser ? (currentUser.cabang || "Soekarno Hatta") : "Soekarno Hatta";
+  const today = new Date();
+  today.setHours(0,0,0,0);
 
-  currentTourStep = 0;
-  document.getElementById("tourOverlay").classList.remove("hidden");
-  renderTourStep();
-}
+  const previewEl = document.getElementById("reminderPreviewText");
+  if (previewEl) previewEl.innerText = "Mengambil data PICA & GENBA real-time...";
 
-function renderTourStep() {
-  const step = tourSteps[currentTourStep];
-  switchTab(step.tab);
+  fetch(`${API_URL}?action=getProfilCabang&cabang=${encodeURIComponent(userCabang)}`)
+  .then(res => res.json())
+  .then(res => {
+    let triggeredMessage = null;
+    let targetTab = "pica";
 
-  document.getElementById("tourStepBadge").innerText = step.badge;
-  document.getElementById("tourDialogText").innerText = step.text;
+    if (res.status === "success") {
+      // 1. Cek PICA mendekati due date (H-2) atau Overdue
+      if (res.picaBelumSelesai && res.picaBelumSelesai.length > 0) {
+        for (let pica of res.picaBelumSelesai) {
+          const due = new Date(pica.dueDate);
+          due.setHours(0,0,0,0);
+          const diffDays = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
 
-  document.querySelectorAll('.ring-4').forEach(el => el.classList.remove('ring-4', 'ring-yellow-400', 'scale-105'));
+          if (diffDays < 0 && reminderState.rule2) { // Lewat Due Date
+            triggeredMessage = `⚠️ PICA Overdue: Temuan "${pica.item}" telah melewai batas waktu jatuh tempo (${formatDateNice(pica.dueDate)}).`;
+            targetTab = "pica";
+            break;
+          } else if (diffDays >= 0 && diffDays <= 2 && reminderState.rule1) { // Mendekati (H-2)
+            triggeredMessage = `Pengingat Due Date: PICA "${pica.item}" di Cabang ${userCabang} jatuh tempo ${diffDays === 0 ? 'hari ini' : 'dalam ' + diffDays + ' hari'}!`;
+            targetTab = "pica";
+            break;
+          }
+        }
+      }
 
-  if (step.targetId) {
-    const target = document.getElementById(step.targetId);
-    if (target) {
-      target.classList.add('ring-4', 'ring-yellow-400', 'scale-105');
-      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // 2. Cek Jadwal GENBA (H-3) jika PICA belum men-trigger
+      if (!triggeredMessage && res.info && res.info.jadwalGenba && reminderState.rule3) {
+        const genbaDate = new Date(res.info.jadwalGenba);
+        genbaDate.setHours(0,0,0,0);
+        const diffGenba = Math.ceil((genbaDate - today) / (1000 * 60 * 60 * 24));
+
+        if (diffGenba >= 0 && diffGenba <= 3) {
+          triggeredMessage = `📅 Pengingat GENBA: Audit Onsite berikutnya di Cabang ${userCabang} diselenggarakan tanggal ${formatDateNice(res.info.jadwalGenba)}.`;
+          targetTab = "profil";
+        }
+      }
     }
-  }
 
-  const btnPrev = document.getElementById("btnTourPrev");
-  const btnNext = document.getElementById("btnTourNext");
-
-  if (currentTourStep === 0) {
-    btnPrev.classList.add("hidden");
-  } else {
-    btnPrev.classList.remove("hidden");
-  }
-
-  if (currentTourStep === tourSteps.length - 1) {
-    btnNext.innerText = "Selesai ✨";
-  } else {
-    btnNext.innerText = "Lanjut \u203A";
-  }
-}
-
-function nextTourStep() {
-  if (currentTourStep < tourSteps.length - 1) {
-    currentTourStep++;
-    renderTourStep();
-  } else {
-    endAppTour();
-  }
-}
-
-function prevTourStep() {
-  if (currentTourStep > 0) {
-    currentTourStep--;
-    renderTourStep();
-  }
-}
-
-function endAppTour() {
-  document.querySelectorAll('.ring-4').forEach(el => el.classList.remove('ring-4', 'ring-yellow-400', 'scale-105'));
-  document.getElementById("tourOverlay").classList.add("hidden");
-  localStorage.setItem("nosa_has_toured", "true");
-  switchTab("home");
-}
-
-// LOGIKA FITUR REMINDER IN-APP TOAST
-function initReminderUI() {
-  const saved = localStorage.getItem("nosa_reminder_state");
-  if (saved) {
-    try { reminderState = JSON.parse(saved); } catch (e) {}
-  }
-  updateReminderButtons();
-}
-
-function toggleReminderRule(ruleKey) {
-  reminderState[ruleKey] = !reminderState[ruleKey];
-  localStorage.setItem("nosa_reminder_state", JSON.stringify(reminderState));
-  updateReminderButtons();
-  updateReminderPreviewText(ruleKey);
-
-  if (reminderState[ruleKey]) {
-    showInAppReminderToast(ruleKey);
-  }
-}
-
-function updateReminderButtons() {
-  const rules = ['rule1', 'rule2', 'rule3', 'rule4'];
-  rules.forEach((rKey, idx) => {
-    const btn = document.getElementById(`btnRule${idx + 1}`);
-    if (!btn) return;
-    if (reminderState[rKey]) {
-      btn.innerText = "Aktif";
-      btn.className = "px-4 py-1.5 rounded-xl text-xs font-extrabold shadow-2xs transition bg-emerald-400 text-emerald-950";
+    if (triggeredMessage) {
+      if (previewEl) previewEl.innerText = triggeredMessage;
+      showInAppReminderToast(triggeredMessage, targetTab);
     } else {
-      btn.innerText = "Non-Aktif";
-      btn.className = "px-4 py-1.5 rounded-xl text-xs font-extrabold shadow-2xs transition bg-red-300 text-red-950";
+      const emptyMsg = `Tidak ada pengingat mendesak untuk Cabang ${userCabang} pada tanggal hari ini.`;
+      if (previewEl) previewEl.innerText = emptyMsg;
+      if (isManualClick) alert(emptyMsg);
     }
+  })
+  .catch(err => {
+    if (previewEl) previewEl.innerText = "Gagal memverifikasi jadwal real-time.";
   });
 }
 
-function updateReminderPreviewText(activeKey) {
-  const preview = document.getElementById("reminderPreviewText");
-  if (!preview) return;
-
-  const cabang = currentUser ? (currentUser.cabang || "Soekarno Hatta") : "Soekarno Hatta";
-
-  if (activeKey === 'rule1') {
-    preview.innerText = `Pengingat ${cabang}: PICA "Display hero stage tidak sesuai lineup bulanan" jatuh tempo besok. Status Open. Mohon lakukan update progress!`;
-  } else if (activeKey === 'rule2') {
-    preview.innerText = `Peringatan ${cabang}: PICA "Cover jok & handgrip belum terpasang" telah LEWAT JATUH TEMPO. Segera selesaikan dan unggah foto perbaikan!`;
-  } else if (activeKey === 'rule3') {
-    preview.innerText = `Pengingat GENBA ${cabang}: Audit GENBA Onsite berikutnya dijadwalkan pada 25 Oktober 2026. Mohon persiapkan area dealer dan dokumen ceklis.`;
-  } else if (activeKey === 'rule4') {
-    preview.innerText = `Perhatian NOSIZU ${cabang}: Skor rata-rata FLP cabang Anda berada di peringkat 3 terendah se-nasional. Ayo dorong tim untuk belajar via NOSIZU!`;
-  }
-}
-
-function showInAppReminderToast(ruleKey = 'rule1') {
+function showInAppReminderToast(msg, targetTab = "pica") {
   const toast = document.getElementById("inAppReminderToast");
   const cabangBadge = document.getElementById("toastCabangBadge");
   const msgContent = document.getElementById("toastMessageContent");
 
   const cabang = currentUser ? (currentUser.cabang || "Soekarno Hatta") : "Soekarno Hatta";
   cabangBadge.innerText = `Cabang ${cabang}`;
-
-  if (ruleKey === 'rule1') {
-    msgContent.innerText = `Pengingat PICA: PICA "Display hero stage" jatuh tempo besok. Silakan perbarui statusnya!`;
-    activeToastTargetTab = "pica";
-  } else if (ruleKey === 'rule2') {
-    msgContent.innerText = `⚠️ PICA Overdue: Ada temuan audit yang telah melewati batas waktu!`;
-    activeToastTargetTab = "pica";
-  } else if (ruleKey === 'rule3') {
-    msgContent.innerText = `📅 Jadwal GENBA: Audit Onsite berikutnya diselenggarakan tanggal 25 Okt 2026.`;
-    activeToastTargetTab = "profil";
-  } else if (ruleKey === 'rule4') {
-    msgContent.innerText = `📊 Peringkat NOSIZU: Ayo tingkatkan XP FLP Cabang ${cabang}!`;
-    activeToastTargetTab = "leaderboard";
-  }
+  msgContent.innerText = msg;
+  activeToastTargetTab = targetTab;
 
   toast.classList.remove("hidden");
 }
 
-function dismissInAppToast() {
-  document.getElementById("inAppReminderToast").classList.add("hidden");
+function dismissInAppToast() { document.getElementById("inAppReminderToast").classList.add("hidden"); }
+function handleToastAction() { dismissInAppToast(); switchTab(activeToastTargetTab); }
+
+// LOGIKA REFERENSI STANDAR & ROTASI 3D INTERAKSI
+function loadReferensiData() {
+  const container = document.getElementById("referensiGridBox");
+  if (!container) return;
+  container.innerHTML = '<p class="text-xs text-gray-400 italic text-center col-span-full py-8">Memuat data referensi standar...</p>';
+
+  fetch(`${API_URL}?action=getReferensi`)
+  .then(res => res.json())
+  .then(data => {
+    if (!data || data.length <= 1) {
+      container.innerHTML = '<p class="text-xs text-gray-400 italic text-center col-span-full py-8">Belum ada data referensi standar di spreadsheet.</p>';
+      return;
+    }
+    const rows = data.slice(1);
+    let html = '';
+    
+    rows.forEach(row => {
+      const kat = row[1] || 'visual dealer';
+      const judul = row[2] || 'Judul Referensi';
+      const deskripsi = row[3] || 'Deskripsi standar';
+      const instruksi = row[4] || 'Instruksi & ketentuan standar.';
+      
+      let rawImg = row[5] || '';
+      if (rawImg.includes('drive.google.com') && rawImg.includes('/d/')) {
+        const match = rawImg.match(/\/d\/([^\/]+)/);
+        if (match && match[1]) rawImg = `https://lh3.googleusercontent.com/d/${match[1]}`;
+      }
+      const imgUrl = rawImg;
+      const downloadUrl = row[6] || '';
+
+      html += `
+        <div class="bg-nosa-cardBg p-4 sm:p-5 rounded-3xl border border-gray-200/70 shadow-xs flex flex-col justify-between space-y-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
+            <div onclick="open3DViewer('${imgUrl.replace(/'/g, "\\'")}', '${judul.replace(/'/g, "\\'")}', '${deskripsi.replace(/'/g, "\\'")}')" class="w-full h-48 sm:h-56 rounded-2xl overflow-hidden bg-white/90 p-2 flex items-center justify-center border border-gray-300/50 shadow-inner cursor-pointer relative group">
+              ${imgUrl ? `<img src="${imgUrl}" alt="${judul}" class="w-full h-full object-contain transition group-hover:scale-105">` : '<span class="text-xs text-gray-400 italic">Tidak ada gambar</span>'}
+              <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white font-extrabold text-xs gap-1">
+                <span>🔄 Putar 3D</span>
+              </div>
+            </div>
+            <div class="space-y-2">
+              <span class="inline-block bg-nosa-yellow text-gray-900 text-[10px] font-extrabold px-3 py-0.5 rounded-md uppercase tracking-wider">${kat}</span>
+              <h3 class="text-xl sm:text-2xl font-black text-nosa-green tracking-tight leading-none pt-0.5">${judul}</h3>
+              <p class="text-xs text-gray-700 leading-snug">${deskripsi}</p>
+              <div class="pt-2 space-y-0.5">
+                <h5 class="text-xs font-black text-nosa-green">Instruksi & Ketentuan</h5>
+                <p class="text-[11px] text-gray-600 leading-normal">${instruksi}</p>
+              </div>
+              ${downloadUrl ? `
+                <div class="pt-2">
+                  <h5 class="text-xs font-black text-nosa-green">Link Download</h5>
+                  <a href="${downloadUrl}" target="_blank" class="text-[10px] text-blue-600 underline font-semibold break-all">${downloadUrl}</a>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    });
+    container.innerHTML = html;
+  });
 }
 
-function handleToastAction() {
-  dismissInAppToast();
-  switchTab(activeToastTargetTab);
+function open3DViewer(imgUrl, title, desc) {
+  document.getElementById("modal3DTitle").innerText = title;
+  document.getElementById("modal3DImage").src = imgUrl;
+  document.getElementById("modal3DDesc").innerText = desc;
+  currentRotationY = 0;
+  update3DRotation();
+
+  const container = document.getElementById("spin3DContainer");
+  container.onmousedown = start3DSpin;
+  window.onmousemove = move3DSpin;
+  window.onmouseup = end3DSpin;
+
+  container.ontouchstart = (e) => start3DSpin(e.touches[0]);
+  window.ontouchmove = (e) => move3DSpin(e.touches[0]);
+  window.ontouchend = end3DSpin;
+
+  document.getElementById("modal3DViewer").classList.remove("hidden");
 }
 
-// LOGIKA AUTHENTIKASI & ROLE
+function close3DViewer() { document.getElementById("modal3DViewer").classList.add("hidden"); }
+
+function start3DSpin(e) { isSpinning3D = true; startX3D = e.clientX; }
+function move3DSpin(e) {
+  if (!isSpinning3D) return;
+  const deltaX = e.clientX - startX3D;
+  currentRotationY += deltaX * 0.8;
+  startX3D = e.clientX;
+  update3DRotation();
+}
+function end3DSpin() { isSpinning3D = false; }
+function update3DRotation() {
+  const img = document.getElementById("modal3DImage");
+  if (img) img.style.transform = `perspective(1000px) rotateY(${currentRotationY}deg)`;
+}
+
+// LOGIKA DIREK AUDIT GENBA (TANPA INISIASI & VALIDASI LENGKAP)
+function initDirectGenbaSession() {
+  const userCabang = currentUser ? (currentUser.cabang || "Soekarno Hatta") : "Soekarno Hatta";
+  const userNama = currentUser ? (currentUser.nama || "Refan") : "Refan";
+  const userRole = currentUser ? (currentUser.role || "Kepala Cabang") : "Kepala Cabang";
+
+  currentAuditSession = { cabang: userCabang, nama: userNama, jabatan: userRole };
+  document.getElementById("auditInfoCabang").innerText = `Cabang ${userCabang}`;
+  document.getElementById("auditInfoAuditor").innerText = `Auditor: ${userNama} (${userRole})`;
+
+  loadCeklisNOSData();
+}
+
+function loadCeklisNOSData() {
+  const container = document.getElementById("genbaCeklisContainer");
+  container.innerHTML = '<p class="text-xs text-gray-400 italic text-center py-6">Memuat item ceklis NOS...</p>';
+  
+  fetch(`${API_URL}?action=getCeklisNOS`)
+  .then(res => res.json())
+  .then(data => {
+    if (!data || data.length <= 1) {
+      container.innerHTML = '<p class="text-xs text-gray-400 italic text-center py-6">Belum ada item ceklis di spreadsheet CeklisNOS.</p>';
+      return;
+    }
+    allCeklisNOSData = data.slice(1);
+    filterGenbaCategory(activeGenbaCategory);
+  });
+}
+
+function filterGenbaCategory(categoryKey) {
+  activeGenbaCategory = categoryKey;
+  const categories = ['PREMISES H1', 'PROCESS H1', 'PEOPLE H1', 'PREMISES H23', 'PROCESS H23', 'PEOPLE H23'];
+  
+  categories.forEach(cat => {
+    const btn = document.getElementById(`tabCat-${cat.replace(/\s+/g, '')}`);
+    if (btn) {
+      if (cat === categoryKey) {
+        btn.className = "px-3.5 py-2 rounded-xl text-xs font-extrabold whitespace-nowrap bg-nosa-green text-white shadow-xs transition";
+      } else {
+        btn.className = "px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-white text-gray-600 hover:bg-gray-100 transition";
+      }
+    }
+  });
+
+  renderFilteredCeklis();
+}
+
+function renderFilteredCeklis() {
+  const container = document.getElementById("genbaCeklisContainer");
+  const filtered = allCeklisNOSData.filter(row => {
+    const tipe = (row[1] || '').toString().toUpperCase();
+    return tipe.includes(activeGenbaCategory.toUpperCase());
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<p class="text-xs text-gray-400 italic text-center py-6">Tidak ada item ceklis untuk kategori ${activeGenbaCategory}.</p>`;
+    validateGenbaCompletion();
+    return;
+  }
+
+  let html = '';
+  filtered.forEach((row, idx) => {
+    const originalIndex = allCeklisNOSData.indexOf(row);
+    const tipe = row[1] || activeGenbaCategory;
+    const mandatory = row[2] || 'S, G, P';
+    const itemVal = (row[3] || '').toString().trim();
+    const subItem1 = (row[4] || '').toString().trim();
+    const subItem2 = (row[5] || '').toString().trim();
+    const penjelasan = row[6] || 'Penjelasan item ceklis...';
+    const labelParts = [itemVal, subItem1, subItem2].filter(text => text !== '');
+    const headerLabel = labelParts.join(', ');
+    
+    let rawImg = row[7] || '';
+    if (rawImg.includes('drive.google.com') && rawImg.includes('/d/')) {
+      const match = rawImg.match(/\/d\/([^\/]+)/);
+      if (match && match[1]) rawImg = `https://lh3.googleusercontent.com/d/${match[1]}`;
+    }
+    const imgUrl = rawImg;
+    const isNeedFoto = (row[8] || 'Ya').toString().toLowerCase() === 'ya';
+
+    const currentSel = auditSelection[originalIndex] ? auditSelection[originalIndex].status : null;
+
+    html += `
+      <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/80 shadow-xs space-y-3">
+        <div class="flex justify-between items-center border-b border-gray-300/50 pb-1.5">
+          <h3 class="text-sm font-black text-nosa-green tracking-wider uppercase">${tipe}</h3>
+          <span class="text-xs font-black text-nosa-green tracking-wider">${mandatory}</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-stretch">
+          <div class="bg-gray-200/60 p-3 rounded-xl space-y-2 flex flex-col h-full">
+            <h5 class="text-xs font-extrabold text-gray-900 border-b border-gray-300/60 pb-1 flex-shrink-0">${headerLabel || 'Item Ceklis'}</h5>
+            <div class="max-h-40 overflow-y-auto pr-1 flex-1">
+              <p class="text-[11px] text-gray-700 leading-relaxed whitespace-pre-line">${penjelasan}</p>
+            </div>
+          </div>
+          <div class="bg-gray-200/60 p-3 rounded-xl flex flex-col justify-between items-center text-center space-y-2">
+            <span class="text-[10px] font-black text-nosa-green tracking-widest uppercase">REFERENSI</span>
+            <div class="w-full h-28 rounded-lg bg-white overflow-hidden flex items-center justify-center border border-gray-300/40">
+              ${imgUrl ? `<img src="${imgUrl}" class="w-full h-full object-contain p-1">` : '<span class="text-[10px] text-gray-400 italic">No Reference Image</span>'}
+            </div>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+          <button type="button" onclick="selectAuditStatus(${originalIndex}, 'Exist Good', '${headerLabel.replace(/'/g, "\\'")}')" class="audit-btn-${originalIndex} py-2 ${currentSel === 'Exist Good' ? 'bg-emerald-500 text-white font-extrabold shadow-xs' : 'bg-gray-300 hover:bg-emerald-200 text-gray-800 font-bold'} text-xs rounded-xl border border-gray-400/50 transition">Exist Good</button>
+          <button type="button" onclick="selectAuditStatus(${originalIndex}, 'Exist Not Good', '${headerLabel.replace(/'/g, "\\'")}')" class="audit-btn-${originalIndex} py-2 ${currentSel === 'Exist Not Good' ? 'bg-amber-500 text-white font-extrabold shadow-xs' : 'bg-gray-300 hover:bg-amber-200 text-gray-800 font-bold'} text-xs rounded-xl border border-gray-400/50 transition">Exist Not Good</button>
+          <button type="button" onclick="selectAuditStatus(${originalIndex}, 'Not Exist', '${headerLabel.replace(/'/g, "\\'")}')" class="audit-btn-${originalIndex} py-2 ${currentSel === 'Not Exist' ? 'bg-red-500 text-white font-extrabold shadow-xs' : 'bg-gray-300 hover:bg-red-200 text-gray-800 font-bold'} text-xs rounded-xl border border-gray-400/50 transition">Not Exist</button>
+          <button type="button" onclick="selectAuditStatus(${originalIndex}, 'N/A', '${headerLabel.replace(/'/g, "\\'")}')" class="audit-btn-${originalIndex} py-2 ${currentSel === 'N/A' ? 'bg-gray-600 text-white font-extrabold shadow-xs' : 'bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold'} text-xs rounded-xl border border-gray-400/50 transition">N/A</button>
+        </div>
+      </div>
+    `;
+  });
+  container.innerHTML = html;
+  validateGenbaCompletion();
+}
+
+function selectAuditStatus(originalIndex, status, headerLabel) {
+  auditSelection[originalIndex] = { status: status, headerLabel: headerLabel };
+  const btns = document.querySelectorAll(`.audit-btn-${originalIndex}`);
+  btns.forEach(btn => {
+    btn.className = "py-2 bg-gray-300 text-gray-800 text-xs font-bold rounded-xl border border-gray-400/50 transition";
+    if (btn.innerText.trim() === status) {
+      if (status === 'Exist Good') btn.className = "py-2 bg-emerald-500 text-white text-xs font-extrabold rounded-xl shadow-xs";
+      if (status === 'Exist Not Good') btn.className = "py-2 bg-amber-500 text-white text-xs font-extrabold rounded-xl shadow-xs";
+      if (status === 'Not Exist') btn.className = "py-2 bg-red-500 text-white text-xs font-extrabold rounded-xl shadow-xs";
+      if (status === 'N/A') btn.className = "py-2 bg-gray-600 text-white text-xs font-extrabold rounded-xl shadow-xs";
+    }
+  });
+
+  validateGenbaCompletion();
+}
+
+function validateGenbaCompletion() {
+  const totalItems = allCeklisNOSData.length;
+  const answeredCount = Object.keys(auditSelection).length;
+  const progressText = document.getElementById("auditProgressText");
+  const btnSubmit = document.getElementById("btnSubmitGenbaAudit");
+
+  if (progressText) progressText.innerText = `${answeredCount}/${totalItems} Diselesaikan`;
+
+  if (totalItems > 0 && answeredCount >= totalItems) {
+    if (btnSubmit) {
+      btnSubmit.disabled = false;
+      btnSubmit.className = "flex-1 sm:flex-initial py-2.5 px-5 bg-nosa-green hover:bg-nosa-greenLight text-white font-extrabold text-xs rounded-xl shadow-md transition cursor-pointer";
+      btnSubmit.innerText = "💾 Submit Audit GENBA";
+    }
+  } else {
+    if (btnSubmit) {
+      btnSubmit.disabled = true;
+      btnSubmit.className = "flex-1 sm:flex-initial py-2.5 px-5 bg-gray-300 text-gray-500 font-extrabold text-xs rounded-xl shadow-xs transition cursor-not-allowed";
+      btnSubmit.innerText = `🔒 Submit Audit (${totalItems - answeredCount} tersisa)`;
+    }
+  }
+}
+
+function submitGenbaForm() {
+  if (Object.keys(auditSelection).length < allCeklisNOSData.length) {
+    alert("Silakan lengkapi semua item ceklis sebelum melakukan submit!");
+    return;
+  }
+  const results = Object.values(auditSelection);
+  const btnSubmit = document.getElementById("btnSubmitGenbaAudit");
+  if (btnSubmit) { btnSubmit.disabled = true; btnSubmit.innerText = "Menyimpan PICA..."; }
+
+  fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ action: "submitGenbaAudit", auditSession: currentAuditSession, auditResults: results })
+  })
+  .then(res => res.json())
+  .then(res => {
+    if (res.status === "success") {
+      alert(`Audit Berhasil Disimpan! ${res.totalPicaCreated} temuan PICA baru telah ditambahkan.`);
+      auditSelection = {};
+      switchTab("pica");
+    } else { alert(res.message || "Gagal menyimpan audit."); }
+  });
+}
+
+// REST OF THE EXISTING FUNCTIONS (ONBOARDING, AUTH, PICA, NOSIZU, LEADERBOARD, PROFIL)
 function selectRole(role) {
   selectedRole = role;
   const btnKacab = document.getElementById('btnRoleKacab');
@@ -282,8 +453,7 @@ function handleAuthSubmit(e) {
   const password = document.getElementById("authPassword").value.trim();
   const nama = document.getElementById("regNama").value.trim();
   const cabang = document.getElementById("authCabang").value.trim();
-  btn.disabled = true;
-  btn.innerText = "Proses...";
+  btn.disabled = true; btn.innerText = "Proses...";
   const payload = {
     action: authMode === "register" ? "registerUser" : "loginUser",
     email: email, password: password, nama: nama, role: selectedRole,
@@ -302,14 +472,7 @@ function handleAuthSubmit(e) {
       currentUser = res.userData;
       localStorage.setItem("nosa_user", JSON.stringify(currentUser));
       renderDashboard(currentUser);
-    } else {
-      alert(res.message || "Gagal memproses login.");
-    }
-  })
-  .catch(err => {
-    btn.disabled = false;
-    btn.innerText = authMode === "register" ? "daftar akun" : "masuk";
-    alert("Gagal terhubung ke server.");
+    } else { alert(res.message || "Gagal memproses login."); }
   });
 }
 
@@ -320,8 +483,6 @@ function handleLogout() {
     currentUser = null;
     document.getElementById("mainContainer").classList.add("hidden");
     document.getElementById("loginPage").classList.remove("hidden");
-    document.getElementById("authEmail").value = "";
-    document.getElementById("authPassword").value = "";
     setAuthMode("login");
   }
 }
@@ -332,168 +493,138 @@ function renderDashboard(user) {
   document.getElementById("dashUserNama").innerText = user.nama || user.email;
   document.getElementById("profNamaCabang").innerText = "Cabang " + (user.cabang || "Soekarno Hatta");
   
-  document.getElementById("genbaNamaAuditor").value = user.nama || "Refan";
-  document.getElementById("genbaJabatanAuditor").value = user.role || "NOS Officer";
-  
   switchTab("home");
   loadProfilCabangData(user.cabang || "Soekarno Hatta");
-  loadDropdownCabang();
   initReminderUI();
+  evaluateRealtimeReminders();
 
-  // Tampilkan otomatis Toast Reminder sesuai cabang pengguna
-  setTimeout(() => {
-    if (reminderState.rule1) showInAppReminderToast('rule1');
-  }, 1500);
-
-  setTimeout(() => {
-    startAppTour(false);
-  }, 600);
+  setTimeout(() => { startAppTour(false); }, 600);
 }
 
-function loadDropdownCabang() {
-  const select = document.getElementById("genbaSelectCabang");
-  fetch(`${API_URL}?action=getCabangList`)
-  .then(res => res.json())
-  .then(data => {
-    if (Array.isArray(data) && data.length > 0) {
-      let options = '<option value="">--Pilih Cabang--</option>';
-      data.forEach(cab => {
-        options += `<option value="${cab}">${cab}</option>`;
-      });
-      select.innerHTML = options;
-      if (currentUser && currentUser.cabang) select.value = currentUser.cabang;
+function initReminderUI() {
+  const saved = localStorage.getItem("nosa_reminder_state");
+  if (saved) { try { reminderState = JSON.parse(saved); } catch (e) {} }
+  updateReminderButtons();
+}
+
+function toggleReminderRule(ruleKey) {
+  reminderState[ruleKey] = !reminderState[ruleKey];
+  localStorage.setItem("nosa_reminder_state", JSON.stringify(reminderState));
+  updateReminderButtons();
+  evaluateRealtimeReminders(true);
+}
+
+function updateReminderButtons() {
+  const rules = ['rule1', 'rule2', 'rule3', 'rule4'];
+  rules.forEach((rKey, idx) => {
+    const btn = document.getElementById(`btnRule${idx + 1}`);
+    if (!btn) return;
+    if (reminderState[rKey]) {
+      btn.innerText = "Aktif";
+      btn.className = "px-4 py-1.5 rounded-xl text-xs font-extrabold shadow-2xs transition bg-emerald-400 text-emerald-950";
+    } else {
+      btn.innerText = "Non-Aktif";
+      btn.className = "px-4 py-1.5 rounded-xl text-xs font-extrabold shadow-2xs transition bg-red-300 text-red-950";
     }
   });
 }
 
-// FUNGSI REFERENSI STANDAR
-function loadReferensiData() {
-  const container = document.getElementById("referensiGridBox");
-  if (!container) return;
-  
-  container.innerHTML = '<p class="text-xs text-gray-400 italic text-center col-span-full py-8">Memuat data referensi standar...</p>';
-
-  fetch(`${API_URL}?action=getReferensi`)
-  .then(res => res.json())
-  .then(data => {
-    if (!data || data.length <= 1) {
-      container.innerHTML = '<p class="text-xs text-gray-400 italic text-center col-span-full py-8">Belum ada data referensi standar di spreadsheet.</p>';
-      return;
-    }
-    
-    const rows = data.slice(1);
-    let html = '';
-    
-    rows.forEach(row => {
-      const kat = row[1] || 'visual dealer';
-      const judul = row[2] || 'Judul Referensi';
-      const deskripsi = row[3] || 'Deskripsi standar';
-      const instruksi = row[4] || 'Instruksi & ketentuan standar.';
-      
-      let rawImg = row[5] || '';
-      if (rawImg.includes('drive.google.com') && rawImg.includes('/d/')) {
-        const match = rawImg.match(/\/d\/([^\/]+)/);
-        if (match && match[1]) rawImg = `https://lh3.googleusercontent.com/d/${match[1]}`;
-      }
-      const imgUrl = rawImg;
-      const downloadUrl = row[6] || '';
-
-      html += `
-        <div class="bg-nosa-cardBg p-4 sm:p-5 rounded-3xl border border-gray-200/70 shadow-xs flex flex-col justify-between space-y-3">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
-            <div class="w-full h-48 sm:h-56 rounded-2xl overflow-hidden bg-white/90 p-2 flex items-center justify-center border border-gray-300/50 shadow-inner">
-              ${imgUrl ? `<img src="${imgUrl}" alt="${judul}" class="w-full h-full object-contain">` : '<span class="text-xs text-gray-400 italic">Tidak ada gambar</span>'}
-            </div>
-            <div class="space-y-2">
-              <span class="inline-block bg-nosa-yellow text-gray-900 text-[10px] font-extrabold px-3 py-0.5 rounded-md uppercase tracking-wider">${kat}</span>
-              <h3 class="text-xl sm:text-2xl font-black text-nosa-green tracking-tight leading-none pt-0.5">${judul}</h3>
-              <p class="text-xs text-gray-700 leading-snug">${deskripsi}</p>
-              <div class="pt-2 space-y-0.5">
-                <h5 class="text-xs font-black text-nosa-green">Instruksi & Ketentuan</h5>
-                <p class="text-[11px] text-gray-600 leading-normal">${instruksi}</p>
-              </div>
-              ${downloadUrl ? `
-                <div class="pt-2">
-                  <h5 class="text-xs font-black text-nosa-green">Link Download</h5>
-                  <a href="${downloadUrl}" target="_blank" class="text-[10px] text-blue-600 underline font-semibold break-all">${downloadUrl}</a>
-                </div>
-              ` : ''}
-            </div>
-          </div>
-        </div>
-      `;
-    });
-    
-    container.innerHTML = html;
-  })
-  .catch(err => {
-    console.error("Error loading Referensi:", err);
-    container.innerHTML = '<p class="text-xs text-red-500 text-center col-span-full py-8">Gagal memuat data referensi standar.</p>';
-  });
+function startAppTour(isManual = false) {
+  const hasToured = localStorage.getItem("nosa_has_toured");
+  if (!isManual && hasToured === "true") return;
+  currentTourStep = 0;
+  document.getElementById("tourOverlay").classList.remove("hidden");
+  renderTourStep();
 }
 
-// FUNGSI MEMUAT & FILTER VIDEO ONBOARDING FLP
+function renderTourStep() {
+  const step = tourSteps[currentTourStep];
+  switchTab(step.tab);
+  document.getElementById("tourStepBadge").innerText = step.badge;
+  document.getElementById("tourDialogText").innerText = step.text;
+  document.querySelectorAll('.ring-4').forEach(el => el.classList.remove('ring-4', 'ring-yellow-400', 'scale-105'));
+
+  if (step.targetId) {
+    const target = document.getElementById(step.targetId);
+    if (target) {
+      target.classList.add('ring-4', 'ring-yellow-400', 'scale-105');
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+  const btnPrev = document.getElementById("btnTourPrev");
+  const btnNext = document.getElementById("btnTourNext");
+  if (currentTourStep === 0) btnPrev.classList.add("hidden"); else btnPrev.classList.remove("hidden");
+  if (currentTourStep === tourSteps.length - 1) btnNext.innerText = "Selesai ✨"; else btnNext.innerText = "Lanjut \u203A";
+}
+
+function nextTourStep() { if (currentTourStep < tourSteps.length - 1) { currentTourStep++; renderTourStep(); } else endAppTour(); }
+function prevTourStep() { if (currentTourStep > 0) { currentTourStep--; renderTourStep(); } }
+function endAppTour() {
+  document.querySelectorAll('.ring-4').forEach(el => el.classList.remove('ring-4', 'ring-yellow-400', 'scale-105'));
+  document.getElementById("tourOverlay").classList.add("hidden");
+  localStorage.setItem("nosa_has_toured", "true"); switchTab("home");
+}
+
+function switchTab(tabId) {
+  const pages = ['dashboardPage', 'referensiPage', 'reminderPage', 'onboardingPage', 'genbaAuditPage', 'picaDashboardPage', 'nosizuPage', 'leaderboardPage', 'profilPage'];
+  pages.forEach(p => { const el = document.getElementById(p); if (el) el.classList.add('hidden'); });
+
+  const navHome = document.getElementById('navHome');
+  const navPica = document.getElementById('navPica');
+  const navLeaderboard = document.getElementById('navLeaderboard');
+  const navProfil = document.getElementById('navProfil');
+  [navHome, navPica, navLeaderboard, navProfil].forEach(n => { if (n) n.classList.add('opacity-70'); });
+
+  if (tabId === 'home') {
+    document.getElementById('dashboardPage').classList.remove('hidden'); navHome.classList.remove('opacity-70');
+  } else if (tabId === 'referensi') {
+    document.getElementById('referensiPage').classList.remove('hidden'); loadReferensiData();
+  } else if (tabId === 'reminder') {
+    document.getElementById('reminderPage').classList.remove('hidden'); initReminderUI(); evaluateRealtimeReminders();
+  } else if (tabId === 'onboarding') {
+    document.getElementById('onboardingPage').classList.remove('hidden'); loadOnboardingData();
+  } else if (tabId === 'genbaAudit') {
+    document.getElementById('genbaAuditPage').classList.remove('hidden'); initDirectGenbaSession();
+  } else if (tabId === 'pica') {
+    document.getElementById('picaDashboardPage').classList.remove('hidden'); navPica.classList.remove('opacity-70'); loadPicaDashboardData();
+  } else if (tabId === 'nosizu') {
+    document.getElementById('nosizuPage').classList.remove('hidden'); loadNOSIZUDashboard();
+  } else if (tabId === 'leaderboard') {
+    document.getElementById('leaderboardPage').classList.remove('hidden'); navLeaderboard.classList.remove('opacity-70'); loadLeaderboardData();
+  } else if (tabId === 'profil') {
+    document.getElementById('profilPage').classList.remove('hidden'); navProfil.classList.remove('opacity-70');
+    if (currentUser && currentUser.cabang) loadProfilCabangData(currentUser.cabang);
+  }
+}
+
+// SOAL NOSIZU, ONBOARDING FLP & PROFIL CABANG HELPER
 function loadOnboardingData() {
   const container = document.getElementById("onboardingGridBox");
   if (!container) return;
-  container.innerHTML = '<p class="text-xs text-gray-400 italic col-span-full text-center py-8">Memuat materi video onboarding...</p>';
-
   fetch(`${API_URL}?action=getOnboardingFLP`)
   .then(res => res.json())
   .then(data => {
-    if (!data || data.length <= 1) {
-      container.innerHTML = '<p class="text-xs text-gray-400 italic col-span-full text-center py-8">Belum ada materi video onboarding di spreadsheet OnboardingFLP.</p>';
-      return;
-    }
-
-    const rows = data.slice(1);
-    allOnboardingVideos = rows.map(r => ({
-      id: r[0],
-      judul: r[1] || 'Judul Video Materi',
-      deskripsi: r[2] || 'Deskripsi materi pembelajaran...',
-      videoUrl: r[3] || '',
-      kategori: r[4] || 'Training FLP'
-    }));
-
+    if (!data || data.length <= 1) { container.innerHTML = '<p class="text-xs text-gray-400 italic text-center col-span-full py-8">Belum ada materi video onboarding.</p>'; return; }
+    allOnboardingVideos = data.slice(1).map(r => ({ id: r[0], judul: r[1] || 'Judul Video', deskripsi: r[2] || '', videoUrl: r[3] || '', kategori: r[4] || 'Training FLP' }));
     renderOnboardingVideos(allOnboardingVideos);
-  })
-  .catch(err => {
-    console.error("Error loading Onboarding FLP:", err);
-    container.innerHTML = '<p class="text-xs text-red-500 col-span-full text-center py-8">Gagal memuat materi video onboarding.</p>';
   });
 }
 
 function renderOnboardingVideos(videoList) {
   const container = document.getElementById("onboardingGridBox");
   if (!container) return;
-
-  if (videoList.length === 0) {
-    container.innerHTML = '<p class="text-xs text-gray-400 italic col-span-full text-center py-8">Video tidak ditemukan sesuai kata kunci pencarian.</p>';
-    return;
-  }
-
   let html = '';
   videoList.forEach(vid => {
     const embedUrl = formatEmbedVideoUrl(vid.videoUrl);
-
     html += `
-      <div class="bg-nosa-cardBg p-4 rounded-3xl border border-gray-200/80 shadow-xs flex flex-col justify-between space-y-3 hover:border-nosa-green transition">
-        <div class="space-y-3">
-          <div class="w-full h-48 rounded-2xl overflow-hidden bg-black flex items-center justify-center border border-gray-300 shadow-inner">
-            ${embedUrl ? `
-              <iframe class="w-full h-full" src="${embedUrl}" title="${vid.judul}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-            ` : `
-              <div class="text-center p-4">
-                <span class="text-3xl">🎬</span>
-                <p class="text-[11px] text-gray-400 mt-1">Link video tidak valid</p>
-              </div>
-            `}
-          </div>
-          <div class="space-y-1">
-            <span class="inline-block bg-nosa-yellow text-gray-900 text-[9px] font-extrabold px-2.5 py-0.5 rounded-md uppercase tracking-wider">${vid.kategori}</span>
-            <h3 class="text-base font-extrabold text-nosa-green leading-snug">${vid.judul}</h3>
-            <p class="text-xs text-gray-600 leading-normal whitespace-pre-line">${vid.deskripsi}</p>
-          </div>
+      <div class="bg-nosa-cardBg p-4 rounded-3xl border border-gray-200/80 shadow-xs space-y-3">
+        <div class="w-full h-48 rounded-2xl overflow-hidden bg-black border border-gray-300 shadow-inner">
+          ${embedUrl ? `<iframe class="w-full h-full" src="${embedUrl}" title="${vid.judul}" frameborder="0" allowfullscreen></iframe>` : '<div class="text-center p-4">🎬 Link tidak valid</div>'}
+        </div>
+        <div class="space-y-1">
+          <span class="inline-block bg-nosa-yellow text-gray-900 text-[9px] font-extrabold px-2.5 py-0.5 rounded-md uppercase tracking-wider">${vid.kategori}</span>
+          <h3 class="text-base font-extrabold text-nosa-green leading-snug">${vid.judul}</h3>
+          <p class="text-xs text-gray-600 leading-normal">${vid.deskripsi}</p>
         </div>
       </div>
     `;
@@ -503,207 +634,39 @@ function renderOnboardingVideos(videoList) {
 
 function filterOnboardingVideo() {
   const query = document.getElementById("searchVideoInput").value.toLowerCase().trim();
-  const filtered = allOnboardingVideos.filter(v => 
-    v.judul.toLowerCase().includes(query) || v.deskripsi.toLowerCase().includes(query) || v.kategori.toLowerCase().includes(query)
-  );
+  const filtered = allOnboardingVideos.filter(v => v.judul.toLowerCase().includes(query) || v.deskripsi.toLowerCase().includes(query));
   renderOnboardingVideos(filtered);
 }
 
 function formatEmbedVideoUrl(url) {
   if (!url) return '';
   let str = url.trim();
-  if (str.includes("youtube.com/watch?v=")) {
-    const vidId = str.split("v=")[1].split("&")[0];
-    return `https://www.youtube.com/embed/${vidId}`;
-  }
-  if (str.includes("youtu.be/")) {
-    const vidId = str.split("youtu.be/")[1].split("?")[0];
-    return `https://www.youtube.com/embed/${vidId}`;
-  }
-  if (str.includes("drive.google.com") && str.includes("/file/d/")) {
-    const match = str.match(/\/d\/([^\/]+)/);
-    if (match && match[1]) return `https://drive.google.com/file/d/${match[1]}/preview`;
-  }
+  if (str.includes("youtube.com/watch?v=")) return `https://www.youtube.com/embed/${str.split("v=")[1].split("&")[0]}`;
+  if (str.includes("youtu.be/")) return `https://www.youtube.com/embed/${str.split("youtu.be/")[1].split("?")[0]}`;
   return str;
 }
 
-// LOGIKA AUDIT GENBA
-function startGenbaAudit(e) {
-  e.preventDefault();
-  const cabang = document.getElementById("genbaSelectCabang").value;
-  const nama = document.getElementById("genbaNamaAuditor").value;
-  const jabatan = document.getElementById("genbaJabatanAuditor").value;
-  const noHp = document.getElementById("genbaNoHp").value;
-  currentAuditSession = { cabang, nama, jabatan, noHp };
-  auditSelection = {};
-  
-  document.getElementById("auditInfoCabang").innerText = cabang || "Soekarno Hatta";
-  document.getElementById("auditInfoAuditor").innerText = `${nama} (${jabatan})`;
-  
-  switchTab("genbaAudit");
-  loadCeklisNOSData();
-}
-
-function loadCeklisNOSData() {
-  const container = document.getElementById("genbaCeklisContainer");
-  container.innerHTML = '<p class="text-xs text-gray-400 italic text-center py-6">Memuat item ceklis NOS...</p>';
-  
-  fetch(`${API_URL}?action=getCeklisNOS`)
-  .then(res => res.json())
-  .then(data => {
-    if (!data || data.length <= 1) {
-      container.innerHTML = '<p class="text-xs text-gray-400 italic text-center py-6">Belum ada item ceklis di spreadsheet CeklisNOS.</p>';
-      return;
-    }
-    const rows = data.slice(1);
-    let html = '';
-    
-    rows.forEach((row, idx) => {
-      const tipe = row[1] || 'PREMISES H1';
-      const mandatory = row[2] || 'S, G, P';
-      const itemVal = (row[3] || '').toString().trim();
-      const subItem1 = (row[4] || '').toString().trim();
-      const subItem2 = (row[5] || '').toString().trim();
-      const penjelasan = row[6] || 'Penjelasan item ceklis...';
-      const labelParts = [itemVal, subItem1, subItem2].filter(text => text !== '');
-      const headerLabel = labelParts.join(', ');
-      
-      let rawImg = row[7] || '';
-      if (rawImg.includes('drive.google.com') && rawImg.includes('/d/')) {
-        const match = rawImg.match(/\/d\/([^\/]+)/);
-        if (match && match[1]) rawImg = `https://lh3.googleusercontent.com/d/${match[1]}`;
-      }
-      const imgUrl = rawImg;
-      const isNeedFoto = (row[8] || 'Ya').toString().toLowerCase() === 'ya';
-      
-      html += `
-        <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/80 shadow-xs space-y-3">
-          <div class="flex justify-between items-center border-b border-gray-300/50 pb-1.5">
-            <h3 class="text-sm font-black text-nosa-green tracking-wider uppercase">${tipe}</h3>
-            <span class="text-xs font-black text-nosa-green tracking-wider">${mandatory}</span>
-          </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-stretch">
-            <div class="bg-gray-200/60 p-3 rounded-xl space-y-2 flex flex-col h-full">
-              <h5 class="text-xs font-extrabold text-gray-900 border-b border-gray-300/60 pb-1 flex-shrink-0">${headerLabel || 'Item Ceklis'}</h5>
-              <div class="max-h-40 overflow-y-auto pr-1 flex-1">
-                <p class="text-[11px] text-gray-700 leading-relaxed whitespace-pre-line">${penjelasan}</p>
-              </div>
-            </div>
-            <div class="bg-gray-200/60 p-3 rounded-xl flex flex-col justify-between items-center text-center space-y-2">
-              <span class="text-[10px] font-black text-nosa-green tracking-widest uppercase">REFERENSI</span>
-              <div class="w-full h-28 rounded-lg bg-white overflow-hidden flex items-center justify-center border border-gray-300/40">
-                ${imgUrl ? `<img src="${imgUrl}" class="w-full h-full object-contain p-1">` : '<span class="text-[10px] text-gray-400 italic">No Reference Image</span>'}
-              </div>
-            </div>
-          </div>
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-            <button type="button" onclick="selectAuditStatus(${idx}, 'Exist Good', '${headerLabel.replace(/'/g, "\\'")}')" class="audit-btn-${idx} py-2 bg-gray-300 hover:bg-emerald-200 text-gray-800 text-xs font-bold rounded-xl border border-gray-400/50 transition">Exist Good</button>
-            <button type="button" onclick="selectAuditStatus(${idx}, 'Exist Not Good', '${headerLabel.replace(/'/g, "\\'")}')" class="audit-btn-${idx} py-2 bg-gray-300 hover:bg-amber-200 text-gray-800 text-xs font-bold rounded-xl border border-gray-400/50 transition">Exist Not Good</button>
-            <button type="button" onclick="selectAuditStatus(${idx}, 'Not Exist', '${headerLabel.replace(/'/g, "\\'")}')" class="audit-btn-${idx} py-2 bg-gray-300 hover:bg-red-200 text-gray-800 text-xs font-bold rounded-xl border border-gray-400/50 transition">Not Exist</button>
-            <button type="button" onclick="selectAuditStatus(${idx}, 'N/A', '${headerLabel.replace(/'/g, "\\'")}')" class="audit-btn-${idx} py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-xs font-bold rounded-xl border border-gray-400/50 transition">N/A</button>
-          </div>
-          ${isNeedFoto ? `
-            <div class="bg-gray-200/60 p-2.5 rounded-xl flex items-center justify-between gap-2 pt-2">
-              <div class="space-y-0.5">
-                <p class="text-[11px] font-bold text-gray-800 flex items-center gap-1">📸 Foto Bukti Audit (Wajib)</p>
-                <p class="text-[9px] text-gray-500">Ambil langsung via Kamera HP atau pilih file galeri</p>
-              </div>
-              <label class="bg-emerald-400 hover:bg-emerald-500 text-gray-900 font-bold text-[10px] px-3 py-1.5 rounded-xl cursor-pointer shadow-2xs transition flex items-center gap-1">
-                <span>📷 Ambil Foto/File</span>
-                <input type="file" accept="image/*" capture="environment" class="hidden" onchange="handleEvidenceUpload(event, ${idx})">
-              </label>
-            </div>
-          ` : ''}
-        </div>
-      `;
-    });
-    container.innerHTML = html;
-  });
-}
-
-function selectAuditStatus(index, status, headerLabel) {
-  auditSelection[index] = { status: status, headerLabel: headerLabel };
-  const btns = document.querySelectorAll(`.audit-btn-${index}`);
-  btns.forEach(btn => {
-    btn.className = "py-2 bg-gray-300 text-gray-800 text-xs font-bold rounded-xl border border-gray-400/50 transition";
-    if (btn.innerText.trim() === status) {
-      if (status === 'Exist Good') btn.className = "py-2 bg-emerald-500 text-white text-xs font-extrabold rounded-xl shadow-xs";
-      if (status === 'Exist Not Good') btn.className = "py-2 bg-amber-500 text-white text-xs font-extrabold rounded-xl shadow-xs";
-      if (status === 'Not Exist') btn.className = "py-2 bg-red-500 text-white text-xs font-extrabold rounded-xl shadow-xs";
-      if (status === 'N/A') btn.className = "py-2 bg-gray-600 text-white text-xs font-extrabold rounded-xl shadow-xs";
-    }
-  });
-}
-
-function handleEvidenceUpload(event, index) {
-  const file = event.target.files[0];
-  if (file) alert(`Foto evidence untuk item #${index + 1} berhasil dipilih: ${file.name}`);
-}
-
-function submitGenbaForm() {
-  if (!currentAuditSession) { alert("Sesi audit tidak valid."); return; }
-  const results = Object.values(auditSelection);
-  if (results.length === 0) { alert("Silakan pilih status setidaknya pada satu item ceklis sebelum submit!"); return; }
-
-  const btnSubmit = document.getElementById("btnSubmitGenbaAudit");
-  if (btnSubmit) { btnSubmit.disabled = true; btnSubmit.innerText = "Menyimpan PICA..."; }
-
-  fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action: "submitGenbaAudit", auditSession: currentAuditSession, auditResults: results })
-  })
-  .then(res => res.json())
-  .then(res => {
-    if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.innerText = "💾 Submit Audit"; }
-    if (res.status === "success") {
-      alert(`Audit Berhasil Disimpan! ${res.totalPicaCreated} temuan PICA baru telah ditambahkan.`);
-      auditSelection = {};
-      switchTab("pica");
-    } else { alert(res.message || "Gagal menyimpan audit."); }
-  });
-}
-
-// LOGIKA DASHBOARD PICA & MODAL
 function loadPicaDashboardData() {
   const container = document.getElementById("picaCardsContainer");
   if (!container) return;
   const userCabang = (currentUser && currentUser.cabang) ? currentUser.cabang : "Soekarno Hatta";
-  container.innerHTML = '<p class="text-xs text-gray-400 italic text-center py-8">Memuat data PICA...</p>';
-
   fetch(`${API_URL}?action=getPicaList&cabang=${encodeURIComponent(userCabang)}`)
   .then(res => res.json())
   .then(data => {
     if (!Array.isArray(data) || data.length === 0) {
-      container.innerHTML = `
-        <div class="bg-nosa-cardBg p-6 rounded-2xl text-center space-y-2 border border-gray-200">
-          <p class="text-2xl">🎉</p>
-          <h4 class="font-bold text-nosa-green text-sm">Tidak Ada PICA Aktif!</h4>
-          <p class="text-xs text-gray-500">Semua standar di cabang ${userCabang} sudah terpenuhi dengan baik.</p>
-        </div>
-      `;
+      container.innerHTML = `<div class="bg-nosa-cardBg p-6 rounded-2xl text-center space-y-2 border border-gray-200"><p class="text-2xl">🎉</p><h4 class="font-bold text-nosa-green text-sm">Tidak Ada PICA Aktif!</h4></div>`;
       return;
     }
     let html = '';
     data.forEach(item => {
       const isClosed = item.status === 'Closed' || item.status === 'Verified';
       const isOnCheck = item.status === 'On Check';
-      let statusBadge = 'bg-red-200 text-red-800';
-      if (isOnCheck) statusBadge = 'bg-amber-200 text-amber-800';
-      if (isClosed) statusBadge = 'bg-emerald-200 text-emerald-800';
-
+      let statusBadge = isClosed ? 'bg-emerald-200 text-emerald-800' : (isOnCheck ? 'bg-amber-200 text-amber-800' : 'bg-red-200 text-red-800');
       html += `
-        <div onclick="openPicaModal('${item.idPica}', '${item.item.replace(/'/g, "\\'")}', '${item.status}', '${(item.catatanPerbaikan || '').replace(/'/g, "\\'")}')" class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/80 shadow-xs space-y-2 cursor-pointer hover:border-nosa-green transition">
-          <div class="flex justify-between items-start">
-            <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">${item.idPica}</span>
-            <span class="${statusBadge} font-extrabold text-[9px] px-2.5 py-0.5 rounded-full">${item.status}</span>
-          </div>
+        <div onclick="openPicaModal('${item.idPica}', '${item.item.replace(/'/g, "\\'")}', '${item.status}', '${(item.catatanPerbaikan || '').replace(/'/g, "\\'")}')" class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/80 shadow-xs space-y-2 cursor-pointer">
+          <div class="flex justify-between items-start"><span class="text-[10px] font-extrabold text-gray-400">${item.idPica}</span><span class="${statusBadge} font-extrabold text-[9px] px-2.5 py-0.5 rounded-full">${item.status}</span></div>
           <h4 class="text-xs font-black text-gray-900">${item.item}</h4>
-          <p class="text-[11px] text-gray-600">${item.catatan || 'Temuan ketidaksesuaian saat GENBA.'}</p>
-          <div class="pt-2 flex justify-between items-center text-[10px] border-t border-gray-300/40 text-gray-500">
-            <span>👤 Auditor: ${item.auditor}</span>
-            <span>📅 Due: <strong class="text-gray-800">${formatDateNice(item.dueDate)}</strong></span>
-          </div>
+          <div class="pt-2 flex justify-between items-center text-[10px] border-t border-gray-300/40 text-gray-500"><span>👤 Auditor: ${item.auditor}</span><span>📅 Due: ${formatDateNice(item.dueDate)}</span></div>
         </div>
       `;
     });
@@ -715,72 +678,33 @@ function openPicaModal(idPica, itemTitle, status, catatanPerbaikan) {
   activePicaId = idPica;
   document.getElementById("modalPicaTitle").innerText = `Detail PICA (${idPica})`;
   document.getElementById("modalPicaItem").innerText = itemTitle;
-  const modalCabangForm = document.getElementById("modalCabangForm");
-  const modalNosForm = document.getElementById("modalNosForm");
-
   if (status === "Open") {
-    modalCabangForm.classList.remove("hidden");
-    modalNosForm.classList.add("hidden");
+    document.getElementById("modalCabangForm").classList.remove("hidden"); document.getElementById("modalNosForm").classList.add("hidden");
   } else if (status === "On Check") {
-    modalCabangForm.classList.add("hidden");
-    modalNosForm.classList.remove("hidden");
+    document.getElementById("modalCabangForm").classList.add("hidden"); document.getElementById("modalNosForm").classList.remove("hidden");
     document.getElementById("modalCatatanPerbaikanView").innerText = catatanPerbaikan || "Cabang telah mengunggah bukti perbaikan.";
-  } else {
-    alert("PICA ini sudah Berstatus Closed (Selesai).");
-    return;
-  }
+  } else { alert("PICA ini sudah Closed."); return; }
   document.getElementById("picaActionModal").classList.remove("hidden");
 }
 
-function closePicaModal() {
-  document.getElementById("picaActionModal").classList.add("hidden");
-  activePicaId = null;
-}
+function closePicaModal() { document.getElementById("picaActionModal").classList.add("hidden"); }
 
 function submitPicaPerbaikan(newStatus) {
   if (!activePicaId) return;
-  const catatan = document.getElementById("modalCatatanPerbaikan").value.trim();
-  const btn = document.getElementById("btnSubmitPerbaikan");
-  btn.disabled = true; btn.innerText = "Mengirim...";
-
   fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action: "updatePicaStatus", idPica: activePicaId, newStatus: newStatus, catatanPerbaikan: catatan })
-  })
-  .then(res => res.json())
-  .then(res => {
-    btn.disabled = false; btn.innerText = "🚀 Kirim ke NOS Officer (Ubah Status ke On Check)";
-    if (res.status === "success") {
-      alert("Perbaikan berhasil dikirim! Status PICA sekarang: On Check");
-      closePicaModal();
-      loadPicaDashboardData();
-    }
-  });
+    method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ action: "updatePicaStatus", idPica: activePicaId, newStatus: newStatus, catatanPerbaikan: document.getElementById("modalCatatanPerbaikan").value.trim() })
+  }).then(() => { closePicaModal(); loadPicaDashboardData(); });
 }
 
 function submitPicaVerifikasi(newStatus) {
   if (!activePicaId) return;
-  const btn = document.getElementById("btnSubmitVerifikasi");
-  btn.disabled = true; btn.innerText = "Memproses...";
-
   fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify({ action: "updatePicaStatus", idPica: activePicaId, newStatus: newStatus })
-  })
-  .then(res => res.json())
-  .then(res => {
-    btn.disabled = false; btn.innerText = "✅ Verifikasi & Approve (Ubah Status ke Closed)";
-    if (res.status === "success") {
-      alert("PICA berhasil diverifikasi! Status PICA sekarang: Closed");
-      closePicaModal();
-      loadPicaDashboardData();
-    }
-  });
+  }).then(() => { closePicaModal(); loadPicaDashboardData(); });
 }
 
-// LOGIKA NOSIZU GAME & LEADERBOARD
 function loadNOSIZUDashboard() {
   const userEmail = (currentUser && currentUser.email) ? currentUser.email : "demo@daya.com";
   fetch(`${API_URL}?action=getUserNOSIZU&email=${encodeURIComponent(userEmail)}`)
@@ -797,34 +721,15 @@ function loadNOSIZUDashboard() {
 function renderNOSIZUPathMap() {
   const mapBox = document.getElementById("nosizuPathMap");
   let html = '';
-  const levels = [
-    { id: 1, title: 'Level 1: Dasar NOS' },
-    { id: 2, title: 'Level 2: Standar Display' },
-    { id: 3, title: 'Level 3: Proses Servis' },
-    { id: 4, title: 'Level 4: Handling Konsumen' },
-  ];
-
+  const levels = [{ id: 1, title: 'Level 1: Dasar NOS' }, { id: 2, title: 'Level 2: Standar Display' }, { id: 3, title: 'Level 3: Proses Servis' }, { id: 4, title: 'Level 4: Handling Konsumen' }];
   levels.forEach((lvl, idx) => {
     const isCompleted = lvl.id < nosUserStats.unit;
     const isCurrent = lvl.id === nosUserStats.unit;
     const alignClass = idx % 2 === 0 ? 'self-start ml-8' : 'self-end mr-8';
-
-    let btnBg = 'bg-gray-400 border-gray-500 cursor-not-allowed';
-    let icon = '🔒';
-
-    if (isCompleted) {
-      btnBg = 'bg-emerald-500 border-emerald-600 cursor-pointer shadow-md';
-      icon = '✓';
-    } else if (isCurrent) {
-      btnBg = 'bg-yellow-400 border-yellow-500 animate-bounce cursor-pointer shadow-lg text-black';
-      icon = '▶';
-    }
-
+    let btnBg = isCompleted ? 'bg-emerald-500 border-emerald-600' : (isCurrent ? 'bg-yellow-400 border-yellow-500 animate-bounce text-black' : 'bg-gray-400 border-gray-500');
     html += `
       <div class="${alignClass} flex flex-col items-center space-y-1">
-        <button onclick="startQuizSession(${lvl.id})" ${!isCompleted && !isCurrent ? 'disabled' : ''} class="w-16 h-16 rounded-full border-b-4 flex items-center justify-center text-xl font-black ${btnBg} transition">
-          ${icon}
-        </button>
+        <button onclick="startQuizSession(${lvl.id})" ${!isCompleted && !isCurrent ? 'disabled' : ''} class="w-16 h-16 rounded-full border-b-4 flex items-center justify-center text-xl font-black ${btnBg}">${isCompleted ? '✓' : (isCurrent ? '▶' : '🔒')}</button>
         <span class="text-[10px] font-extrabold text-white bg-black/30 px-2 py-0.5 rounded-full">${lvl.title}</span>
       </div>
     `;
@@ -833,17 +738,8 @@ function renderNOSIZUPathMap() {
 }
 
 function startQuizSession(unitId) {
-  if (nosUserStats.nyawa <= 0) { alert("Nyawa Anda habis!"); return; }
-  fetch(`${API_URL}?action=getSoalNOSIZU`)
-  .then(res => res.json())
-  .then(data => {
-    if (!data || data.length <= 1) { alert("Belum ada soal kuis yang diinput di spreadsheet SoalNOSIZU."); return; }
-    const rows = data.slice(1);
-    currentQuestionList = rows.map(r => ({
-      id: r[0], unit: r[1], tipe: r[2], pertanyaan: r[3],
-      opsiA: r[4], opsiB: r[5], opsiC: r[6], opsiD: r[7],
-      gambarA: r[8], gambarB: r[9], kunci: String(r[10]).trim(), pembahasan: r[11]
-    }));
+  fetch(`${API_URL}?action=getSoalNOSIZU`).then(res => res.json()).then(data => {
+    currentQuestionList = data.slice(1).map(r => ({ id: r[0], unit: r[1], tipe: r[2], pertanyaan: r[3], opsiA: r[4], opsiB: r[5], opsiC: r[6], opsiD: r[7], gambarA: r[8], gambarB: r[9], kunci: String(r[10]).trim(), pembahasan: r[11] }));
     quizIndex = 0;
     document.getElementById("nosizuPage").classList.add("hidden");
     document.getElementById("nosizuQuizContainer").classList.remove("hidden");
@@ -853,324 +749,65 @@ function startQuizSession(unitId) {
 
 function renderCurrentQuestion() {
   if (quizIndex >= currentQuestionList.length) { finishQuizSession(); return; }
-  userSelectedAnswer = null;
   const q = currentQuestionList[quizIndex];
-  
-  const pct = ((quizIndex) / currentQuestionList.length) * 100;
-  document.getElementById("quizProgressBar").style.width = `${pct}%`;
+  document.getElementById("quizProgressBar").style.width = `${((quizIndex) / currentQuestionList.length) * 100}%`;
   document.getElementById("quizLivesCount").innerText = nosUserStats.nyawa;
-
   document.getElementById("quizQuestionText").innerText = q.pertanyaan;
   document.getElementById("quizFeedbackPanel").classList.add("hidden");
   document.getElementById("btnCheckAnswer").disabled = false;
-
   const box = document.getElementById("quizAnswersBox");
-
-  if (q.tipe === "Pilihan Ganda") {
-    document.getElementById("quizTypeBadge").innerText = "PILIH JAWABAN YANG TEPAT";
-    box.innerHTML = `
-      ${renderOptionBtn('A', q.opsiA)}
-      ${renderOptionBtn('B', q.opsiB)}
-      ${renderOptionBtn('C', q.opsiC)}
-      ${renderOptionBtn('D', q.opsiD)}
-    `;
-  } else if (q.tipe === "Perbandingan Gambar") {
-    document.getElementById("quizTypeBadge").innerText = "SPOT THE DIFFERENCE";
-    box.innerHTML = `
-      <div class="grid grid-cols-2 gap-3 pt-1">
-        <div onclick="selectQuizAnswer('A')" id="opt-A" class="quiz-opt border-2 border-gray-200 p-2 rounded-2xl flex flex-col items-center cursor-pointer">
-          <img src="${formatDriveImg(q.gambarA)}" class="w-full h-32 object-contain rounded-xl bg-gray-50">
-          <span class="text-xs font-black mt-1">Gambar A</span>
-        </div>
-        <div onclick="selectQuizAnswer('B')" id="opt-B" class="quiz-opt border-2 border-gray-200 p-2 rounded-2xl flex flex-col items-center cursor-pointer">
-          <img src="${formatDriveImg(q.gambarB)}" class="w-full h-32 object-contain rounded-xl bg-gray-50">
-          <span class="text-xs font-black mt-1">Gambar B</span>
-        </div>
-      </div>
-    `;
-  } else if (q.tipe === "Pernyataan") {
-    document.getElementById("quizTypeBadge").innerText = "PERNYATAAN BENAR ATAU SALAH";
-    box.innerHTML = `
-      <div class="grid grid-cols-2 gap-3 pt-2">
-        <button type="button" onclick="selectQuizAnswer('Benar')" id="opt-Benar" class="quiz-opt py-4 bg-emerald-500 text-white font-extrabold rounded-2xl text-sm">✓ Benar</button>
-        <button type="button" onclick="selectQuizAnswer('Salah')" id="opt-Salah" class="quiz-opt py-4 bg-red-500 text-white font-extrabold rounded-2xl text-sm">✕ Salah</button>
-      </div>
-    `;
-  }
+  box.innerHTML = `${renderOptionBtn('A', q.opsiA)}${renderOptionBtn('B', q.opsiB)}${renderOptionBtn('C', q.opsiC)}${renderOptionBtn('D', q.opsiD)}`;
 }
 
 function renderOptionBtn(key, val) {
   if (!val) return '';
-  return `
-    <div onclick="selectQuizAnswer('${key}')" id="opt-${key}" class="quiz-opt border-2 border-gray-200 p-3 rounded-2xl flex items-center gap-3 cursor-pointer">
-      <span class="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center font-bold text-xs">${key}</span>
-      <span class="text-xs text-gray-800 font-semibold leading-snug">${val}</span>
-    </div>
-  `;
-}
-
-function formatDriveImg(url) {
-  if (!url) return '';
-  if (url.includes('drive.google.com') && url.includes('/d/')) {
-    const match = url.match(/\/d\/([^\/]+)/);
-    if (match && match[1]) return `https://lh3.googleusercontent.com/d/${match[1]}`;
-  }
-  return url;
+  return `<div onclick="selectQuizAnswer('${key}')" id="opt-${key}" class="quiz-opt border-2 border-gray-200 p-3 rounded-2xl flex items-center gap-3 cursor-pointer"><span class="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center font-bold text-xs">${key}</span><span class="text-xs text-gray-800 font-semibold">${val}</span></div>`;
 }
 
 function selectQuizAnswer(val) {
   userSelectedAnswer = val;
-  document.querySelectorAll('.quiz-opt').forEach(el => {
-    el.classList.remove('border-red-500', 'bg-red-50', 'ring-2', 'ring-red-400');
-  });
+  document.querySelectorAll('.quiz-opt').forEach(el => el.classList.remove('border-red-500', 'bg-red-50'));
   const sel = document.getElementById(`opt-${val}`);
-  if (sel) sel.classList.add('border-red-500', 'bg-red-50', 'ring-2', 'ring-red-400');
+  if (sel) sel.classList.add('border-red-500', 'bg-red-50');
 }
 
 function checkAnswer() {
-  if (!userSelectedAnswer) { alert("Pilih salah satu jawaban terlebih dahulu!"); return; }
+  if (!userSelectedAnswer) return;
   const q = currentQuestionList[quizIndex];
   const isCorrect = String(userSelectedAnswer).toLowerCase() === String(q.kunci).toLowerCase();
-
   const feedbackPanel = document.getElementById("quizFeedbackPanel");
   feedbackPanel.classList.remove("hidden");
-  document.getElementById("btnCheckAnswer").disabled = true;
-
-  if (isCorrect) {
-    nosUserStats.xp += 20;
-    feedbackPanel.className = "p-4 rounded-2xl border bg-emerald-50 border-emerald-300 space-y-2";
-    document.getElementById("feedbackIcon").innerText = "✅";
-    document.getElementById("feedbackTitle").innerText = "Hebat! Jawaban Tepat";
-  } else {
-    nosUserStats.nyawa = Math.max(0, nosUserStats.nyawa - 1);
-    feedbackPanel.className = "p-4 rounded-2xl border bg-red-50 border-red-300 space-y-2";
-    document.getElementById("feedbackIcon").innerText = "❌";
-    document.getElementById("feedbackTitle").innerText = "Kurang Tepat";
-  }
-
-  document.getElementById("feedbackText").innerText = q.pembahasan || "Langkah perbaikan dan pemahaman standar NOS.";
+  if (isCorrect) { nosUserStats.xp += 20; feedbackPanel.className = "p-4 rounded-2xl border bg-emerald-50 border-emerald-300 space-y-2"; document.getElementById("feedbackTitle").innerText = "Hebat!"; }
+  else { nosUserStats.nyawa = Math.max(0, nosUserStats.nyawa - 1); feedbackPanel.className = "p-4 rounded-2xl border bg-red-50 border-red-300 space-y-2"; document.getElementById("feedbackTitle").innerText = "Kurang Tepat"; }
+  document.getElementById("feedbackText").innerText = q.pembahasan || "";
 }
 
-function nextQuestion() {
-  quizIndex++;
-  renderCurrentQuestion();
-}
-
-function exitQuiz() {
-  document.getElementById("nosizuQuizContainer").classList.add("hidden");
-  document.getElementById("nosizuPage").classList.remove("hidden");
-  loadNOSIZUDashboard();
-}
-
-function finishQuizSession() {
-  alert(`Selamat! Anda menyelesaikan sesi kuis. Total XP Anda sekarang: ${nosUserStats.xp}`);
-  fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({
-      action: "updateUserNOSIZU",
-      email: currentUser ? currentUser.email : "demo@daya.com",
-      addXp: 20,
-      nyawa: nosUserStats.nyawa
-    })
-  });
-  exitQuiz();
-}
+function nextQuestion() { quizIndex++; renderCurrentQuestion(); }
+function exitQuiz() { document.getElementById("nosizuQuizContainer").classList.add("hidden"); document.getElementById("nosizuPage").classList.remove("hidden"); loadNOSIZUDashboard(); }
+function finishQuizSession() { alert(`Sesi Kuis Selesai! XP: ${nosUserStats.xp}`); exitQuiz(); }
 
 function loadLeaderboardData() {
   const container = document.getElementById("leaderboardListBox");
-  container.innerHTML = '<p class="text-xs text-gray-400 italic text-center py-8">Memuat klasemen...</p>';
-
-  fetch(`${API_URL}?action=getLeaderboard`)
-  .then(res => res.json())
-  .then(data => {
-    if (!Array.isArray(data) || data.length === 0) {
-      container.innerHTML = '<p class="text-xs text-gray-400 italic text-center py-8">Belum ada peringkat terdaftar.</p>';
-      return;
-    }
+  fetch(`${API_URL}?action=getLeaderboard`).then(res => res.json()).then(data => {
     let html = '';
     data.forEach((item, idx) => {
-      let badge = `<span class="font-extrabold text-gray-400 text-xs w-5">${idx + 1}</span>`;
-      if (idx === 0) badge = `<span class="text-base">🥇</span>`;
-      if (idx === 1) badge = `<span class="text-base">🥈</span>`;
-      if (idx === 2) badge = `<span class="text-base">🥉</span>`;
-
-      html += `
-        <div class="bg-nosa-cardBg p-3 rounded-2xl border border-gray-200/80 shadow-xs flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            ${badge}
-            <div>
-              <h4 class="text-xs font-black text-gray-900">${item.nama}</h4>
-              <p class="text-[9px] text-gray-500">${item.cabang}</p>
-            </div>
-          </div>
-          <span class="text-xs font-black text-blue-600">${item.xp} XP</span>
-        </div>
-      `;
+      html += `<div class="bg-nosa-cardBg p-3 rounded-2xl border flex justify-between"><div><h4 class="text-xs font-black">${item.nama}</h4><p class="text-[9px] text-gray-500">${item.cabang}</p></div><span class="text-xs font-black text-blue-600">${item.xp} XP</span></div>`;
     });
     container.innerHTML = html;
   });
 }
 
-// FUNGSI PROFIL CABANG DINAMIS
 function loadProfilCabangData(cabangName) {
-  const picaBox = document.getElementById("profPicaBox");
-  const berulangBox = document.getElementById("profTemuanBerulangBox");
-  const topFlpBox = document.getElementById("profTopFlpBox");
-
-  if (picaBox) picaBox.innerHTML = '<p class="text-gray-400 italic">Memuat data PICA...</p>';
-  if (berulangBox) berulangBox.innerHTML = '<p class="text-gray-400 italic">Memuat temuan berulang...</p>';
-  if (topFlpBox) topFlpBox.innerHTML = '<p class="text-gray-400 italic">Memuat peringkat FLP...</p>';
-
-  fetch(`${API_URL}?action=getProfilCabang&cabang=${encodeURIComponent(cabangName)}`)
-  .then(res => res.json())
-  .then(res => {
-    if (res.status === "success") {
-      if (res.info && res.info.skorNos) {
-        const parts = res.info.skorNos.split('/');
-        document.getElementById("profBadgeSkor").innerHTML = `
-          <span class="bg-amber-400 text-gray-900 text-xs font-extrabold px-3 py-0.5 rounded-md shadow-2xs">${parts[0] ? parts[0].trim() : "GOLD"}</span>
-          <span class="text-gray-400 font-light text-xs">/</span>
-          <span class="bg-gray-300 text-gray-600 text-xs font-bold px-3 py-0.5 rounded-md">${parts[1] ? parts[1].trim() : "PLATINUM"}</span>
-        `;
-      }
-      
-      if (res.info && res.info.jadwalGenba) {
-        document.getElementById("profJadwalGenba").innerText = formatDateNice(res.info.jadwalGenba);
-      }
-
-      // PICA Belum Selesai
-      if (res.picaBelumSelesai && res.picaBelumSelesai.length > 0) {
-        let picaHtml = '';
-        res.picaBelumSelesai.forEach(item => {
-          const badgeClass = item.status === 'Open' ? 'bg-red-200 text-red-700' : 'bg-amber-200 text-amber-800';
-          picaHtml += `
-            <div class="flex items-center justify-between bg-white/60 p-2 rounded-xl">
-              <div class="flex items-center gap-2">
-                <div class="w-1.5 h-4 ${item.status === 'Open' ? 'bg-red-500' : 'bg-amber-500'} rounded-full"></div>
-                <span class="font-bold text-gray-800 text-xs">${item.item}</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <span class="text-gray-500 font-semibold text-[10px]">${formatDateNice(item.dueDate)}</span>
-                <span class="${badgeClass} font-extrabold px-2.5 py-0.5 rounded-full text-[10px]">${item.status}</span>
-              </div>
-            </div>
-          `;
-        });
-        picaBox.innerHTML = picaHtml;
-      } else {
-        picaBox.innerHTML = '<p class="text-emerald-600 font-bold text-xs">Semua PICA terselesaikan! 🎉</p>';
-      }
-
-      // Temuan Berulang
-      if (res.temuanBerulang && res.temuanBerulang.length > 0) {
-        let berulangHtml = '';
-        res.temuanBerulang.forEach(tb => {
-          berulangHtml += `
-            <div class="flex items-center justify-between bg-white/60 p-2 rounded-xl">
-              <span class="font-bold text-gray-800 text-xs">${tb.item}</span>
-              <span class="bg-red-100 text-red-700 border border-red-200 font-extrabold px-2.5 py-0.5 rounded-full text-[10px]">${tb.jumlah}</span>
-            </div>
-          `;
-        });
-        berulangBox.innerHTML = berulangHtml;
-      } else {
-        berulangBox.innerHTML = '<p class="text-gray-500 italic text-xs">Tidak ada temuan berulang.</p>';
-      }
-
-      // 3 Besar FLP NOSIZU Per Cabang
-      if (res.top3Flp && res.top3Flp.length > 0) {
-        let flpHtml = '';
-        res.top3Flp.forEach((flp, index) => {
-          let badge = `<span class="font-extrabold text-gray-400 text-xs w-5">${index + 1}</span>`;
-          if (index === 0) badge = `<span class="text-base">🥇</span>`;
-          if (index === 1) badge = `<span class="text-base">🥈</span>`;
-          if (index === 2) badge = `<span class="text-base">🥉</span>`;
-
-          flpHtml += `
-            <div class="flex items-center justify-between bg-white/60 p-2.5 rounded-xl">
-              <div class="flex items-center gap-2.5">
-                ${badge}
-                <div>
-                  <h5 class="font-extrabold text-gray-900 text-xs leading-tight">${flp.nama}</h5>
-                  <p class="text-[10px] text-gray-500 font-medium">${flp.role || "FLP"}</p>
-                </div>
-              </div>
-              <span class="font-extrabold text-red-600 text-xs">${flp.xp} XP</span>
-            </div>
-          `;
-        });
-        topFlpBox.innerHTML = flpHtml;
-      } else {
-        topFlpBox.innerHTML = '<p class="text-gray-500 italic text-xs">Belum ada peringkat FLP di cabang ini.</p>';
-      }
+  fetch(`${API_URL}?action=getProfilCabang&cabang=${encodeURIComponent(cabangName)}`).then(res => res.json()).then(res => {
+    if (res.status === "success" && res.info) {
+      if (res.info.jadwalGenba) document.getElementById("profJadwalGenba").innerText = formatDateNice(res.info.jadwalGenba);
     }
-  })
-  .catch(err => {
-    console.error("Error loading Profil Cabang:", err);
-    if (picaBox) picaBox.innerHTML = '<p class="text-red-500 text-xs">Gagal memuat profil cabang.</p>';
   });
-}
-
-// SWITCH TAB NAVIGATION
-function switchTab(tabId) {
-  const pages = ['dashboardPage', 'referensiPage', 'reminderPage', 'onboardingPage', 'genbaFormPage', 'genbaAuditPage', 'picaDashboardPage', 'nosizuPage', 'leaderboardPage', 'profilPage'];
-  pages.forEach(p => {
-    const el = document.getElementById(p);
-    if (el) el.classList.add('hidden');
-  });
-
-  const navHome = document.getElementById('navHome');
-  const navPica = document.getElementById('navPica');
-  const navLeaderboard = document.getElementById('navLeaderboard');
-  const navProfil = document.getElementById('navProfil');
-
-  [navHome, navPica, navLeaderboard, navProfil].forEach(n => { if (n) n.classList.add('opacity-70'); });
-
-  if (tabId === 'home') {
-    document.getElementById('dashboardPage').classList.remove('hidden');
-    navHome.classList.remove('opacity-70');
-  } else if (tabId === 'referensi') {
-    document.getElementById('referensiPage').classList.remove('hidden');
-    loadReferensiData();
-  } else if (tabId === 'reminder') {
-    document.getElementById('reminderPage').classList.remove('hidden');
-    initReminderUI();
-  } else if (tabId === 'onboarding') {
-    document.getElementById('onboardingPage').classList.remove('hidden');
-    loadOnboardingData();
-  } else if (tabId === 'genbaForm') {
-    document.getElementById('genbaFormPage').classList.remove('hidden');
-  } else if (tabId === 'genbaAudit') {
-    document.getElementById('genbaAuditPage').classList.remove('hidden');
-  } else if (tabId === 'pica') {
-    document.getElementById('picaDashboardPage').classList.remove('hidden');
-    navPica.classList.remove('opacity-70');
-    loadPicaDashboardData();
-  } else if (tabId === 'nosizu') {
-    document.getElementById('nosizuPage').classList.remove('hidden');
-    loadNOSIZUDashboard();
-  } else if (tabId === 'leaderboard') {
-    document.getElementById('leaderboardPage').classList.remove('hidden');
-    navLeaderboard.classList.remove('opacity-70');
-    loadLeaderboardData();
-  } else if (tabId === 'profil') {
-    document.getElementById('profilPage').classList.remove('hidden');
-    navProfil.classList.remove('opacity-70');
-    if (currentUser && currentUser.cabang) {
-      loadProfilCabangData(currentUser.cabang);
-    }
-  }
 }
 
 window.onload = function() {
   const saved = localStorage.getItem("nosa_user");
   if (saved) {
-    try {
-      currentUser = JSON.parse(saved);
-      renderDashboard(currentUser);
-    } catch (e) {
-      localStorage.removeItem("nosa_user");
-    }
+    try { currentUser = JSON.parse(saved); renderDashboard(currentUser); } catch (e) { localStorage.removeItem("nosa_user"); }
   }
 };
