@@ -4,11 +4,11 @@ let authMode = "login";
 let selectedRole = "Kepala Cabang";
 let currentUser = null;
 
-// ENGINE GENBA & DIRECT AUDIT
+// ENGINE GENBA, DIRECT AUDIT & KALKULATOR RESULT
 let allCeklisNOSData = [];
 let activeGenbaCategory = "PREMISES H1";
 let currentAuditSession = null;
-let auditSelection = {};
+let auditSelection = {}; // Memuat { status, pilar, headerLabel }
 
 // ENGINE ROTASI 3D VIEWER
 let isSpinning3D = false;
@@ -29,7 +29,7 @@ let currentTourStep = 0;
 const tourSteps = [
   { badge: "PANDUAN NOSA (1/7)", targetId: null, tab: "home", text: "Halo! Aku Daya NOSA 👋. Selamat datang! Yuk, aku ajak keliling sebentar untuk mengenali setiap fitur hebat di Daya NOSA." },
   { badge: "REFERENSI STANDAR (2/7)", targetId: "cardRef", tab: "home", text: "Menu Referensi Standar berisi dokumen visual & 3D interaktif sebagai acuan standar dealer Anda." },
-  { badge: "GENBA AUDIT (3/7)", targetId: "cardGenba", tab: "home", text: "Di sini Anda bisa langsung melakukan GENBA Audit per kategori (H1 & H23) tanpa perlu input ulang data!" },
+  { badge: "GENBA AUDIT (3/7)", targetId: "cardGenba", tab: "home", text: "Di sini Anda bisa langsung melakukan GENBA Audit per kategori (H1 & H23) dengan perhitungan Result otomatis!" },
   { badge: "DASHBOARD PICA (4/7)", targetId: "cardPerforma", tab: "home", text: "Pantau performa area Anda dan tindak lanjuti temuan PICA di sini." },
   { badge: "NOSIZU GAME (5/7)", targetId: "cardNosizu", tab: "home", text: "Sambil senggang, asah pengetahuan standar NOS Anda melalui game kuis interaktif NOSIZU!" },
   { badge: "ONBOARDING FLP (6/7)", targetId: "cardOnboarding", tab: "home", text: "Menu ini menyediakan video-video materi orientasi & pelatihan khusus FLP baru." },
@@ -53,7 +53,244 @@ function formatDateNice(dateStr) {
   }
 }
 
-// LOGIKA REMINDERS REAL-TIME MATCHING TANGGAL & DUE DATE
+// LOGIKA DIREK AUDIT GENBA & KALKULASI REAL-TIME
+function initDirectGenbaSession() {
+  const userCabang = currentUser ? (currentUser.cabang || "Soekarno Hatta") : "Soekarno Hatta";
+  const userNama = currentUser ? (currentUser.nama || "Refan") : "Refan";
+  const userRole = currentUser ? (currentUser.role || "Kepala Cabang") : "Kepala Cabang";
+
+  currentAuditSession = { cabang: userCabang, nama: userNama, jabatan: userRole };
+  document.getElementById("auditInfoCabang").innerText = `Cabang ${userCabang}`;
+  document.getElementById("auditInfoAuditor").innerText = `Auditor: ${userNama} (${userRole})`;
+
+  loadCeklisNOSData();
+}
+
+function loadCeklisNOSData() {
+  const container = document.getElementById("genbaCeklisContainer");
+  container.innerHTML = '<p class="text-xs text-gray-400 italic text-center py-6">Memuat item ceklis NOS...</p>';
+  
+  fetch(`${API_URL}?action=getCeklisNOS`)
+  .then(res => res.json())
+  .then(data => {
+    if (!data || data.length <= 1) {
+      container.innerHTML = '<p class="text-xs text-gray-400 italic text-center py-6">Belum ada item ceklis di spreadsheet CeklisNOS.</p>';
+      return;
+    }
+    allCeklisNOSData = data.slice(1);
+    filterGenbaCategory(activeGenbaCategory);
+    calculateAuditScores();
+  });
+}
+
+function filterGenbaCategory(categoryKey) {
+  activeGenbaCategory = categoryKey;
+  const categories = ['PREMISES H1', 'PROCESS H1', 'PEOPLE H1', 'PREMISES H23', 'PROCESS H23', 'PEOPLE H23'];
+  
+  categories.forEach(cat => {
+    const btn = document.getElementById(`tabCat-${cat.replace(/\s+/g, '')}`);
+    if (btn) {
+      if (cat === categoryKey) {
+        btn.className = "px-3.5 py-2 rounded-xl text-xs font-extrabold whitespace-nowrap bg-nosa-green text-white shadow-xs transition";
+      } else {
+        btn.className = "px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-white text-gray-600 hover:bg-gray-100 transition";
+      }
+    }
+  });
+
+  renderFilteredCeklis();
+}
+
+function renderFilteredCeklis() {
+  const container = document.getElementById("genbaCeklisContainer");
+  const filtered = allCeklisNOSData.filter(row => {
+    const tipe = (row[1] || '').toString().toUpperCase();
+    return tipe.includes(activeGenbaCategory.toUpperCase());
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<p class="text-xs text-gray-400 italic text-center py-6">Tidak ada item ceklis untuk kategori ${activeGenbaCategory}.</p>`;
+    validateGenbaCompletion();
+    return;
+  }
+
+  let html = '';
+  filtered.forEach(row => {
+    const originalIndex = allCeklisNOSData.indexOf(row);
+    const tipe = row[1] || activeGenbaCategory;
+    const mandatory = row[2] || 'S, G, P';
+    const itemVal = (row[3] || '').toString().trim();
+    const subItem1 = (row[4] || '').toString().trim();
+    const subItem2 = (row[5] || '').toString().trim();
+    const penjelasan = row[6] || 'Penjelasan item ceklis...';
+    const labelParts = [itemVal, subItem1, subItem2].filter(text => text !== '');
+    const headerLabel = labelParts.join(', ');
+    
+    let rawImg = row[7] || '';
+    if (rawImg.includes('drive.google.com') && rawImg.includes('/d/')) {
+      const match = rawImg.match(/\/d\/([^\/]+)/);
+      if (match && match[1]) rawImg = `https://lh3.googleusercontent.com/d/${match[1]}`;
+    }
+    const imgUrl = rawImg;
+
+    const currentSel = auditSelection[originalIndex] ? auditSelection[originalIndex].status : null;
+
+    // Deteksi Pilar (Premises / Process / People)
+    let pilar = "PREMISES";
+    const uTipe = tipe.toUpperCase();
+    if (uTipe.includes("PROCESS")) pilar = "PROCESS";
+    if (uTipe.includes("PEOPLE")) pilar = "PEOPLE";
+
+    html += `
+      <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/80 shadow-xs space-y-3">
+        <div class="flex justify-between items-center border-b border-gray-300/50 pb-1.5">
+          <h3 class="text-sm font-black text-nosa-green tracking-wider uppercase">${tipe}</h3>
+          <span class="text-xs font-black text-nosa-green tracking-wider">${mandatory}</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-stretch">
+          <div class="bg-gray-200/60 p-3 rounded-xl space-y-2 flex flex-col h-full">
+            <h5 class="text-xs font-extrabold text-gray-900 border-b border-gray-300/60 pb-1 flex-shrink-0">${headerLabel || 'Item Ceklis'}</h5>
+            <div class="max-h-40 overflow-y-auto pr-1 flex-1">
+              <p class="text-[11px] text-gray-700 leading-relaxed whitespace-pre-line">${penjelasan}</p>
+            </div>
+          </div>
+          <div class="bg-gray-200/60 p-3 rounded-xl flex flex-col justify-between items-center text-center space-y-2">
+            <span class="text-[10px] font-black text-nosa-green tracking-widest uppercase">REFERENSI</span>
+            <div class="w-full h-28 rounded-lg bg-white overflow-hidden flex items-center justify-center border border-gray-300/40">
+              ${imgUrl ? `<img src="${imgUrl}" class="w-full h-full object-contain p-1">` : '<span class="text-[10px] text-gray-400 italic">No Reference Image</span>'}
+            </div>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+          <button type="button" onclick="selectAuditStatus(${originalIndex}, 'Exist Good', '${pilar}', '${headerLabel.replace(/'/g, "\\'")}')" class="audit-btn-${originalIndex} py-2 ${currentSel === 'Exist Good' ? 'bg-emerald-500 text-white font-extrabold shadow-xs' : 'bg-gray-300 hover:bg-emerald-200 text-gray-800 font-bold'} text-xs rounded-xl border border-gray-400/50 transition cursor-pointer">Exist Good</button>
+          <button type="button" onclick="selectAuditStatus(${originalIndex}, 'Exist Not Good', '${pilar}', '${headerLabel.replace(/'/g, "\\'")}')" class="audit-btn-${originalIndex} py-2 ${currentSel === 'Exist Not Good' ? 'bg-amber-500 text-white font-extrabold shadow-xs' : 'bg-gray-300 hover:bg-amber-200 text-gray-800 font-bold'} text-xs rounded-xl border border-gray-400/50 transition cursor-pointer">Exist Not Good</button>
+          <button type="button" onclick="selectAuditStatus(${originalIndex}, 'Not Exist', '${pilar}', '${headerLabel.replace(/'/g, "\\'")}')" class="audit-btn-${originalIndex} py-2 ${currentSel === 'Not Exist' ? 'bg-red-500 text-white font-extrabold shadow-xs' : 'bg-gray-300 hover:bg-red-200 text-gray-800 font-bold'} text-xs rounded-xl border border-gray-400/50 transition cursor-pointer">Not Exist</button>
+          <button type="button" onclick="selectAuditStatus(${originalIndex}, 'N/A', '${pilar}', '${headerLabel.replace(/'/g, "\\'")}')" class="audit-btn-${originalIndex} py-2 ${currentSel === 'N/A' ? 'bg-gray-600 text-white font-extrabold shadow-xs' : 'bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold'} text-xs rounded-xl border border-gray-400/50 transition cursor-pointer">N/A</button>
+        </div>
+      </div>
+    `;
+  });
+  container.innerHTML = html;
+  validateGenbaCompletion();
+}
+
+function selectAuditStatus(originalIndex, status, pilar, headerLabel) {
+  // Izinkan pergantian status secara fleksibel
+  auditSelection[originalIndex] = { status: status, pilar: pilar, headerLabel: headerLabel };
+  
+  const btns = document.querySelectorAll(`.audit-btn-${originalIndex}`);
+  btns.forEach(btn => {
+    btn.className = "py-2 bg-gray-300 text-gray-800 text-xs font-bold rounded-xl border border-gray-400/50 transition cursor-pointer";
+    if (btn.innerText.trim() === status) {
+      if (status === 'Exist Good') btn.className = "py-2 bg-emerald-500 text-white text-xs font-extrabold rounded-xl shadow-xs cursor-pointer";
+      if (status === 'Exist Not Good') btn.className = "py-2 bg-amber-500 text-white text-xs font-extrabold rounded-xl shadow-xs cursor-pointer";
+      if (status === 'Not Exist') btn.className = "py-2 bg-red-500 text-white text-xs font-extrabold rounded-xl shadow-xs cursor-pointer";
+      if (status === 'N/A') btn.className = "py-2 bg-gray-600 text-white text-xs font-extrabold rounded-xl shadow-xs cursor-pointer";
+    }
+  });
+
+  // Rekalkulasi skor & persentase result secara instan
+  calculateAuditScores();
+  validateGenbaCompletion();
+}
+
+// FUNGSI KALKULATOR SKOR MATEMATIS OTOMATIS
+function calculateAuditScores() {
+  let stats = {
+    PREMISES: { totalPoin: 0, validChecklist: 0 },
+    PROCESS:  { totalPoin: 0, validChecklist: 0 },
+    PEOPLE:   { totalPoin: 0, validChecklist: 0 }
+  };
+
+  Object.values(auditSelection).forEach(item => {
+    const pilar = item.pilar || "PREMISES";
+    const st = item.status;
+
+    if (st === "N/A") return; // N/A tidak dihitung sebagai pembagi
+
+    stats[pilar].validChecklist += 1;
+
+    if (pilar === "PREMISES") {
+      if (st === "Exist Good") stats.PREMISES.totalPoin += 1;
+      else if (st === "Exist Not Good") stats.PREMISES.totalPoin += (-1);
+      // Not Exist = 0
+    } else if (pilar === "PROCESS") {
+      if (st === "Exist Good") stats.PROCESS.totalPoin += 1;
+      // Exist Not Good = 0, Not Exist = 0
+    } else if (pilar === "PEOPLE") {
+      if (st === "Exist Good") stats.PEOPLE.totalPoin += 2;
+      else if (st === "Exist Not Good") stats.PEOPLE.totalPoin += 1;
+      // Not Exist = 0
+    }
+  });
+
+  // Calculate Result %
+  // Premises & Process = SUM(Total Poin)/SUM(Total Checklist)
+  const resPremises = stats.PREMISES.validChecklist > 0 ? (stats.PREMISES.totalPoin / stats.PREMISES.validChecklist) * 100 : 0;
+  const resProcess  = stats.PROCESS.validChecklist > 0 ? (stats.PROCESS.totalPoin / stats.PROCESS.validChecklist) * 100 : 0;
+  
+  // People = SUM(Total Poin)/(2 * SUM(Total Checklist))
+  const resPeople   = stats.PEOPLE.validChecklist > 0 ? (stats.PEOPLE.totalPoin / (2 * stats.PEOPLE.validChecklist)) * 100 : 0;
+
+  // Render Ke UI
+  document.getElementById("resPremisesVal").innerText = `${Math.round(resPremises)}%`;
+  document.getElementById("ptsPremisesVal").innerText = `${stats.PREMISES.totalPoin} Pts / ${stats.PREMISES.validChecklist} Item`;
+
+  document.getElementById("resProcessVal").innerText = `${Math.round(resProcess)}%`;
+  document.getElementById("ptsProcessVal").innerText = `${stats.PROCESS.totalPoin} Pts / ${stats.PROCESS.validChecklist} Item`;
+
+  document.getElementById("resPeopleVal").innerText = `${Math.round(resPeople)}%`;
+  document.getElementById("ptsPeopleVal").innerText = `${stats.PEOPLE.totalPoin} Pts / ${stats.PEOPLE.validChecklist * 2} Max`;
+}
+
+function validateGenbaCompletion() {
+  const totalItems = allCeklisNOSData.length;
+  const answeredCount = Object.keys(auditSelection).length;
+  const progressText = document.getElementById("auditProgressText");
+  const btnSubmit = document.getElementById("btnSubmitGenbaAudit");
+
+  if (progressText) progressText.innerText = `${answeredCount}/${totalItems} Diselesaikan`;
+
+  if (totalItems > 0 && answeredCount >= totalItems) {
+    if (btnSubmit) {
+      btnSubmit.disabled = false;
+      btnSubmit.className = "flex-1 sm:flex-initial py-2.5 px-5 bg-nosa-green hover:bg-nosa-greenLight text-white font-extrabold text-xs rounded-xl shadow-md transition cursor-pointer";
+      btnSubmit.innerText = "💾 Submit Audit GENBA";
+    }
+  } else {
+    if (btnSubmit) {
+      btnSubmit.disabled = true;
+      btnSubmit.className = "flex-1 sm:flex-initial py-2.5 px-5 bg-gray-300 text-gray-500 font-extrabold text-xs rounded-xl shadow-xs transition cursor-not-allowed";
+      btnSubmit.innerText = `🔒 Submit Audit (${totalItems - answeredCount} tersisa)`;
+    }
+  }
+}
+
+function submitGenbaForm() {
+  if (Object.keys(auditSelection).length < allCeklisNOSData.length) {
+    alert("Silakan lengkapi semua item ceklis sebelum melakukan submit!");
+    return;
+  }
+  const results = Object.values(auditSelection);
+  const btnSubmit = document.getElementById("btnSubmitGenbaAudit");
+  if (btnSubmit) { btnSubmit.disabled = true; btnSubmit.innerText = "Menyimpan PICA..."; }
+
+  fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ action: "submitGenbaAudit", auditSession: currentAuditSession, auditResults: results })
+  })
+  .then(res => res.json())
+  .then(res => {
+    if (res.status === "success") {
+      alert(`Audit Berhasil Disimpan! ${res.totalPicaCreated} temuan PICA baru telah ditambahkan.`);
+      auditSelection = {};
+      switchTab("pica");
+    } else { alert(res.message || "Gagal menyimpan audit."); }
+  });
+}
+
+// REMINDERS REAL-TIME MATCHING TANGGAL & DUE DATE
 function evaluateRealtimeReminders(isManualClick = false) {
   const userCabang = currentUser ? (currentUser.cabang || "Soekarno Hatta") : "Soekarno Hatta";
   const today = new Date();
@@ -69,18 +306,17 @@ function evaluateRealtimeReminders(isManualClick = false) {
     let targetTab = "pica";
 
     if (res.status === "success") {
-      // 1. Cek PICA mendekati due date (H-2) atau Overdue
       if (res.picaBelumSelesai && res.picaBelumSelesai.length > 0) {
         for (let pica of res.picaBelumSelesai) {
           const due = new Date(pica.dueDate);
           due.setHours(0,0,0,0);
           const diffDays = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
 
-          if (diffDays < 0 && reminderState.rule2) { // Lewat Due Date
-            triggeredMessage = `⚠️ PICA Overdue: Temuan "${pica.item}" telah melewai batas waktu jatuh tempo (${formatDateNice(pica.dueDate)}).`;
+          if (diffDays < 0 && reminderState.rule2) {
+            triggeredMessage = `⚠️ PICA Overdue: Temuan "${pica.item}" telah melewati batas waktu jatuh tempo (${formatDateNice(pica.dueDate)}).`;
             targetTab = "pica";
             break;
-          } else if (diffDays >= 0 && diffDays <= 2 && reminderState.rule1) { // Mendekati (H-2)
+          } else if (diffDays >= 0 && diffDays <= 2 && reminderState.rule1) {
             triggeredMessage = `Pengingat Due Date: PICA "${pica.item}" di Cabang ${userCabang} jatuh tempo ${diffDays === 0 ? 'hari ini' : 'dalam ' + diffDays + ' hari'}!`;
             targetTab = "pica";
             break;
@@ -88,7 +324,6 @@ function evaluateRealtimeReminders(isManualClick = false) {
         }
       }
 
-      // 2. Cek Jadwal GENBA (H-3) jika PICA belum men-trigger
       if (!triggeredMessage && res.info && res.info.jadwalGenba && reminderState.rule3) {
         const genbaDate = new Date(res.info.jadwalGenba);
         genbaDate.setHours(0,0,0,0);
@@ -131,7 +366,7 @@ function showInAppReminderToast(msg, targetTab = "pica") {
 function dismissInAppToast() { document.getElementById("inAppReminderToast").classList.add("hidden"); }
 function handleToastAction() { dismissInAppToast(); switchTab(activeToastTargetTab); }
 
-// LOGIKA REFERENSI STANDAR & ROTASI 3D INTERAKSI
+// REFERENSI STANDAR & ROTASI 3D
 function loadReferensiData() {
   const container = document.getElementById("referensiGridBox");
   if (!container) return;
@@ -228,185 +463,7 @@ function update3DRotation() {
   if (img) img.style.transform = `perspective(1000px) rotateY(${currentRotationY}deg)`;
 }
 
-// LOGIKA DIREK AUDIT GENBA (TANPA INISIASI & VALIDASI LENGKAP)
-function initDirectGenbaSession() {
-  const userCabang = currentUser ? (currentUser.cabang || "Soekarno Hatta") : "Soekarno Hatta";
-  const userNama = currentUser ? (currentUser.nama || "Refan") : "Refan";
-  const userRole = currentUser ? (currentUser.role || "Kepala Cabang") : "Kepala Cabang";
-
-  currentAuditSession = { cabang: userCabang, nama: userNama, jabatan: userRole };
-  document.getElementById("auditInfoCabang").innerText = `Cabang ${userCabang}`;
-  document.getElementById("auditInfoAuditor").innerText = `Auditor: ${userNama} (${userRole})`;
-
-  loadCeklisNOSData();
-}
-
-function loadCeklisNOSData() {
-  const container = document.getElementById("genbaCeklisContainer");
-  container.innerHTML = '<p class="text-xs text-gray-400 italic text-center py-6">Memuat item ceklis NOS...</p>';
-  
-  fetch(`${API_URL}?action=getCeklisNOS`)
-  .then(res => res.json())
-  .then(data => {
-    if (!data || data.length <= 1) {
-      container.innerHTML = '<p class="text-xs text-gray-400 italic text-center py-6">Belum ada item ceklis di spreadsheet CeklisNOS.</p>';
-      return;
-    }
-    allCeklisNOSData = data.slice(1);
-    filterGenbaCategory(activeGenbaCategory);
-  });
-}
-
-function filterGenbaCategory(categoryKey) {
-  activeGenbaCategory = categoryKey;
-  const categories = ['PREMISES H1', 'PROCESS H1', 'PEOPLE H1', 'PREMISES H23', 'PROCESS H23', 'PEOPLE H23'];
-  
-  categories.forEach(cat => {
-    const btn = document.getElementById(`tabCat-${cat.replace(/\s+/g, '')}`);
-    if (btn) {
-      if (cat === categoryKey) {
-        btn.className = "px-3.5 py-2 rounded-xl text-xs font-extrabold whitespace-nowrap bg-nosa-green text-white shadow-xs transition";
-      } else {
-        btn.className = "px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-white text-gray-600 hover:bg-gray-100 transition";
-      }
-    }
-  });
-
-  renderFilteredCeklis();
-}
-
-function renderFilteredCeklis() {
-  const container = document.getElementById("genbaCeklisContainer");
-  const filtered = allCeklisNOSData.filter(row => {
-    const tipe = (row[1] || '').toString().toUpperCase();
-    return tipe.includes(activeGenbaCategory.toUpperCase());
-  });
-
-  if (filtered.length === 0) {
-    container.innerHTML = `<p class="text-xs text-gray-400 italic text-center py-6">Tidak ada item ceklis untuk kategori ${activeGenbaCategory}.</p>`;
-    validateGenbaCompletion();
-    return;
-  }
-
-  let html = '';
-  filtered.forEach((row, idx) => {
-    const originalIndex = allCeklisNOSData.indexOf(row);
-    const tipe = row[1] || activeGenbaCategory;
-    const mandatory = row[2] || 'S, G, P';
-    const itemVal = (row[3] || '').toString().trim();
-    const subItem1 = (row[4] || '').toString().trim();
-    const subItem2 = (row[5] || '').toString().trim();
-    const penjelasan = row[6] || 'Penjelasan item ceklis...';
-    const labelParts = [itemVal, subItem1, subItem2].filter(text => text !== '');
-    const headerLabel = labelParts.join(', ');
-    
-    let rawImg = row[7] || '';
-    if (rawImg.includes('drive.google.com') && rawImg.includes('/d/')) {
-      const match = rawImg.match(/\/d\/([^\/]+)/);
-      if (match && match[1]) rawImg = `https://lh3.googleusercontent.com/d/${match[1]}`;
-    }
-    const imgUrl = rawImg;
-    const isNeedFoto = (row[8] || 'Ya').toString().toLowerCase() === 'ya';
-
-    const currentSel = auditSelection[originalIndex] ? auditSelection[originalIndex].status : null;
-
-    html += `
-      <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/80 shadow-xs space-y-3">
-        <div class="flex justify-between items-center border-b border-gray-300/50 pb-1.5">
-          <h3 class="text-sm font-black text-nosa-green tracking-wider uppercase">${tipe}</h3>
-          <span class="text-xs font-black text-nosa-green tracking-wider">${mandatory}</span>
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-stretch">
-          <div class="bg-gray-200/60 p-3 rounded-xl space-y-2 flex flex-col h-full">
-            <h5 class="text-xs font-extrabold text-gray-900 border-b border-gray-300/60 pb-1 flex-shrink-0">${headerLabel || 'Item Ceklis'}</h5>
-            <div class="max-h-40 overflow-y-auto pr-1 flex-1">
-              <p class="text-[11px] text-gray-700 leading-relaxed whitespace-pre-line">${penjelasan}</p>
-            </div>
-          </div>
-          <div class="bg-gray-200/60 p-3 rounded-xl flex flex-col justify-between items-center text-center space-y-2">
-            <span class="text-[10px] font-black text-nosa-green tracking-widest uppercase">REFERENSI</span>
-            <div class="w-full h-28 rounded-lg bg-white overflow-hidden flex items-center justify-center border border-gray-300/40">
-              ${imgUrl ? `<img src="${imgUrl}" class="w-full h-full object-contain p-1">` : '<span class="text-[10px] text-gray-400 italic">No Reference Image</span>'}
-            </div>
-          </div>
-        </div>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-          <button type="button" onclick="selectAuditStatus(${originalIndex}, 'Exist Good', '${headerLabel.replace(/'/g, "\\'")}')" class="audit-btn-${originalIndex} py-2 ${currentSel === 'Exist Good' ? 'bg-emerald-500 text-white font-extrabold shadow-xs' : 'bg-gray-300 hover:bg-emerald-200 text-gray-800 font-bold'} text-xs rounded-xl border border-gray-400/50 transition">Exist Good</button>
-          <button type="button" onclick="selectAuditStatus(${originalIndex}, 'Exist Not Good', '${headerLabel.replace(/'/g, "\\'")}')" class="audit-btn-${originalIndex} py-2 ${currentSel === 'Exist Not Good' ? 'bg-amber-500 text-white font-extrabold shadow-xs' : 'bg-gray-300 hover:bg-amber-200 text-gray-800 font-bold'} text-xs rounded-xl border border-gray-400/50 transition">Exist Not Good</button>
-          <button type="button" onclick="selectAuditStatus(${originalIndex}, 'Not Exist', '${headerLabel.replace(/'/g, "\\'")}')" class="audit-btn-${originalIndex} py-2 ${currentSel === 'Not Exist' ? 'bg-red-500 text-white font-extrabold shadow-xs' : 'bg-gray-300 hover:bg-red-200 text-gray-800 font-bold'} text-xs rounded-xl border border-gray-400/50 transition">Not Exist</button>
-          <button type="button" onclick="selectAuditStatus(${originalIndex}, 'N/A', '${headerLabel.replace(/'/g, "\\'")}')" class="audit-btn-${originalIndex} py-2 ${currentSel === 'N/A' ? 'bg-gray-600 text-white font-extrabold shadow-xs' : 'bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold'} text-xs rounded-xl border border-gray-400/50 transition">N/A</button>
-        </div>
-      </div>
-    `;
-  });
-  container.innerHTML = html;
-  validateGenbaCompletion();
-}
-
-function selectAuditStatus(originalIndex, status, headerLabel) {
-  auditSelection[originalIndex] = { status: status, headerLabel: headerLabel };
-  const btns = document.querySelectorAll(`.audit-btn-${originalIndex}`);
-  btns.forEach(btn => {
-    btn.className = "py-2 bg-gray-300 text-gray-800 text-xs font-bold rounded-xl border border-gray-400/50 transition";
-    if (btn.innerText.trim() === status) {
-      if (status === 'Exist Good') btn.className = "py-2 bg-emerald-500 text-white text-xs font-extrabold rounded-xl shadow-xs";
-      if (status === 'Exist Not Good') btn.className = "py-2 bg-amber-500 text-white text-xs font-extrabold rounded-xl shadow-xs";
-      if (status === 'Not Exist') btn.className = "py-2 bg-red-500 text-white text-xs font-extrabold rounded-xl shadow-xs";
-      if (status === 'N/A') btn.className = "py-2 bg-gray-600 text-white text-xs font-extrabold rounded-xl shadow-xs";
-    }
-  });
-
-  validateGenbaCompletion();
-}
-
-function validateGenbaCompletion() {
-  const totalItems = allCeklisNOSData.length;
-  const answeredCount = Object.keys(auditSelection).length;
-  const progressText = document.getElementById("auditProgressText");
-  const btnSubmit = document.getElementById("btnSubmitGenbaAudit");
-
-  if (progressText) progressText.innerText = `${answeredCount}/${totalItems} Diselesaikan`;
-
-  if (totalItems > 0 && answeredCount >= totalItems) {
-    if (btnSubmit) {
-      btnSubmit.disabled = false;
-      btnSubmit.className = "flex-1 sm:flex-initial py-2.5 px-5 bg-nosa-green hover:bg-nosa-greenLight text-white font-extrabold text-xs rounded-xl shadow-md transition cursor-pointer";
-      btnSubmit.innerText = "💾 Submit Audit GENBA";
-    }
-  } else {
-    if (btnSubmit) {
-      btnSubmit.disabled = true;
-      btnSubmit.className = "flex-1 sm:flex-initial py-2.5 px-5 bg-gray-300 text-gray-500 font-extrabold text-xs rounded-xl shadow-xs transition cursor-not-allowed";
-      btnSubmit.innerText = `🔒 Submit Audit (${totalItems - answeredCount} tersisa)`;
-    }
-  }
-}
-
-function submitGenbaForm() {
-  if (Object.keys(auditSelection).length < allCeklisNOSData.length) {
-    alert("Silakan lengkapi semua item ceklis sebelum melakukan submit!");
-    return;
-  }
-  const results = Object.values(auditSelection);
-  const btnSubmit = document.getElementById("btnSubmitGenbaAudit");
-  if (btnSubmit) { btnSubmit.disabled = true; btnSubmit.innerText = "Menyimpan PICA..."; }
-
-  fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action: "submitGenbaAudit", auditSession: currentAuditSession, auditResults: results })
-  })
-  .then(res => res.json())
-  .then(res => {
-    if (res.status === "success") {
-      alert(`Audit Berhasil Disimpan! ${res.totalPicaCreated} temuan PICA baru telah ditambahkan.`);
-      auditSelection = {};
-      switchTab("pica");
-    } else { alert(res.message || "Gagal menyimpan audit."); }
-  });
-}
-
-// REST OF THE EXISTING FUNCTIONS (ONBOARDING, AUTH, PICA, NOSIZU, LEADERBOARD, PROFIL)
+// LOGIKA AUTHENTIKASI & ROLE
 function selectRole(role) {
   selectedRole = role;
   const btnKacab = document.getElementById('btnRoleKacab');
