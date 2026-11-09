@@ -721,13 +721,22 @@ function handleAuthSubmit(e) {
   const email = document.getElementById("authEmail").value.trim();
   const password = document.getElementById("authPassword").value.trim();
   const nama = document.getElementById("regNama").value.trim();
-  const cabang = document.getElementById("authCabang").value.trim();
-  btn.disabled = true; btn.innerText = "Proses...";
+  const cabangInput = document.getElementById("authCabang").value.trim();
+  
+  btn.disabled = true; 
+  btn.innerText = "Proses...";
+  
+  const userCabang = selectedRole === "PIC NOS" ? "Head Office" : (cabangInput || "Cibiru");
+  
   const payload = {
     action: authMode === "register" ? "registerUser" : "loginUser",
-    email: email, password: password, nama: nama, role: selectedRole,
-    cabang: selectedRole === "PIC NOS" ? "Head Office" : (cabang || "Cibiru")
+    email: email, 
+    password: password, 
+    nama: nama || email.split("@")[0], 
+    role: selectedRole,
+    cabang: userCabang
   };
+  
   fetch(API_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -737,11 +746,27 @@ function handleAuthSubmit(e) {
   .then(res => {
     btn.disabled = false;
     btn.innerText = authMode === "register" ? "daftar akun" : "masuk";
-    if (res.status === "success") {
-      currentUser = res.userData;
+    
+    if (res.status === "success" && res.userData) {
+      // Pastikan data user memiliki nilai default aman agar tidak crash
+      currentUser = {
+        email: res.userData.email || email,
+        nama: res.userData.nama || nama || email.split("@")[0],
+        role: res.userData.role || selectedRole,
+        cabang: res.userData.cabang || userCabang
+      };
+      
       localStorage.setItem("nosa_user", JSON.stringify(currentUser));
       renderDashboard(currentUser);
-    } else { alert(res.message || "Gagal memproses login."); }
+    } else { 
+      alert(res.message || "Gagal memproses login. Periksa email dan password Anda."); 
+    }
+  })
+  .catch(err => {
+    btn.disabled = false;
+    btn.innerText = authMode === "register" ? "daftar akun" : "masuk";
+    console.error("Auth error:", err);
+    alert("Terjadi kesalahan koneksi ke server. Silakan coba lagi.");
   });
 }
 
@@ -757,20 +782,31 @@ function handleLogout() {
 }
 
 function renderDashboard(user) {
+  if (!user) return;
+  
   document.getElementById("loginPage").classList.add("hidden");
   document.getElementById("mainContainer").classList.remove("hidden");
-  document.getElementById("dashUserNama").innerText = user.nama || user.email;
-  document.getElementById("profNamaCabang").innerText = "Cabang " + (user.cabang || "Cibiru");
+  
+  const safeNama = user.nama || user.email || "Pengguna";
+  const safeCabang = user.cabang || "Cibiru";
+  
+  const dashUserNamaEl = document.getElementById("dashUserNama");
+  if (dashUserNamaEl) dashUserNamaEl.innerText = safeNama;
+  
+  const profNamaCabangEl = document.getElementById("profNamaCabang");
+  if (profNamaCabangEl) profNamaCabangEl.innerText = "Cabang " + safeCabang;
   
   switchTab("home");
-  loadHomeLastGenbaResult(user.cabang || "Cibiru");
-  loadProfilCabangData(user.cabang || "Cibiru");
+  
+  // Panggil fungsi data secara aman
+  try { loadHomeLastGenbaResult(safeCabang); } catch(e) { console.error(e); }
+  try { loadProfilCabangData(safeCabang); } catch(e) { console.error(e); }
+  
   initReminderUI();
   evaluateRealtimeReminders();
-
+  
   setTimeout(() => { startAppTour(false); }, 600);
 }
-
 function initReminderUI() {
   const saved = localStorage.getItem("nosa_reminder_state");
   if (saved) { try { reminderState = JSON.parse(saved); } catch (e) {} }
