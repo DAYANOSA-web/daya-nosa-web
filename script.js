@@ -850,11 +850,20 @@ function filterOnboardingVideo() {
 function formatEmbedVideoUrl(url) {
   if (!url) return '';
   let str = url.trim();
+  // Konversi otomatis link Google Drive agar bisa tampil di Iframe Web
+  if (str.includes("drive.google.com")) {
+    if (str.includes("/view")) {
+      return str.replace(/\/view.*/, "/preview");
+    }
+    const match = str.match(/\/d\/([^\/]+)/);
+    if (match && match[1]) {
+      return `https://drive.google.com/file/d/${match[1]}/preview`;
+    }
+  }
   if (str.includes("youtube.com/watch?v=")) return `https://www.youtube.com/embed/${str.split("v=")[1].split("&")[0]}`;
   if (str.includes("youtu.be/")) return `https://www.youtube.com/embed/${str.split("youtu.be/")[1].split("?")[0]}`;
   return str;
 }
-
 function loadPicaDashboardData() {
   const container = document.getElementById("picaCardsContainer");
   if (!container) return;
@@ -958,14 +967,54 @@ function startQuizSession(unitId) {
 
 function renderCurrentQuestion() {
   if (quizIndex >= currentQuestionList.length) { finishQuizSession(); return; }
+  
+  // Reset jawaban sebelumnya agar tidak lolos otomatis saat dipencet Periksa
+  userSelectedAnswer = null;
+  
   const q = currentQuestionList[quizIndex];
   document.getElementById("quizProgressBar").style.width = `${((quizIndex) / currentQuestionList.length) * 100}%`;
   document.getElementById("quizLivesCount").innerText = nosUserStats.nyawa;
   document.getElementById("quizQuestionText").innerText = q.pertanyaan;
   document.getElementById("quizFeedbackPanel").classList.add("hidden");
-  document.getElementById("btnCheckAnswer").disabled = false;
+  
   const box = document.getElementById("quizAnswersBox");
-  box.innerHTML = `${renderOptionBtn('A', q.opsiA)}${renderOptionBtn('B', q.opsiB)}${renderOptionBtn('C', q.opsiC)}${renderOptionBtn('D', q.opsiD)}`;
+  const tipe = (q.tipe || '').toLowerCase();
+  
+  // Render opsi berdasarkan TipeSoal di spreadsheet
+  if (tipe.includes("perbandingan")) {
+    let imgA = formatDriveImgUrl(q.gambarA);
+    let imgB = formatDriveImgUrl(q.gambarB);
+    box.innerHTML = `
+      <div class="grid grid-cols-2 gap-3">
+        <div onclick="selectQuizAnswer('A')" id="opt-A" class="quiz-opt border-2 border-gray-200 p-2 rounded-2xl cursor-pointer text-center space-y-1">
+          <div class="h-32 bg-gray-100 rounded-xl overflow-hidden flex items-center justify-center">
+            ${imgA ? `<img src="${imgA}" class="max-h-full max-w-full object-contain">` : '<span class="text-xs text-gray-400">Gambar A</span>'}
+          </div>
+          <span class="text-xs font-bold text-gray-800">Pilihan A</span>
+        </div>
+        <div onclick="selectQuizAnswer('B')" id="opt-B" class="quiz-opt border-2 border-gray-200 p-2 rounded-2xl cursor-pointer text-center space-y-1">
+          <div class="h-32 bg-gray-100 rounded-xl overflow-hidden flex items-center justify-center">
+            ${imgB ? `<img src="${imgB}" class="max-h-full max-w-full object-contain">` : '<span class="text-xs text-gray-400">Gambar B</span>'}
+          </div>
+          <span class="text-xs font-bold text-gray-800">Pilihan B</span>
+        </div>
+      </div>
+    `;
+  } else if (tipe.includes("pernyataan")) {
+    box.innerHTML = `
+      <div class="grid grid-cols-2 gap-3">
+        ${renderOptionBtn('Benar', 'Benar')}
+        ${renderOptionBtn('Salah', 'Salah')}
+      </div>
+    `;
+  } else {
+    box.innerHTML = `
+      ${renderOptionBtn('A', q.opsiA)}
+      ${renderOptionBtn('B', q.opsiB)}
+      ${renderOptionBtn('C', q.opsiC)}
+      ${renderOptionBtn('D', q.opsiD)}
+    `;
+  }
 }
 
 function renderOptionBtn(key, val) {
@@ -980,14 +1029,36 @@ function selectQuizAnswer(val) {
   if (sel) sel.classList.add('border-red-500', 'bg-red-50');
 }
 
+function formatDriveImgUrl(rawUrl) {
+  if (!rawUrl) return '';
+  let str = String(rawUrl).trim();
+  if (str.includes('drive.google.com') && str.includes('/d/')) {
+    const match = str.match(/\/d\/([^\/]+)/);
+    if (match && match[1]) return `https://lh3.googleusercontent.com/d/${match[1]}`;
+  }
+  return str;
+}
+
 function checkAnswer() {
-  if (!userSelectedAnswer) return;
+  if (!userSelectedAnswer) {
+    alert("Silakan pilih salah satu jawaban terlebih dahulu!");
+    return;
+  }
   const q = currentQuestionList[quizIndex];
-  const isCorrect = String(userSelectedAnswer).toLowerCase() === String(q.kunci).toLowerCase();
+  const isCorrect = String(userSelectedAnswer).trim().toLowerCase() === String(q.kunci).trim().toLowerCase();
+  
   const feedbackPanel = document.getElementById("quizFeedbackPanel");
   feedbackPanel.classList.remove("hidden");
-  if (isCorrect) { nosUserStats.xp += 20; feedbackPanel.className = "p-4 rounded-2xl border bg-emerald-50 border-emerald-300 space-y-2"; document.getElementById("feedbackTitle").innerText = "Hebat!"; }
-  else { nosUserStats.nyawa = Math.max(0, nosUserStats.nyawa - 1); feedbackPanel.className = "p-4 rounded-2xl border bg-red-50 border-red-300 space-y-2"; document.getElementById("feedbackTitle").innerText = "Kurang Tepat"; }
+  
+  if (isCorrect) { 
+    nosUserStats.xp += 20; 
+    feedbackPanel.className = "p-4 rounded-2xl border bg-emerald-50 border-emerald-300 space-y-2"; 
+    document.getElementById("feedbackTitle").innerText = "Hebat! Jawaban Benar"; 
+  } else { 
+    nosUserStats.nyawa = Math.max(0, nosUserStats.nyawa - 1); 
+    feedbackPanel.className = "p-4 rounded-2xl border bg-red-50 border-red-300 space-y-2"; 
+    document.getElementById("feedbackTitle").innerText = "Kurang Tepat"; 
+  }
   document.getElementById("feedbackText").innerText = q.pembahasan || "";
 }
 
