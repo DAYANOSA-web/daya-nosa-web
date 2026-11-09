@@ -294,9 +294,10 @@ function selectAuditStatus(originalIndex, status, pilar, categoryKey) {
   const subItem1 = (row[4] || '').toString().trim();
   const subItem2 = (row[5] || '').toString().trim();
   const headerLabel = [itemVal, subItem1, subItem2].filter(t => t !== '').join(', ');
-
-  const prevFoto = auditSelection[originalIndex] ? auditSelection[originalIndex].fotoBase64 : null;
-
+  
+  // Ambil foto yang diunggah dari variabel atau input file DOM jika ada
+  let prevFoto = auditSelection[originalIndex] ? auditSelection[originalIndex].fotoBase64 : null;
+  
   auditSelection[originalIndex] = { 
     status: status, 
     pilar: pilar, 
