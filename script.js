@@ -8,7 +8,7 @@ let currentUser = null;
 let allCeklisNOSData = [];
 let activeGenbaCategory = "PREMISES H1";
 let currentAuditSession = null;
-let auditSelection = {}; // Memuat { status, pilar, headerLabel }
+let auditSelection = {};
 
 // ENGINE ROTASI 3D VIEWER
 let isSpinning3D = false;
@@ -51,6 +51,67 @@ function formatDateNice(dateStr) {
   } catch (e) {
     return dateStr;
   }
+}
+
+// LOGIKA DETERMINASI GRADING TERDAPAT PADA GAMBAR LAMPIRAN
+function getGradingResult(percentageVal) {
+  const val = parseFloat(percentageVal) || 0;
+  if (val >= 90.0) return { title: 'Platinum', bgClass: 'bg-slate-700 text-white border border-slate-500' };
+  if (val >= 70.0) return { title: 'Gold', bgClass: 'bg-amber-400 text-amber-950 font-black' };
+  if (val >= 60.0) return { title: 'Silver', bgClass: 'bg-gray-400 text-gray-950 font-black' };
+  return { title: 'Bronze', bgClass: 'bg-amber-700 text-white font-black' };
+}
+
+// FETCH & RENDER RESULT GENBA TERAKHIR KE HALAMAN HOME
+function loadHomeLastGenbaResult(cabangName) {
+  document.getElementById("homeGenbaCabang").innerText = `Cabang ${cabangName}`;
+
+  fetch(`${API_URL}?action=getLastGenbaResult&cabang=${encodeURIComponent(cabangName)}`)
+  .then(res => res.json())
+  .then(res => {
+    let pPremises = 0, pProcess = 0, pPeople = 0;
+    let tglAudit = "-";
+
+    if (res.status === "success" && res.data) {
+      pPremises = Math.round(res.data.premises || 0);
+      pProcess  = Math.round(res.data.process || 0);
+      pPeople   = Math.round(res.data.people || 0);
+      tglAudit  = formatDateNice(res.data.tanggal);
+    } else {
+      // Dummy visual fallback jika data belum diisi di backend
+      pPremises = 85; pProcess = 78; pPeople = 92;
+      tglAudit = "9 Nov 2026";
+    }
+
+    const overallScore = Math.round((pPremises + pProcess + pPeople) / 3);
+    const grading = getGradingResult(overallScore);
+
+    // Update UI Badge & Overall
+    const badgeEl = document.getElementById("homeGradingBadge");
+    if (badgeEl) {
+      badgeEl.innerText = grading.title;
+      badgeEl.className = `${grading.bgClass} text-xs font-black px-3 py-0.5 rounded-lg shadow-xs uppercase tracking-wider`;
+    }
+
+    document.getElementById("homeOverallScoreVal").innerText = `${overallScore}%`;
+    const circleBar = document.getElementById("homeCircleProgress");
+    if (circleBar) circleBar.setAttribute("stroke-dasharray", `${overallScore}, 100`);
+
+    // Update Scores per Pilar
+    document.getElementById("homePremisesScore").innerText = `${pPremises}%`;
+    document.getElementById("homeBarPremises").style.width = `${pPremises}%`;
+
+    document.getElementById("homeProcessScore").innerText = `${pProcess}%`;
+    document.getElementById("homeBarProcess").style.width = `${pProcess}%`;
+
+    document.getElementById("homePeopleScore").innerText = `${pPeople}%`;
+    document.getElementById("homeBarPeople").style.width = `${pPeople}%`;
+
+    document.getElementById("homeGenbaDate").innerText = `Audit Terakhir: ${tglAudit}`;
+  })
+  .catch(err => {
+    console.error("Gagal memuat result GENBA Home", err);
+  });
 }
 
 // LOGIKA DIREK AUDIT GENBA & KALKULASI REAL-TIME
@@ -135,7 +196,6 @@ function renderFilteredCeklis() {
 
     const currentSel = auditSelection[originalIndex] ? auditSelection[originalIndex].status : null;
 
-    // Deteksi Pilar (Premises / Process / People)
     let pilar = "PREMISES";
     const uTipe = tipe.toUpperCase();
     if (uTipe.includes("PROCESS")) pilar = "PROCESS";
@@ -175,7 +235,6 @@ function renderFilteredCeklis() {
 }
 
 function selectAuditStatus(originalIndex, status, pilar, headerLabel) {
-  // Izinkan pergantian status secara fleksibel
   auditSelection[originalIndex] = { status: status, pilar: pilar, headerLabel: headerLabel };
   
   const btns = document.querySelectorAll(`.audit-btn-${originalIndex}`);
@@ -189,12 +248,10 @@ function selectAuditStatus(originalIndex, status, pilar, headerLabel) {
     }
   });
 
-  // Rekalkulasi skor & persentase result secara instan
   calculateAuditScores();
   validateGenbaCompletion();
 }
 
-// FUNGSI KALKULATOR SKOR MATEMATIS OTOMATIS
 function calculateAuditScores() {
   let stats = {
     PREMISES: { totalPoin: 0, validChecklist: 0 },
@@ -206,33 +263,25 @@ function calculateAuditScores() {
     const pilar = item.pilar || "PREMISES";
     const st = item.status;
 
-    if (st === "N/A") return; // N/A tidak dihitung sebagai pembagi
+    if (st === "N/A") return;
 
     stats[pilar].validChecklist += 1;
 
     if (pilar === "PREMISES") {
       if (st === "Exist Good") stats.PREMISES.totalPoin += 1;
       else if (st === "Exist Not Good") stats.PREMISES.totalPoin += (-1);
-      // Not Exist = 0
     } else if (pilar === "PROCESS") {
       if (st === "Exist Good") stats.PROCESS.totalPoin += 1;
-      // Exist Not Good = 0, Not Exist = 0
     } else if (pilar === "PEOPLE") {
       if (st === "Exist Good") stats.PEOPLE.totalPoin += 2;
       else if (st === "Exist Not Good") stats.PEOPLE.totalPoin += 1;
-      // Not Exist = 0
     }
   });
 
-  // Calculate Result %
-  // Premises & Process = SUM(Total Poin)/SUM(Total Checklist)
   const resPremises = stats.PREMISES.validChecklist > 0 ? (stats.PREMISES.totalPoin / stats.PREMISES.validChecklist) * 100 : 0;
   const resProcess  = stats.PROCESS.validChecklist > 0 ? (stats.PROCESS.totalPoin / stats.PROCESS.validChecklist) * 100 : 0;
-  
-  // People = SUM(Total Poin)/(2 * SUM(Total Checklist))
   const resPeople   = stats.PEOPLE.validChecklist > 0 ? (stats.PEOPLE.totalPoin / (2 * stats.PEOPLE.validChecklist)) * 100 : 0;
 
-  // Render Ke UI
   document.getElementById("resPremisesVal").innerText = `${Math.round(resPremises)}%`;
   document.getElementById("ptsPremisesVal").innerText = `${stats.PREMISES.totalPoin} Pts / ${stats.PREMISES.validChecklist} Item`;
 
@@ -285,12 +334,14 @@ function submitGenbaForm() {
     if (res.status === "success") {
       alert(`Audit Berhasil Disimpan! ${res.totalPicaCreated} temuan PICA baru telah ditambahkan.`);
       auditSelection = {};
+      const userCabang = currentUser ? (currentUser.cabang || "Soekarno Hatta") : "Soekarno Hatta";
+      loadHomeLastGenbaResult(userCabang);
       switchTab("pica");
     } else { alert(res.message || "Gagal menyimpan audit."); }
   });
 }
 
-// REMINDERS REAL-TIME MATCHING TANGGAL & DUE DATE
+// EVALUASI NOTIFIKASI REAL-TIME
 function evaluateRealtimeReminders(isManualClick = false) {
   const userCabang = currentUser ? (currentUser.cabang || "Soekarno Hatta") : "Soekarno Hatta";
   const today = new Date();
@@ -463,7 +514,7 @@ function update3DRotation() {
   if (img) img.style.transform = `perspective(1000px) rotateY(${currentRotationY}deg)`;
 }
 
-// LOGIKA AUTHENTIKASI & ROLE
+// LOGIKA AUTHENTIKASI & DASHBOARD
 function selectRole(role) {
   selectedRole = role;
   const btnKacab = document.getElementById('btnRoleKacab');
@@ -551,6 +602,7 @@ function renderDashboard(user) {
   document.getElementById("profNamaCabang").innerText = "Cabang " + (user.cabang || "Soekarno Hatta");
   
   switchTab("home");
+  loadHomeLastGenbaResult(user.cabang || "Soekarno Hatta");
   loadProfilCabangData(user.cabang || "Soekarno Hatta");
   initReminderUI();
   evaluateRealtimeReminders();
@@ -634,6 +686,7 @@ function switchTab(tabId) {
 
   if (tabId === 'home') {
     document.getElementById('dashboardPage').classList.remove('hidden'); navHome.classList.remove('opacity-70');
+    if (currentUser && currentUser.cabang) loadHomeLastGenbaResult(currentUser.cabang);
   } else if (tabId === 'referensi') {
     document.getElementById('referensiPage').classList.remove('hidden'); loadReferensiData();
   } else if (tabId === 'reminder') {
