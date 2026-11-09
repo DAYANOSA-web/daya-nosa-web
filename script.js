@@ -8,7 +8,7 @@ let currentUser = null;
 let allCeklisNOSData = [];
 let activeGenbaCategory = "PREMISES H1";
 let currentAuditSession = null;
-let auditSelection = {}; // Memuat { status, pilar, categoryKey, headerLabel }
+let auditSelection = {}; // Memuat { status, pilar, categoryKey, headerLabel, fotoBase64 }
 
 // ENGINE ROTASI 3D VIEWER
 let isSpinning3D = false;
@@ -53,7 +53,6 @@ function formatDateNice(dateStr) {
   }
 }
 
-// LOGIKA DETERMINASI GRADING ACCORDING TO ATTACHMENT
 function getGradingResult(percentageVal) {
   const val = parseFloat(percentageVal) || 0;
   if (val >= 90.0) return { title: 'Platinum', bgClass: 'bg-slate-700 text-white border border-slate-500' };
@@ -62,7 +61,6 @@ function getGradingResult(percentageVal) {
   return { title: 'Bronze', bgClass: 'bg-amber-700 text-white font-black' };
 }
 
-// FETCH & RENDER RESULT GENBA TERAKHIR KE HALAMAN HOME
 function loadHomeLastGenbaResult(cabangName) {
   document.getElementById("homeGenbaCabang").innerText = `Cabang ${cabangName}`;
 
@@ -111,7 +109,6 @@ function loadHomeLastGenbaResult(cabangName) {
   });
 }
 
-// LOGIKA DIREK AUDIT GENBA & KALKULASI REAL-TIME
 function initDirectGenbaSession() {
   const userCabang = currentUser ? (currentUser.cabang || "Soekarno Hatta") : "Soekarno Hatta";
   const userNama = currentUser ? (currentUser.nama || "Refan") : "Refan";
@@ -159,6 +156,16 @@ function filterGenbaCategory(categoryKey) {
   renderFilteredCeklis();
 }
 
+// FIX: PEMBACAAN KOLOM SPREADSHEET SESUAI GAMBAR DATABASE
+// Kolom A (0): IDCeklis
+// Kolom B (1): Tipe
+// Kolom C (2): Mandatory (S, G, P / GP / P dll)
+// Kolom D (3): Item
+// Kolom E (4): Sub Item 1
+// Kolom F (5): Sub Item 2
+// Kolom G (6): Penjelasan
+// Kolom H (7): GambarReferensiUrl
+// Kolom I (8): IsNeedFoto (Ya/Tidak)
 function renderFilteredCeklis() {
   const container = document.getElementById("genbaCeklisContainer");
   const filtered = allCeklisNOSData.filter(row => {
@@ -175,21 +182,25 @@ function renderFilteredCeklis() {
   let html = '';
   filtered.forEach(row => {
     const originalIndex = allCeklisNOSData.indexOf(row);
-    const tipe = row[1] || activeGenbaCategory;
-    const mandatory = row[2] || 'S, G, P';
+    const idCeklis = (row[0] || '').toString().trim();
+    const tipe = (row[1] || activeGenbaCategory).toString().trim();
+    const mandatory = (row[2] || '-').toString().trim(); // FIX MANDATORY KOLOM C
     const itemVal = (row[3] || '').toString().trim();
     const subItem1 = (row[4] || '').toString().trim();
     const subItem2 = (row[5] || '').toString().trim();
-    const penjelasan = row[6] || 'Penjelasan item ceklis...';
-    const labelParts = [itemVal, subItem1, subItem2].filter(text => text !== '');
-    const headerLabel = labelParts.join(', ');
+    const penjelasan = (row[6] || 'Penjelasan item ceklis...').toString().trim();
     
-    let rawImg = row[7] || '';
+    let rawImg = (row[7] || '').toString().trim();
     if (rawImg.includes('drive.google.com') && rawImg.includes('/d/')) {
       const match = rawImg.match(/\/d\/([^\/]+)/);
       if (match && match[1]) rawImg = `https://lh3.googleusercontent.com/d/${match[1]}`;
     }
     const imgUrl = rawImg;
+    
+    const isNeedFoto = (row[8] || '').toString().trim().toLowerCase() === 'ya'; // FIX ISNEEDFOTO KOLOM I
+
+    const labelParts = [itemVal, subItem1, subItem2].filter(text => text !== '');
+    const headerLabel = labelParts.join(', ');
 
     const currentSel = auditSelection[originalIndex] ? auditSelection[originalIndex].status : null;
 
@@ -201,9 +212,16 @@ function renderFilteredCeklis() {
     html += `
       <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/80 shadow-xs space-y-3">
         <div class="flex justify-between items-center border-b border-gray-300/50 pb-1.5">
-          <h3 class="text-sm font-black text-nosa-green tracking-wider uppercase">${tipe}</h3>
-          <span class="text-xs font-black text-nosa-green tracking-wider">${mandatory}</span>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] bg-nosa-green text-white px-2 py-0.5 rounded-md font-bold">${idCeklis || 'NOS'}</span>
+            <h3 class="text-xs sm:text-sm font-black text-nosa-green tracking-wider uppercase">${tipe}</h3>
+          </div>
+          <div class="flex items-center gap-2">
+            ${isNeedFoto ? `<span class="bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-black px-2 py-0.5 rounded-md">📷 Wajib Foto</span>` : ''}
+            <span class="text-xs font-black text-nosa-green bg-emerald-100/80 px-2.5 py-0.5 rounded-md border border-emerald-300">Mandatory: ${mandatory}</span>
+          </div>
         </div>
+
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-stretch">
           <div class="bg-gray-200/60 p-3 rounded-xl space-y-2 flex flex-col h-full">
             <h5 class="text-xs font-extrabold text-gray-900 border-b border-gray-300/60 pb-1 flex-shrink-0">${headerLabel || 'Item Ceklis'}</h5>
@@ -218,11 +236,24 @@ function renderFilteredCeklis() {
             </div>
           </div>
         </div>
+
+        <!-- UPLOAD BUKTI FOTO JIKA ISNEEDFOTO = YA -->
+        ${isNeedFoto ? `
+          <div class="bg-white/80 p-3 rounded-xl border border-amber-200 space-y-1.5">
+            <label class="block text-[10px] font-extrabold text-amber-900 uppercase">Upload Bukti Foto Temuan/Kondisi</label>
+            <input type="file" accept="image/*" onchange="handleAuditPhotoUpload(${originalIndex}, this)" class="w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-100 file:text-amber-800 hover:file:bg-amber-200">
+            <span id="photoStatus-${originalIndex}" class="text-[10px] text-gray-500 italic block">
+              ${auditSelection[originalIndex] && auditSelection[originalIndex].fotoBase64 ? '✅ Foto telah diunggah' : 'Belum ada foto terpilih'}
+            </span>
+          </div>
+        ` : ''}
+
+        <!-- TOMBOL PILIHAN AUDIT -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-          <button type="button" data-index="${originalIndex}" data-status="Exist Good" onclick="selectAuditStatus(${originalIndex}, 'Exist Good', '${pilar}', '${activeGenbaCategory}', '${headerLabel.replace(/'/g, "\\'")}')" class="audit-btn-${originalIndex} py-2 ${currentSel === 'Exist Good' ? 'bg-emerald-500 text-white font-extrabold shadow-xs' : 'bg-gray-300 hover:bg-emerald-200 text-gray-800 font-bold'} text-xs rounded-xl border border-gray-400/50 transition cursor-pointer">Exist Good</button>
-          <button type="button" data-index="${originalIndex}" data-status="Exist Not Good" onclick="selectAuditStatus(${originalIndex}, 'Exist Not Good', '${pilar}', '${activeGenbaCategory}', '${headerLabel.replace(/'/g, "\\'")}')" class="audit-btn-${originalIndex} py-2 ${currentSel === 'Exist Not Good' ? 'bg-amber-500 text-white font-extrabold shadow-xs' : 'bg-gray-300 hover:bg-amber-200 text-gray-800 font-bold'} text-xs rounded-xl border border-gray-400/50 transition cursor-pointer">Exist Not Good</button>
-          <button type="button" data-index="${originalIndex}" data-status="Not Exist" onclick="selectAuditStatus(${originalIndex}, 'Not Exist', '${pilar}', '${activeGenbaCategory}', '${headerLabel.replace(/'/g, "\\'")}')" class="audit-btn-${originalIndex} py-2 ${currentSel === 'Not Exist' ? 'bg-red-500 text-white font-extrabold shadow-xs' : 'bg-gray-300 hover:bg-red-200 text-gray-800 font-bold'} text-xs rounded-xl border border-gray-400/50 transition cursor-pointer">Not Exist</button>
-          <button type="button" data-index="${originalIndex}" data-status="N/A" onclick="selectAuditStatus(${originalIndex}, 'N/A', '${pilar}', '${activeGenbaCategory}', '${headerLabel.replace(/'/g, "\\'")}')" class="audit-btn-${originalIndex} py-2 ${currentSel === 'N/A' ? 'bg-gray-600 text-white font-extrabold shadow-xs' : 'bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold'} text-xs rounded-xl border border-gray-400/50 transition cursor-pointer">N/A</button>
+          <button type="button" data-index="${originalIndex}" data-status="Exist Good" onclick="selectAuditStatus(${originalIndex}, 'Exist Good', '${pilar}', '${activeGenbaCategory}')" class="audit-btn-${originalIndex} py-2 ${currentSel === 'Exist Good' ? 'bg-emerald-500 text-white font-extrabold shadow-xs' : 'bg-gray-300 hover:bg-emerald-200 text-gray-800 font-bold'} text-xs rounded-xl border border-gray-400/50 transition cursor-pointer">Exist Good</button>
+          <button type="button" data-index="${originalIndex}" data-status="Exist Not Good" onclick="selectAuditStatus(${originalIndex}, 'Exist Not Good', '${pilar}', '${activeGenbaCategory}')" class="audit-btn-${originalIndex} py-2 ${currentSel === 'Exist Not Good' ? 'bg-amber-500 text-white font-extrabold shadow-xs' : 'bg-gray-300 hover:bg-amber-200 text-gray-800 font-bold'} text-xs rounded-xl border border-gray-400/50 transition cursor-pointer">Exist Not Good</button>
+          <button type="button" data-index="${originalIndex}" data-status="Not Exist" onclick="selectAuditStatus(${originalIndex}, 'Not Exist', '${pilar}', '${activeGenbaCategory}')" class="audit-btn-${originalIndex} py-2 ${currentSel === 'Not Exist' ? 'bg-red-500 text-white font-extrabold shadow-xs' : 'bg-gray-300 hover:bg-red-200 text-gray-800 font-bold'} text-xs rounded-xl border border-gray-400/50 transition cursor-pointer">Not Exist</button>
+          <button type="button" data-index="${originalIndex}" data-status="N/A" onclick="selectAuditStatus(${originalIndex}, 'N/A', '${pilar}', '${activeGenbaCategory}')" class="audit-btn-${originalIndex} py-2 ${currentSel === 'N/A' ? 'bg-gray-600 text-white font-extrabold shadow-xs' : 'bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold'} text-xs rounded-xl border border-gray-400/50 transition cursor-pointer">N/A</button>
         </div>
       </div>
     `;
@@ -231,16 +262,41 @@ function renderFilteredCeklis() {
   validateGenbaCompletion();
 }
 
-// UPDATE FLEKSIBEL PILIHAN & PERBAIKAN VISUAL TOMBOL
-function selectAuditStatus(originalIndex, status, pilar, categoryKey, headerLabel) {
+// HANDLER FOTO BASE64
+function handleAuditPhotoUpload(originalIndex, inputEl) {
+  if (inputEl.files && inputEl.files[0]) {
+    const file = inputEl.files[0];
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      if (!auditSelection[originalIndex]) {
+        auditSelection[originalIndex] = {};
+      }
+      auditSelection[originalIndex].fotoBase64 = e.target.result;
+      const statusEl = document.getElementById(`photoStatus-${originalIndex}`);
+      if (statusEl) statusEl.innerText = `✅ Foto (${file.name}) terlampir`;
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+// FIX: SELEKSI STATUS AUDIT AMAN DARI EMBED STRING BUG
+function selectAuditStatus(originalIndex, status, pilar, categoryKey) {
+  const row = allCeklisNOSData[originalIndex] || [];
+  const itemVal = (row[3] || '').toString().trim();
+  const subItem1 = (row[4] || '').toString().trim();
+  const subItem2 = (row[5] || '').toString().trim();
+  const headerLabel = [itemVal, subItem1, subItem2].filter(t => t !== '').join(', ');
+
+  const prevFoto = auditSelection[originalIndex] ? auditSelection[originalIndex].fotoBase64 : null;
+
   auditSelection[originalIndex] = { 
     status: status, 
     pilar: pilar, 
     categoryKey: categoryKey,
-    headerLabel: headerLabel 
+    headerLabel: headerLabel,
+    fotoBase64: prevFoto
   };
   
-  // FIX: Mengubah class visual tombol secara spesifik berdasarkan atribut data-status
   const btns = document.querySelectorAll(`.audit-btn-${originalIndex}`);
   btns.forEach(btn => {
     const btnStatus = btn.getAttribute("data-status");
@@ -298,7 +354,6 @@ function calculateAuditScores() {
   document.getElementById("ptsPeopleVal").innerText = `${stats.PEOPLE.totalPoin} Pts / ${stats.PEOPLE.validChecklist * 2} Max`;
 }
 
-// CEK KELENGKAPAN TERPISAH PER KATEGORI AKTIF (SUBMIT INDEPENDEN)
 function validateGenbaCompletion() {
   const currentCategoryItems = allCeklisNOSData.filter(row => {
     const tipe = (row[1] || '').toString().toUpperCase();
@@ -307,11 +362,10 @@ function validateGenbaCompletion() {
 
   const totalCurrentCat = currentCategoryItems.length;
   
-  // Count answered items within current active category
   let answeredCurrentCat = 0;
   currentCategoryItems.forEach(row => {
     const origIdx = allCeklisNOSData.indexOf(row);
-    if (auditSelection[origIdx]) answeredCurrentCat++;
+    if (auditSelection[origIdx] && auditSelection[origIdx].status) answeredCurrentCat++;
   });
 
   const progressText = document.getElementById("auditProgressText");
@@ -336,7 +390,6 @@ function validateGenbaCompletion() {
   }
 }
 
-// SUBMIT HASIL AUDIT UNTUK KATEGORI YANG AKTIF
 function submitGenbaForm() {
   const currentCategoryItems = allCeklisNOSData.filter(row => {
     const tipe = (row[1] || '').toString().toUpperCase();
@@ -381,7 +434,6 @@ function submitGenbaForm() {
   });
 }
 
-// EVALUASI NOTIFIKASI REAL-TIME
 function evaluateRealtimeReminders(isManualClick = false) {
   const userCabang = currentUser ? (currentUser.cabang || "Soekarno Hatta") : "Soekarno Hatta";
   const today = new Date();
@@ -457,7 +509,6 @@ function showInAppReminderToast(msg, targetTab = "pica") {
 function dismissInAppToast() { document.getElementById("inAppReminderToast").classList.add("hidden"); }
 function handleToastAction() { dismissInAppToast(); switchTab(activeToastTargetTab); }
 
-// REFERENSI STANDAR & ROTASI 3D
 function loadReferensiData() {
   const container = document.getElementById("referensiGridBox");
   if (!container) return;
@@ -554,7 +605,6 @@ function update3DRotation() {
   if (img) img.style.transform = `perspective(1000px) rotateY(${currentRotationY}deg)`;
 }
 
-// LOGIKA AUTHENTIKASI & DASHBOARD
 function selectRole(role) {
   selectedRole = role;
   const btnKacab = document.getElementById('btnRoleKacab');
@@ -747,7 +797,6 @@ function switchTab(tabId) {
   }
 }
 
-// SOAL NOSIZU, ONBOARDING FLP & PROFIL CABANG HELPER
 function loadOnboardingData() {
   const container = document.getElementById("onboardingGridBox");
   if (!container) return;
