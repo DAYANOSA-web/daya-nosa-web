@@ -180,9 +180,14 @@ function filterGenbaCategory(categoryKey) {
 
 function renderFilteredCeklis() {
   const container = document.getElementById("genbaCeklisContainer");
+  
+  // Normalisasi string kategori aktif (hilangkan semua spasi & ubah ke UPPERCASE)
+  const cleanActiveCat = activeGenbaCategory.replace(/\s+/g, '').toUpperCase();
+
   const filtered = allCeklisNOSData.filter(row => {
-    const tipe = (row[1] || '').toString().toUpperCase();
-    return tipe.includes(activeGenbaCategory.toUpperCase());
+    // Normalisasi teks kolom B (Tipe) dari spreadsheet
+    const tipeSheet = (row[1] || '').toString().replace(/\s+/g, '').toUpperCase();
+    return tipeSheet.includes(cleanActiveCat) || cleanActiveCat.includes(tipeSheet);
   });
 
   if (filtered.length === 0) {
@@ -196,7 +201,7 @@ function renderFilteredCeklis() {
     const originalIndex = allCeklisNOSData.indexOf(row);
     const idCeklis = (row[0] || '').toString().trim();
     const tipe = (row[1] || activeGenbaCategory).toString().trim();
-    const mandatory = (row[2] || '-').toString().trim();
+    const mandatory = (row[2] || '-').toString().trim(); // Kolom C: Mandatory
     const itemVal = (row[3] || '').toString().trim();
     const subItem1 = (row[4] || '').toString().trim();
     const subItem2 = (row[5] || '').toString().trim();
@@ -208,7 +213,7 @@ function renderFilteredCeklis() {
       if (match && match[1]) rawImg = `https://lh3.googleusercontent.com/d/${match[1]}`;
     }
     const imgUrl = rawImg;
-    const isNeedFoto = (row[8] || '').toString().trim().toLowerCase() === 'ya';
+    const isNeedFoto = (row[8] || '').toString().trim().toLowerCase() === 'ya'; // Kolom I: IsNeedFoto
 
     const labelParts = [itemVal, subItem1, subItem2].filter(text => text !== '');
     const headerLabel = labelParts.join(', ');
@@ -221,7 +226,7 @@ function renderFilteredCeklis() {
     if (uTipe.includes("PEOPLE")) pilar = "PEOPLE";
 
     html += `
-      <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/80 shadow-xs space-y-3">
+      <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/80 shadow-xs space-y-3 text-left">
         <div class="flex justify-between items-center border-b border-gray-300/50 pb-1.5">
           <div class="flex items-center gap-2">
             <span class="text-[10px] bg-nosa-green text-white px-2 py-0.5 rounded-md font-bold">${idCeklis || 'NOS'}</span>
@@ -269,6 +274,43 @@ function renderFilteredCeklis() {
   });
   container.innerHTML = html;
   validateGenbaCompletion();
+}
+
+function validateGenbaCompletion() {
+  const cleanActiveCat = activeGenbaCategory.replace(/\s+/g, '').toUpperCase();
+  const currentCategoryItems = allCeklisNOSData.filter(row => {
+    const tipeSheet = (row[1] || '').toString().replace(/\s+/g, '').toUpperCase();
+    return tipeSheet.includes(cleanActiveCat) || cleanActiveCat.includes(tipeSheet);
+  });
+
+  const totalCurrentCat = currentCategoryItems.length;
+  
+  let answeredCurrentCat = 0;
+  currentCategoryItems.forEach(row => {
+    const origIdx = allCeklisNOSData.indexOf(row);
+    if (auditSelection[origIdx] && auditSelection[origIdx].status) answeredCurrentCat++;
+  });
+
+  const progressText = document.getElementById("auditProgressText");
+  const catBadge = document.getElementById("auditCatBadge");
+  const btnSubmit = document.getElementById("btnSubmitGenbaAudit");
+
+  if (catBadge) catBadge.innerText = `${activeGenbaCategory} Progress`;
+  if (progressText) progressText.innerText = `${answeredCurrentCat}/${totalCurrentCat} Diselesaikan`;
+
+  if (totalCurrentCat > 0 && answeredCurrentCat >= totalCurrentCat) {
+    if (btnSubmit) {
+      btnSubmit.disabled = false;
+      btnSubmit.className = "flex-1 sm:flex-initial py-2.5 px-5 bg-nosa-green hover:bg-nosa-greenLight text-white font-extrabold text-xs rounded-xl shadow-md transition cursor-pointer";
+      btnSubmit.innerText = `💾 Submit Audit (${activeGenbaCategory})`;
+    }
+  } else {
+    if (btnSubmit) {
+      btnSubmit.disabled = true;
+      btnSubmit.className = "flex-1 sm:flex-initial py-2.5 px-5 bg-gray-300 text-gray-500 font-extrabold text-xs rounded-xl shadow-xs transition cursor-not-allowed";
+      btnSubmit.innerText = `🔒 Submit (${totalCurrentCat - answeredCurrentCat} tersisa)`;
+    }
+  }
 }
 
 function handleAuditPhotoUpload(originalIndex, inputEl) {
