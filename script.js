@@ -8,7 +8,7 @@ let currentUser = null;
 let allCeklisNOSData = [];
 let activeGenbaCategory = "PREMISES H1";
 let currentAuditSession = null;
-let auditSelection = {}; // Memuat { status, pilar, categoryKey, headerLabel, fotoBase64 }
+let auditSelection = {};
 
 // ENGINE ROTASI 3D VIEWER
 let isSpinning3D = false;
@@ -54,33 +54,64 @@ function formatDateNice(dateStr) {
 }
 
 function getGradingResult(percentageVal) {
-  const val = parseFloat(percentageVal) || 0;
+  if (percentageVal === null || percentageVal === undefined || isNaN(percentageVal)) {
+    return { title: '-', bgClass: 'bg-gray-400 text-gray-950 font-black' };
+  }
+  const val = parseFloat(percentageVal);
   if (val >= 90.0) return { title: 'Platinum', bgClass: 'bg-slate-700 text-white border border-slate-500' };
   if (val >= 70.0) return { title: 'Gold', bgClass: 'bg-amber-400 text-amber-950 font-black' };
   if (val >= 60.0) return { title: 'Silver', bgClass: 'bg-gray-400 text-gray-950 font-black' };
   return { title: 'Bronze', bgClass: 'bg-amber-700 text-white font-black' };
 }
 
+// UPDATE: FETCH & RENDER RESULT GENBA 6 PILAR PADA HOMEPAGE
 function loadHomeLastGenbaResult(cabangName) {
   document.getElementById("homeGenbaCabang").innerText = `Cabang ${cabangName}`;
 
   fetch(`${API_URL}?action=getLastGenbaResult&cabang=${encodeURIComponent(cabangName)}`)
   .then(res => res.json())
   .then(res => {
-    let pPremises = 0, pProcess = 0, pPeople = 0;
+    const categories = [
+      { key: "premisesH1", scoreId: "homeScorePremisesH1", barId: "homeBarPremisesH1" },
+      { key: "processH1", scoreId: "homeScoreProcessH1", barId: "homeBarProcessH1" },
+      { key: "peopleH1", scoreId: "homeScorePeopleH1", barId: "homeBarPeopleH1" },
+      { key: "premisesH23", scoreId: "homeScorePremisesH23", barId: "homeBarPremisesH23" },
+      { key: "processH23", scoreId: "homeScoreProcessH23", barId: "homeBarProcessH23" },
+      { key: "peopleH23", scoreId: "homeScorePeopleH23", barId: "homeBarPeopleH23" }
+    ];
+
+    let totalScore = 0;
+    let countEvaluated = 0;
     let tglAudit = "-";
 
-    if (res.status === "success" && res.data) {
-      pPremises = Math.round(res.data.premises || 0);
-      pProcess  = Math.round(res.data.process || 0);
-      pPeople   = Math.round(res.data.people || 0);
-      tglAudit  = formatDateNice(res.data.tanggal);
-    } else {
-      pPremises = 85; pProcess = 78; pPeople = 92;
-      tglAudit = "9 Nov 2026";
-    }
+    const dataObj = (res.status === "success" && res.data) ? res.data : {};
+    if (res.data && res.data.tanggal) tglAudit = formatDateNice(res.data.tanggal);
 
-    const overallScore = Math.round((pPremises + pProcess + pPeople) / 3);
+    categories.forEach(cat => {
+      const scoreEl = document.getElementById(cat.scoreId);
+      const barEl = document.getElementById(cat.barId);
+      const rawVal = dataObj[cat.key];
+
+      if (rawVal !== undefined && rawVal !== null && !isNaN(rawVal)) {
+        const valNum = Math.round(parseFloat(rawVal));
+        if (scoreEl) {
+          scoreEl.innerText = `${valNum}%`;
+          scoreEl.className = "text-base sm:text-xl font-black text-nosa-green";
+        }
+        if (barEl) barEl.style.width = `${valNum}%`;
+        totalScore += valNum;
+        countEvaluated++;
+      } else {
+        if (scoreEl) {
+          scoreEl.innerText = "Belum Ada Nilai GENBA Terakhir";
+          scoreEl.className = "text-[10px] sm:text-xs font-bold text-gray-400 italic leading-snug py-1";
+        }
+        if (barEl) barEl.style.width = "0%";
+      }
+    });
+
+    // OVERALL CALCULATION ONLY ON AVAILABLE PILARS
+    const overallScore = countEvaluated > 0 ? Math.round(totalScore / countEvaluated) : null;
     const grading = getGradingResult(overallScore);
 
     const badgeEl = document.getElementById("homeGradingBadge");
@@ -89,29 +120,20 @@ function loadHomeLastGenbaResult(cabangName) {
       badgeEl.className = `${grading.bgClass} text-xs font-black px-3 py-0.5 rounded-lg shadow-xs uppercase tracking-wider`;
     }
 
-    document.getElementById("homeOverallScoreVal").innerText = `${overallScore}%`;
+    document.getElementById("homeOverallScoreVal").innerText = overallScore !== null ? `${overallScore}%` : "-";
     const circleBar = document.getElementById("homeCircleProgress");
-    if (circleBar) circleBar.setAttribute("stroke-dasharray", `${overallScore}, 100`);
-
-    document.getElementById("homePremisesScore").innerText = `${pPremises}%`;
-    document.getElementById("homeBarPremises").style.width = `${pPremises}%`;
-
-    document.getElementById("homeProcessScore").innerText = `${pProcess}%`;
-    document.getElementById("homeBarProcess").style.width = `${pProcess}%`;
-
-    document.getElementById("homePeopleScore").innerText = `${pPeople}%`;
-    document.getElementById("homeBarPeople").style.width = `${pPeople}%`;
+    if (circleBar) circleBar.setAttribute("stroke-dasharray", overallScore !== null ? `${overallScore}, 100` : "0, 100");
 
     document.getElementById("homeGenbaDate").innerText = `Audit Terakhir: ${tglAudit}`;
   })
   .catch(err => {
-    console.error("Gagal memuat result GENBA Home", err);
+    console.error("Gagal memuat result GENBA 6 Pilar Home", err);
   });
 }
 
 function initDirectGenbaSession() {
-  const userCabang = currentUser ? (currentUser.cabang || "Soekarno Hatta") : "Soekarno Hatta";
-  const userNama = currentUser ? (currentUser.nama || "Refan") : "Refan";
+  const userCabang = currentUser ? (currentUser.cabang || "Cibiru") : "Cibiru";
+  const userNama = currentUser ? (currentUser.nama || "Rafi") : "Rafi";
   const userRole = currentUser ? (currentUser.role || "Kepala Cabang") : "Kepala Cabang";
 
   currentAuditSession = { cabang: userCabang, nama: userNama, jabatan: userRole };
@@ -156,16 +178,6 @@ function filterGenbaCategory(categoryKey) {
   renderFilteredCeklis();
 }
 
-// FIX: PEMBACAAN KOLOM SPREADSHEET SESUAI GAMBAR DATABASE
-// Kolom A (0): IDCeklis
-// Kolom B (1): Tipe
-// Kolom C (2): Mandatory (S, G, P / GP / P dll)
-// Kolom D (3): Item
-// Kolom E (4): Sub Item 1
-// Kolom F (5): Sub Item 2
-// Kolom G (6): Penjelasan
-// Kolom H (7): GambarReferensiUrl
-// Kolom I (8): IsNeedFoto (Ya/Tidak)
 function renderFilteredCeklis() {
   const container = document.getElementById("genbaCeklisContainer");
   const filtered = allCeklisNOSData.filter(row => {
@@ -184,7 +196,7 @@ function renderFilteredCeklis() {
     const originalIndex = allCeklisNOSData.indexOf(row);
     const idCeklis = (row[0] || '').toString().trim();
     const tipe = (row[1] || activeGenbaCategory).toString().trim();
-    const mandatory = (row[2] || '-').toString().trim(); // FIX MANDATORY KOLOM C
+    const mandatory = (row[2] || '-').toString().trim();
     const itemVal = (row[3] || '').toString().trim();
     const subItem1 = (row[4] || '').toString().trim();
     const subItem2 = (row[5] || '').toString().trim();
@@ -196,8 +208,7 @@ function renderFilteredCeklis() {
       if (match && match[1]) rawImg = `https://lh3.googleusercontent.com/d/${match[1]}`;
     }
     const imgUrl = rawImg;
-    
-    const isNeedFoto = (row[8] || '').toString().trim().toLowerCase() === 'ya'; // FIX ISNEEDFOTO KOLOM I
+    const isNeedFoto = (row[8] || '').toString().trim().toLowerCase() === 'ya';
 
     const labelParts = [itemVal, subItem1, subItem2].filter(text => text !== '');
     const headerLabel = labelParts.join(', ');
@@ -237,7 +248,6 @@ function renderFilteredCeklis() {
           </div>
         </div>
 
-        <!-- UPLOAD BUKTI FOTO JIKA ISNEEDFOTO = YA -->
         ${isNeedFoto ? `
           <div class="bg-white/80 p-3 rounded-xl border border-amber-200 space-y-1.5">
             <label class="block text-[10px] font-extrabold text-amber-900 uppercase">Upload Bukti Foto Temuan/Kondisi</label>
@@ -248,7 +258,6 @@ function renderFilteredCeklis() {
           </div>
         ` : ''}
 
-        <!-- TOMBOL PILIHAN AUDIT -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
           <button type="button" data-index="${originalIndex}" data-status="Exist Good" onclick="selectAuditStatus(${originalIndex}, 'Exist Good', '${pilar}', '${activeGenbaCategory}')" class="audit-btn-${originalIndex} py-2 ${currentSel === 'Exist Good' ? 'bg-emerald-500 text-white font-extrabold shadow-xs' : 'bg-gray-300 hover:bg-emerald-200 text-gray-800 font-bold'} text-xs rounded-xl border border-gray-400/50 transition cursor-pointer">Exist Good</button>
           <button type="button" data-index="${originalIndex}" data-status="Exist Not Good" onclick="selectAuditStatus(${originalIndex}, 'Exist Not Good', '${pilar}', '${activeGenbaCategory}')" class="audit-btn-${originalIndex} py-2 ${currentSel === 'Exist Not Good' ? 'bg-amber-500 text-white font-extrabold shadow-xs' : 'bg-gray-300 hover:bg-amber-200 text-gray-800 font-bold'} text-xs rounded-xl border border-gray-400/50 transition cursor-pointer">Exist Not Good</button>
@@ -262,15 +271,12 @@ function renderFilteredCeklis() {
   validateGenbaCompletion();
 }
 
-// HANDLER FOTO BASE64
 function handleAuditPhotoUpload(originalIndex, inputEl) {
   if (inputEl.files && inputEl.files[0]) {
     const file = inputEl.files[0];
     const reader = new FileReader();
     reader.onload = function(e) {
-      if (!auditSelection[originalIndex]) {
-        auditSelection[originalIndex] = {};
-      }
+      if (!auditSelection[originalIndex]) auditSelection[originalIndex] = {};
       auditSelection[originalIndex].fotoBase64 = e.target.result;
       const statusEl = document.getElementById(`photoStatus-${originalIndex}`);
       if (statusEl) statusEl.innerText = `✅ Foto (${file.name}) terlampir`;
@@ -279,7 +285,6 @@ function handleAuditPhotoUpload(originalIndex, inputEl) {
   }
 }
 
-// FIX: SELEKSI STATUS AUDIT AMAN DARI EMBED STRING BUG
 function selectAuditStatus(originalIndex, status, pilar, categoryKey) {
   const row = allCeklisNOSData[originalIndex] || [];
   const itemVal = (row[3] || '').toString().trim();
@@ -427,7 +432,7 @@ function submitGenbaForm() {
     if (res.status === "success") {
       alert(`Audit ${activeGenbaCategory} Berhasil Disimpan! ${res.totalPicaCreated || 0} temuan PICA baru telah ditambahkan.`);
       
-      const userCabang = currentUser ? (currentUser.cabang || "Soekarno Hatta") : "Soekarno Hatta";
+      const userCabang = currentUser ? (currentUser.cabang || "Cibiru") : "Cibiru";
       loadHomeLastGenbaResult(userCabang);
       switchTab("home");
     } else { alert(res.message || "Gagal menyimpan audit."); }
@@ -435,7 +440,7 @@ function submitGenbaForm() {
 }
 
 function evaluateRealtimeReminders(isManualClick = false) {
-  const userCabang = currentUser ? (currentUser.cabang || "Soekarno Hatta") : "Soekarno Hatta";
+  const userCabang = currentUser ? (currentUser.cabang || "Cibiru") : "Cibiru";
   const today = new Date();
   today.setHours(0,0,0,0);
 
@@ -498,7 +503,7 @@ function showInAppReminderToast(msg, targetTab = "pica") {
   const cabangBadge = document.getElementById("toastCabangBadge");
   const msgContent = document.getElementById("toastMessageContent");
 
-  const cabang = currentUser ? (currentUser.cabang || "Soekarno Hatta") : "Soekarno Hatta";
+  const cabang = currentUser ? (currentUser.cabang || "Cibiru") : "Cibiru";
   cabangBadge.innerText = `Cabang ${cabang}`;
   msgContent.innerText = msg;
   activeToastTargetTab = targetTab;
@@ -655,7 +660,7 @@ function handleAuthSubmit(e) {
   const payload = {
     action: authMode === "register" ? "registerUser" : "loginUser",
     email: email, password: password, nama: nama, role: selectedRole,
-    cabang: selectedRole === "PIC NOS" ? "Head Office" : (cabang || "Soekarno Hatta")
+    cabang: selectedRole === "PIC NOS" ? "Head Office" : (cabang || "Cibiru")
   };
   fetch(API_URL, {
     method: "POST",
@@ -689,11 +694,11 @@ function renderDashboard(user) {
   document.getElementById("loginPage").classList.add("hidden");
   document.getElementById("mainContainer").classList.remove("hidden");
   document.getElementById("dashUserNama").innerText = user.nama || user.email;
-  document.getElementById("profNamaCabang").innerText = "Cabang " + (user.cabang || "Soekarno Hatta");
+  document.getElementById("profNamaCabang").innerText = "Cabang " + (user.cabang || "Cibiru");
   
   switchTab("home");
-  loadHomeLastGenbaResult(user.cabang || "Soekarno Hatta");
-  loadProfilCabangData(user.cabang || "Soekarno Hatta");
+  loadHomeLastGenbaResult(user.cabang || "Cibiru");
+  loadProfilCabangData(user.cabang || "Cibiru");
   initReminderUI();
   evaluateRealtimeReminders();
 
@@ -848,7 +853,7 @@ function formatEmbedVideoUrl(url) {
 function loadPicaDashboardData() {
   const container = document.getElementById("picaCardsContainer");
   if (!container) return;
-  const userCabang = (currentUser && currentUser.cabang) ? currentUser.cabang : "Soekarno Hatta";
+  const userCabang = (currentUser && currentUser.cabang) ? currentUser.cabang : "Cibiru";
   fetch(`${API_URL}?action=getPicaList&cabang=${encodeURIComponent(userCabang)}`)
   .then(res => res.json())
   .then(data => {
