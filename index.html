@@ -667,28 +667,35 @@
     </div>
   </div>
 
-  <!-- MODAL 3D VIEWER ROTASI GAMBAR REFERENSI -->
+ <!-- MODAL 3D VIEWER ROTASI 360° INTERAKTIF -->
   <div id="modal3DViewer" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50">
     <div class="bg-white w-full max-w-lg rounded-3xl p-5 space-y-4 shadow-2xl border border-gray-700 relative text-center">
       <div class="flex justify-between items-center border-b border-gray-200 pb-2">
-        <h3 class="text-sm font-black text-nosa-green uppercase tracking-wider" id="modal3DTitle">Viewer 3D Interaktif</h3>
+        <h3 class="text-sm font-black text-nosa-green uppercase tracking-wider" id="modal3DTitle">Viewer 360° Interaktif</h3>
         <button onclick="close3DViewer()" class="text-gray-400 hover:text-gray-700 text-xl font-bold">&times;</button>
       </div>
-
-      <!-- KONTEN ROTASI 3D -->
-      <div class="w-full h-64 sm:h-80 bg-gray-100 rounded-2xl flex items-center justify-center overflow-hidden relative cursor-grab active:cursor-grabbing border border-gray-300" id="spin3DContainer">
-        <img id="modal3DImage" src="" class="max-w-full max-h-full object-contain pointer-events-none transition-transform duration-75">
-        <div class="absolute bottom-2 inset-x-0 text-center">
-          <span class="bg-black/60 text-white text-[10px] font-bold px-3 py-1 rounded-full backdrop-blur-xs">
-            🔄 Geser/Drag Horizontal untuk Memutar 3D
+      
+      <!-- AREA ROTASI 360 INTERAKTIF -->
+      <div class="w-full h-64 sm:h-80 bg-gray-100 rounded-2xl flex items-center justify-center overflow-hidden relative cursor-grab active:cursor-grabbing border border-gray-300 user-select-none" id="spin3DContainer">
+        <!-- LOADER SPINNER -->
+        <div id="spinner3DLoader" class="hidden text-xs text-nosa-green font-bold flex-col items-center gap-2">
+          <span class="text-2xl animate-spin">⏳</span>
+          <span>Memuat frame foto 360°...</span>
+        </div>
+        
+        <img id="modal3DImage" src="" class="max-w-full max-h-full object-contain pointer-events-none select-none">
+        
+        <div class="absolute bottom-2 inset-x-0 text-center pointer-events-none">
+          <span class="bg-black/70 text-white text-[10px] font-extrabold px-3.5 py-1.5 rounded-full backdrop-blur-xs shadow-md">
+            🔄 Geser / Drag Horizontal Untuk Memutar Objek 360°
           </span>
         </div>
       </div>
-
-      <p class="text-xs text-gray-600 font-medium leading-snug" id="modal3DDesc">Simulasi tampilan visual 3D referensi standar NOS.</p>
+      
+      <p class="text-xs text-gray-600 font-medium leading-snug" id="modal3DDesc">Tampilan visual rotasi 360° referensi standar NOS.</p>
     </div>
   </div>
-
+  
   <!-- IN-APP TOAST REMINDER -->
   <div id="inAppReminderToast" class="hidden fixed bottom-20 right-4 sm:bottom-6 sm:right-6 max-w-sm w-[calc(100%-2rem)] bg-white rounded-2xl p-4 shadow-2xl border-2 border-nosa-green z-40 transition-all duration-300 transform translate-y-0">
     <div class="flex items-start gap-3">
