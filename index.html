@@ -64,7 +64,7 @@
             </div>
           </div>
           <div id="cabangInputGroup" class="hidden">
-            <input type="text" id="authCabang" placeholder="Nama Cabang (misal: Soekarno Hatta)" class="w-full px-4 py-2.5 rounded-2xl border-2 border-nosa-border bg-white text-sm text-gray-700 focus:outline-none">
+            <input type="text" id="authCabang" placeholder="Nama Cabang (misal: Cibiru)" class="w-full px-4 py-2.5 rounded-2xl border-2 border-nosa-border bg-white text-sm text-gray-700 focus:outline-none">
           </div>
           <button type="submit" id="btnSubmitAuth" class="w-full py-3 bg-nosa-button hover:bg-nosa-border text-black font-extrabold text-lg rounded-2xl shadow-md cursor-pointer">
             masuk
@@ -113,7 +113,7 @@
       <div id="dashboardPage" class="space-y-6">
         <div class="space-y-0.5">
           <h2 class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
-            halo, <span id="dashUserNama">pak Refan</span> 👋
+            halo, <span id="dashUserNama">pak Rafi</span> 👋
           </h2>
           <p class="text-xs sm:text-sm text-gray-600 font-normal">selamat datang kembali! apa yang mau anda input hari ini?</p>
         </div>
@@ -157,73 +157,101 @@
           </div>
         </div>
 
-        <!-- KARTU HASIL GENBA TERAKHIR & GRADING -->
-        <div id="cardPerforma" class="bg-nosa-cardBg p-5 sm:p-6 rounded-3xl border border-gray-200/60 shadow-xs space-y-4">
+        <!-- KARTU HASIL GENBA TERAKHIR & GRADING 6 PILAR -->
+        <div id="cardPerforma" class="bg-nosa-cardBg p-5 sm:p-6 rounded-3xl border border-gray-200/60 shadow-xs space-y-5">
           <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-gray-300/60 pb-3">
             <div>
               <span class="text-[10px] font-extrabold text-nosa-green tracking-wider uppercase">RESULT GENBA TERAKHIR</span>
-              <h3 class="text-base sm:text-lg font-black text-gray-900" id="homeGenbaCabang">Cabang Soekarno Hatta</h3>
+              <h3 class="text-base sm:text-lg font-black text-gray-900" id="homeGenbaCabang">Cabang Cibiru</h3>
             </div>
             
-            <!-- BADGE GRADING HASIL AKHIR -->
             <div class="flex items-center gap-2 bg-white px-3.5 py-1.5 rounded-2xl border border-gray-200 shadow-2xs">
               <span class="text-xs text-gray-500 font-bold">Grading Result:</span>
-              <span id="homeGradingBadge" class="bg-amber-500 text-white text-xs font-black px-3 py-0.5 rounded-lg shadow-xs uppercase tracking-wider">
-                GOLD
+              <span id="homeGradingBadge" class="bg-gray-400 text-gray-950 font-black text-xs px-3 py-0.5 rounded-lg shadow-xs uppercase tracking-wider">
+                -
               </span>
             </div>
           </div>
 
-          <!-- GRID BREAKDOWN PER PILAR -->
-          <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 items-center">
+          <!-- CONTAINER UTAMA: SCORE CIRCLE & 6 KARTU PILAR -->
+          <div class="grid grid-cols-1 md:grid-cols-7 gap-4 items-center">
             
-            <!-- OVERALL SCORE CIRCLE -->
-            <div class="flex items-center sm:justify-center gap-3 bg-white/70 p-3 rounded-2xl border border-gray-200/70">
-              <div class="relative w-14 h-14 sm:w-16 sm:h-16 flex-shrink-0 flex items-center justify-center">
+            <!-- OVERALL SCORE CIRCLE (SPAN 1 COL) -->
+            <div class="md:col-span-1 flex flex-col items-center justify-center bg-white/80 p-4 rounded-2xl border border-gray-200 text-center space-y-2">
+              <div class="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 flex items-center justify-center">
                 <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                  <path class="text-gray-200" stroke-width="4.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                  <path id="homeCircleProgress" class="text-nosa-green" stroke-dasharray="0, 100" stroke-width="4.5" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                  <path class="text-gray-200" stroke-width="4" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                  <path id="homeCircleProgress" class="text-nosa-green" stroke-dasharray="0, 100" stroke-width="4" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                 </svg>
-                <span class="absolute font-black text-gray-800 text-xs sm:text-sm" id="homeOverallScoreVal">0%</span>
+                <span class="absolute font-black text-gray-900 text-sm sm:text-base" id="homeOverallScoreVal">0%</span>
               </div>
-              <div class="sm:hidden space-y-0.5">
-                <h5 class="text-xs font-black text-nosa-green">Rata-Rata Result</h5>
-                <p class="text-[10px] text-gray-500" id="homeOverallTextMobile">Berdasarkan audit terakhir</p>
-              </div>
+              <span class="text-[10px] font-extrabold text-nosa-green tracking-wider uppercase">Rata-Rata Result</span>
             </div>
 
-            <!-- PREMISES RESULT -->
-            <div class="bg-white/80 p-3 rounded-2xl border border-gray-200 space-y-1 text-center">
-              <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">Premises</span>
-              <h4 class="text-base sm:text-xl font-black text-nosa-green" id="homePremisesScore">0%</h4>
-              <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-1">
-                <div id="homeBarPremises" class="bg-nosa-green h-full w-0 transition-all duration-500"></div>
+            <!-- GRID BREAKDOWN 6 PILAR (SPAN 6 COL) -->
+            <div class="md:col-span-6 grid grid-cols-2 sm:grid-cols-3 gap-3">
+              
+              <!-- PREMISES H1 -->
+              <div class="bg-white/80 p-3 rounded-2xl border border-gray-200 space-y-1 text-center">
+                <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">Premises H1</span>
+                <h4 class="text-xs sm:text-base font-black text-nosa-green" id="homeScorePremisesH1">Belum Ada Nilai GENBA Terakhir</h4>
+                <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-1">
+                  <div id="homeBarPremisesH1" class="bg-nosa-green h-full w-0 transition-all duration-500"></div>
+                </div>
               </div>
-            </div>
 
-            <!-- PROCESS RESULT -->
-            <div class="bg-white/80 p-3 rounded-2xl border border-gray-200 space-y-1 text-center">
-              <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">Process</span>
-              <h4 class="text-base sm:text-xl font-black text-nosa-green" id="homeProcessScore">0%</h4>
-              <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-1">
-                <div id="homeBarProcess" class="bg-nosa-green h-full w-0 transition-all duration-500"></div>
+              <!-- PROCESS H1 -->
+              <div class="bg-white/80 p-3 rounded-2xl border border-gray-200 space-y-1 text-center">
+                <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">Process H1</span>
+                <h4 class="text-xs sm:text-base font-black text-nosa-green" id="homeScoreProcessH1">Belum Ada Nilai GENBA Terakhir</h4>
+                <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-1">
+                  <div id="homeBarProcessH1" class="bg-nosa-green h-full w-0 transition-all duration-500"></div>
+                </div>
               </div>
-            </div>
 
-            <!-- PEOPLE RESULT -->
-            <div class="bg-white/80 p-3 rounded-2xl border border-gray-200 space-y-1 text-center">
-              <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">People</span>
-              <h4 class="text-base sm:text-xl font-black text-nosa-green" id="homePeopleScore">0%</h4>
-              <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-1">
-                <div id="homeBarPeople" class="bg-nosa-green h-full w-0 transition-all duration-500"></div>
+              <!-- PEOPLE H1 -->
+              <div class="bg-white/80 p-3 rounded-2xl border border-gray-200 space-y-1 text-center">
+                <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">People H1</span>
+                <h4 class="text-xs sm:text-base font-black text-nosa-green" id="homeScorePeopleH1">Belum Ada Nilai GENBA Terakhir</h4>
+                <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-1">
+                  <div id="homeBarPeopleH1" class="bg-nosa-green h-full w-0 transition-all duration-500"></div>
+                </div>
               </div>
+
+              <!-- PREMISES H23 -->
+              <div class="bg-white/80 p-3 rounded-2xl border border-gray-200 space-y-1 text-center">
+                <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">Premises H23</span>
+                <h4 class="text-xs sm:text-base font-black text-nosa-green" id="homeScorePremisesH23">Belum Ada Nilai GENBA Terakhir</h4>
+                <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-1">
+                  <div id="homeBarPremisesH23" class="bg-nosa-green h-full w-0 transition-all duration-500"></div>
+                </div>
+              </div>
+
+              <!-- PROCESS H23 -->
+              <div class="bg-white/80 p-3 rounded-2xl border border-gray-200 space-y-1 text-center">
+                <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">Process H23</span>
+                <h4 class="text-xs sm:text-base font-black text-nosa-green" id="homeScoreProcessH23">Belum Ada Nilai GENBA Terakhir</h4>
+                <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-1">
+                  <div id="homeBarProcessH23" class="bg-nosa-green h-full w-0 transition-all duration-500"></div>
+                </div>
+              </div>
+
+              <!-- PEOPLE H23 -->
+              <div class="bg-white/80 p-3 rounded-2xl border border-gray-200 space-y-1 text-center">
+                <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">People H23</span>
+                <h4 class="text-xs sm:text-base font-black text-nosa-green" id="homeScorePeopleH23">Belum Ada Nilai GENBA Terakhir</h4>
+                <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-1">
+                  <div id="homeBarPeopleH23" class="bg-nosa-green h-full w-0 transition-all duration-500"></div>
+                </div>
+              </div>
+
             </div>
 
           </div>
 
           <div class="flex justify-between items-center pt-1">
             <span class="text-[10px] text-gray-500 font-medium" id="homeGenbaDate">Audit Terakhir: -</span>
-            <button onclick="switchTab('genbaAudit')" class="inline-flex items-center gap-1.5 bg-nosa-green hover:bg-nosa-greenLight text-white text-xs font-bold px-3.5 py-1.5 rounded-xl shadow-xs transition">
+            <button onclick="switchTab('genbaAudit')" class="inline-flex items-center gap-1.5 bg-nosa-green hover:bg-nosa-greenLight text-white text-xs font-bold px-3.5 py-1.5 rounded-xl shadow-xs transition cursor-pointer">
               <span>Mulai Audit Baru</span>
               <span>&rsaquo;</span>
             </button>
@@ -340,8 +368,8 @@
           <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-gray-300/50 pb-3">
             <div class="space-y-0.5">
               <span class="text-[10px] font-extrabold text-nosa-green uppercase tracking-wider">SESI AUDIT GENBA</span>
-              <h3 class="text-lg sm:text-xl font-black text-gray-900" id="auditInfoCabang">Cabang Soekarno Hatta</h3>
-              <p class="text-xs text-gray-600 font-medium" id="auditInfoAuditor">Auditor: Refan (Kepala Cabang)</p>
+              <h3 class="text-lg sm:text-xl font-black text-gray-900" id="auditInfoCabang">Cabang Cibiru</h3>
+              <p class="text-xs text-gray-600 font-medium" id="auditInfoAuditor">Auditor: Rafi (Kepala Cabang)</p>
             </div>
             <div class="flex items-center gap-2 w-full sm:w-auto">
               <div class="text-right hidden sm:block">
@@ -483,7 +511,7 @@
           <div class="flex items-center gap-1.5 text-xs text-gray-400 font-normal">
             <span>🏠</span> <span>JBR</span> <span>&gt;</span> <span>Cabang</span>
           </div>
-          <h2 class="text-2xl font-black text-gray-900 tracking-tight" id="profNamaCabang">Cabang Soekarno Hatta</h2>
+          <h2 class="text-2xl font-black text-gray-900 tracking-tight" id="profNamaCabang">Cabang Cibiru</h2>
           <p class="text-xs font-bold text-gray-400">JBR</p>
         </div>
 
@@ -669,7 +697,7 @@
       </div>
       <div class="flex-1 space-y-1">
         <div class="flex justify-between items-start">
-          <h5 class="text-xs font-extrabold text-nosa-green uppercase tracking-wider" id="toastCabangBadge">Cabang Soekarno Hatta</h5>
+          <h5 class="text-xs font-extrabold text-nosa-green uppercase tracking-wider" id="toastCabangBadge">Cabang Cibiru</h5>
           <button onclick="dismissInAppToast()" class="text-gray-400 hover:text-gray-600 font-bold text-sm leading-none pl-1">&times;</button>
         </div>
         <p class="text-xs text-gray-800 font-semibold leading-snug" id="toastMessageContent">
