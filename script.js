@@ -681,15 +681,28 @@ function selectRole(role) {
   const btnKacab = document.getElementById('btnRoleKacab');
   const btnPic = document.getElementById('btnRolePic');
   const btnFlp = document.getElementById('btnRoleFlp');
-  [btnKacab, btnPic, btnFlp].forEach(btn => {
-    btn.className = "flex-1 py-1.5 px-1 text-gray-600 text-[10px] font-normal transition-all";
-  });
-  if (role === 'Kepala Cabang') {
-    btnKacab.className = "flex-1 py-1.5 px-1 bg-nosa-bgRole rounded-xl text-gray-900 text-[10px] font-bold transition-all shadow-xs";
-  } else if (role === 'PIC NOS') {
-    btnPic.className = "flex-1 py-1.5 px-1 bg-nosa-bgRole rounded-xl text-gray-900 text-[10px] font-bold transition-all shadow-xs";
-  } else {
-    btnFlp.className = "flex-1 py-1.5 px-1 bg-nosa-bgRole rounded-xl text-gray-900 text-[10px] font-bold transition-all shadow-xs";
+  
+  if (btnKacab && btnPic && btnFlp) {
+    [btnKacab, btnPic, btnFlp].forEach(btn => {
+      btn.className = "flex-1 py-1.5 px-1 text-gray-600 text-[10px] font-normal transition-all cursor-pointer";
+    });
+    if (role === 'Kepala Cabang') {
+      btnKacab.className = "flex-1 py-1.5 px-1 bg-nosa-bgRole rounded-xl text-gray-900 text-[10px] font-bold transition-all shadow-xs cursor-pointer";
+    } else if (role === 'PIC NOS') {
+      btnPic.className = "flex-1 py-1.5 px-1 bg-nosa-bgRole rounded-xl text-gray-900 text-[10px] font-bold transition-all shadow-xs cursor-pointer";
+    } else {
+      btnFlp.className = "flex-1 py-1.5 px-1 bg-nosa-bgRole rounded-xl text-gray-900 text-[10px] font-bold transition-all shadow-xs cursor-pointer";
+    }
+  }
+  
+  // Jika sedang di mode register, sesuaikan input cabang
+  const cabangGroup = document.getElementById("cabangInputGroup");
+  if (cabangGroup && authMode === "register") {
+    if (role === "PIC NOS") {
+      cabangGroup.classList.add("hidden");
+    } else {
+      cabangGroup.classList.remove("hidden");
+    }
   }
 }
 
@@ -700,31 +713,45 @@ function setAuthMode(mode) {
   const btnSubmit = document.getElementById("btnSubmitAuth");
   const tabLogin = document.getElementById("tabModeLogin");
   const tabReg = document.getElementById("tabModeRegister");
+  
   if (mode === "register") {
-    nameGroup.classList.remove("hidden");
-    if (selectedRole !== "PIC NOS") cabangGroup.classList.remove("hidden");
-    btnSubmit.innerText = "daftar akun";
-    tabReg.className = "flex-1 py-1.5 rounded-xl bg-white text-gray-900 shadow-xs transition font-bold";
-    tabLogin.className = "flex-1 py-1.5 rounded-xl hover:text-gray-900 transition";
+    if (nameGroup) nameGroup.classList.remove("hidden");
+    if (cabangGroup && selectedRole !== "PIC NOS") cabangGroup.classList.remove("hidden");
+    if (btnSubmit) btnSubmit.innerText = "daftar akun";
+    if (tabReg) tabReg.className = "flex-1 py-1.5 rounded-xl bg-white text-gray-900 shadow-xs transition font-bold cursor-pointer";
+    if (tabLogin) tabLogin.className = "flex-1 py-1.5 rounded-xl hover:text-gray-900 transition cursor-pointer";
   } else {
-    nameGroup.classList.add("hidden");
-    cabangGroup.classList.add("hidden");
-    btnSubmit.innerText = "masuk";
-    tabLogin.className = "flex-1 py-1.5 rounded-xl bg-white text-gray-900 shadow-xs transition font-bold";
-    tabReg.className = "flex-1 py-1.5 rounded-xl hover:text-gray-900 transition";
+    if (nameGroup) nameGroup.classList.add("hidden");
+    if (cabangGroup) cabangGroup.classList.add("hidden");
+    if (btnSubmit) btnSubmit.innerText = "masuk";
+    if (tabLogin) tabLogin.className = "flex-1 py-1.5 rounded-xl bg-white text-gray-900 shadow-xs transition font-bold cursor-pointer";
+    if (tabReg) tabReg.className = "flex-1 py-1.5 rounded-xl hover:text-gray-900 transition cursor-pointer";
   }
 }
 
 function handleAuthSubmit(e) {
-  e.preventDefault();
-  const btn = document.getElementById("btnSubmitAuth");
-  const email = document.getElementById("authEmail").value.trim();
-  const password = document.getElementById("authPassword").value.trim();
-  const nama = document.getElementById("regNama").value.trim();
-  const cabangInput = document.getElementById("authCabang").value.trim();
+  if (e && e.preventDefault) e.preventDefault();
   
-  btn.disabled = true; 
-  btn.innerText = "Proses...";
+  const btn = document.getElementById("btnSubmitAuth");
+  const emailEl = document.getElementById("authEmail");
+  const passEl = document.getElementById("authPassword");
+  const regNamaEl = document.getElementById("regNama");
+  const cabangEl = document.getElementById("authCabang");
+  
+  const email = emailEl ? emailEl.value.trim() : "";
+  const password = passEl ? passEl.value.trim() : "";
+  const nama = regNamaEl ? regNamaEl.value.trim() : "";
+  const cabangInput = cabangEl ? cabangEl.value.trim() : "";
+  
+  if (!email || !password) {
+    alert("Silakan isi Email/ID dan Password Anda!");
+    return false;
+  }
+  
+  if (btn) {
+    btn.disabled = true; 
+    btn.innerText = "Proses...";
+  }
   
   const userCabang = selectedRole === "PIC NOS" ? "Head Office" : (cabangInput || "Cibiru");
   
@@ -744,11 +771,12 @@ function handleAuthSubmit(e) {
   })
   .then(res => res.json())
   .then(res => {
-    btn.disabled = false;
-    btn.innerText = authMode === "register" ? "daftar akun" : "masuk";
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = authMode === "register" ? "daftar akun" : "masuk";
+    }
     
     if (res.status === "success" && res.userData) {
-      // Pastikan data user memiliki nilai default aman agar tidak crash
       currentUser = {
         email: res.userData.email || email,
         nama: res.userData.nama || nama || email.split("@")[0],
@@ -759,15 +787,19 @@ function handleAuthSubmit(e) {
       localStorage.setItem("nosa_user", JSON.stringify(currentUser));
       renderDashboard(currentUser);
     } else { 
-      alert(res.message || "Gagal memproses login. Periksa email dan password Anda."); 
+      alert(res.message || "Gagal memproses. Periksa kembali ID dan Password Anda."); 
     }
   })
   .catch(err => {
-    btn.disabled = false;
-    btn.innerText = authMode === "register" ? "daftar akun" : "masuk";
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = authMode === "register" ? "daftar akun" : "masuk";
+    }
     console.error("Auth error:", err);
-    alert("Terjadi kesalahan koneksi ke server. Silakan coba lagi.");
+    alert("Terjadi kesalahan koneksi. Silakan coba lagi.");
   });
+  
+  return false;
 }
 
 function handleLogout() {
@@ -798,7 +830,6 @@ function renderDashboard(user) {
   
   switchTab("home");
   
-  // Panggil fungsi data secara aman
   try { loadHomeLastGenbaResult(safeCabang); } catch(e) { console.error(e); }
   try { loadProfilCabangData(safeCabang); } catch(e) { console.error(e); }
   
