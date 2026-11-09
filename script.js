@@ -520,11 +520,17 @@ function showInAppReminderToast(msg, targetTab = "pica") {
 function dismissInAppToast() { document.getElementById("inAppReminderToast").classList.add("hidden"); }
 function handleToastAction() { dismissInAppToast(); switchTab(activeToastTargetTab); }
 
+// VARIABLES UNTUK ENGINE ROTASI FOTO 360
+let sprite3DFrames = [];
+let currentFrameIndex = 0;
+let isSpinning3D = false;
+let startX3D = 0;
+
 function loadReferensiData() {
   const container = document.getElementById("referensiGridBox");
   if (!container) return;
   container.innerHTML = '<p class="text-xs text-gray-400 italic text-center col-span-full py-8">Memuat data referensi standar...</p>';
-
+  
   fetch(`${API_URL}?action=getReferensi`)
   .then(res => res.json())
   .then(data => {
@@ -548,16 +554,26 @@ function loadReferensiData() {
       }
       const imgUrl = rawImg;
       const downloadUrl = row[6] || '';
+      const tipeMedia = (row[7] || 'SINGLE_IMAGE').toString().trim().toUpperCase(); // Kolom H
+      const folder360Url = (row[8] || '').toString().trim(); // Kolom I
+
+      const safeJudul = judul.replace(/'/g, "\\'");
+      const safeDesc = deskripsi.replace(/'/g, "\\'");
+      const safeImg = imgUrl.replace(/'/g, "\\'");
+      const safeFolder = folder360Url.replace(/'/g, "\\'");
 
       html += `
         <div class="bg-nosa-cardBg p-4 sm:p-5 rounded-3xl border border-gray-200/70 shadow-xs flex flex-col justify-between space-y-3">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
-            <div onclick="open3DViewer('${imgUrl.replace(/'/g, "\\'")}', '${judul.replace(/'/g, "\\'")}', '${deskripsi.replace(/'/g, "\\'")}')" class="w-full h-48 sm:h-56 rounded-2xl overflow-hidden bg-white/90 p-2 flex items-center justify-center border border-gray-300/50 shadow-inner cursor-pointer relative group">
+            <div onclick="open3DViewer('${safeImg}', '${safeJudul}', '${safeDesc}', '${tipeMedia}', '${safeFolder}')" class="w-full h-48 sm:h-56 rounded-2xl overflow-hidden bg-white/90 p-2 flex items-center justify-center border border-gray-300/50 shadow-inner cursor-pointer relative group">
               ${imgUrl ? `<img src="${imgUrl}" alt="${judul}" class="w-full h-full object-contain transition group-hover:scale-105">` : '<span class="text-xs text-gray-400 italic">Tidak ada gambar</span>'}
+              
               <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white font-extrabold text-xs gap-1">
-                <span>🔄 Putar 3D</span>
+                <span>${tipeMedia === '360_SPRITE' ? '🔄 Putar 360°' : '🔍 Lihat Gambar'}</span>
               </div>
+              ${tipeMedia === '360_SPRITE' ? '<span class="absolute top-2 right-2 bg-amber-400 text-amber-950 font-black text-[9px] px-2 py-0.5 rounded-full shadow-xs">360° View</span>' : ''}
             </div>
+            
             <div class="space-y-2">
               <span class="inline-block bg-nosa-yellow text-gray-900 text-[10px] font-extrabold px-3 py-0.5 rounded-md uppercase tracking-wider">${kat}</span>
               <h3 class="text-xl sm:text-2xl font-black text-nosa-green tracking-tight leading-none pt-0.5">${judul}</h3>
@@ -581,39 +597,83 @@ function loadReferensiData() {
   });
 }
 
-function open3DViewer(imgUrl, title, desc) {
+function open3DViewer(imgUrl, title, desc, tipeMedia, folderUrl) {
   document.getElementById("modal3DTitle").innerText = title;
-  document.getElementById("modal3DImage").src = imgUrl;
   document.getElementById("modal3DDesc").innerText = desc;
-  currentRotationY = 0;
-  update3DRotation();
+  const mainImgEl = document.getElementById("modal3DImage");
+  const loaderEl = document.getElementById("spinner3DLoader");
+  
+  sprite3DFrames = [];
+  currentFrameIndex = 0;
+  
+  if (tipeMedia === '360_SPRITE' && folderUrl) {
+    mainImgEl.classList.add("hidden");
+    if (loaderEl) loaderEl.classList.remove("hidden");
+    
+    fetch(`${API_URL}?action=getFolderImages&folder=${encodeURIComponent(folderUrl)}`)
+    .then(res => res.json())
+    .then(res => {
+      if (loaderEl) loaderEl.classList.add("hidden");
+      mainImgEl.classList.remove("hidden");
+      
+      if (res.status === "success" && res.images && res.images.length > 0) {
+        sprite3DFrames = res.images;
+        mainImgEl.src = sprite3DFrames[0];
+      } else {
+        mainImgEl.src = imgUrl; // Fallback jika folder kosong
+      }
+    })
+    .catch(() => {
+      if (loaderEl) loaderEl.classList.add("hidden");
+      mainImgEl.classList.remove("hidden");
+      mainImgEl.src = imgUrl;
+    });
+  } else {
+    if (loaderEl) loaderEl.classList.add("hidden");
+    mainImgEl.classList.remove("hidden");
+    mainImgEl.src = imgUrl;
+  }
 
   const container = document.getElementById("spin3DContainer");
   container.onmousedown = start3DSpin;
   window.onmousemove = move3DSpin;
   window.onmouseup = end3DSpin;
-
+  
   container.ontouchstart = (e) => start3DSpin(e.touches[0]);
   window.ontouchmove = (e) => move3DSpin(e.touches[0]);
   window.ontouchend = end3DSpin;
-
+  
   document.getElementById("modal3DViewer").classList.remove("hidden");
 }
 
-function close3DViewer() { document.getElementById("modal3DViewer").classList.add("hidden"); }
-
-function start3DSpin(e) { isSpinning3D = true; startX3D = e.clientX; }
-function move3DSpin(e) {
-  if (!isSpinning3D) return;
-  const deltaX = e.clientX - startX3D;
-  currentRotationY += deltaX * 0.8;
-  startX3D = e.clientX;
-  update3DRotation();
+function close3DViewer() { 
+  document.getElementById("modal3DViewer").classList.add("hidden"); 
 }
-function end3DSpin() { isSpinning3D = false; }
-function update3DRotation() {
-  const img = document.getElementById("modal3DImage");
-  if (img) img.style.transform = `perspective(1000px) rotateY(${currentRotationY}deg)`;
+
+function start3DSpin(e) { 
+  if (sprite3DFrames.length <= 1) return;
+  isSpinning3D = true; 
+  startX3D = e.clientX; 
+}
+
+function move3DSpin(e) {
+  if (!isSpinning3D || sprite3DFrames.length <= 1) return;
+  const deltaX = e.clientX - startX3D;
+  
+  // Ganti frame setiap pergeseran 15px
+  if (Math.abs(deltaX) > 15) {
+    if (deltaX < 0) {
+      currentFrameIndex = (currentFrameIndex + 1) % sprite3DFrames.length;
+    } else {
+      currentFrameIndex = (currentFrameIndex - 1 + sprite3DFrames.length) % sprite3DFrames.length;
+    }
+    document.getElementById("modal3DImage").src = sprite3DFrames[currentFrameIndex];
+    startX3D = e.clientX;
+  }
+}
+
+function end3DSpin() { 
+  isSpinning3D = false; 
 }
 
 function selectRole(role) {
