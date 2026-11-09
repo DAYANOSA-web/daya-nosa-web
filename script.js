@@ -8,7 +8,7 @@ let currentUser = null;
 let allCeklisNOSData = [];
 let activeGenbaCategory = "PREMISES H1";
 let currentAuditSession = null;
-let auditSelection = {};
+let auditSelection = {}; // Memuat { status, pilar, categoryKey, headerLabel, fotoBase64 }
 
 // ENGINE ROTASI 3D VIEWER
 let isSpinning3D = false;
@@ -64,7 +64,7 @@ function getGradingResult(percentageVal) {
   return { title: 'Bronze', bgClass: 'bg-amber-700 text-white font-black' };
 }
 
-// UPDATE: FETCH & RENDER RESULT GENBA 6 PILAR PADA HOMEPAGE
+// FETCH & RENDER RESULT GENBA 6 PILAR PADA HOMEPAGE
 function loadHomeLastGenbaResult(cabangName) {
   document.getElementById("homeGenbaCabang").innerText = `Cabang ${cabangName}`;
 
@@ -110,7 +110,6 @@ function loadHomeLastGenbaResult(cabangName) {
       }
     });
 
-    // OVERALL CALCULATION ONLY ON AVAILABLE PILARS
     const overallScore = countEvaluated > 0 ? Math.round(totalScore / countEvaluated) : null;
     const grading = getGradingResult(overallScore);
 
@@ -178,14 +177,13 @@ function filterGenbaCategory(categoryKey) {
   renderFilteredCeklis();
 }
 
+// PENCOCOKAN FLEKSIBEL CEKLIS & PENANGANAN KOLOM MANDATORY (C) DAN ISNEEDFOTO (I)
 function renderFilteredCeklis() {
   const container = document.getElementById("genbaCeklisContainer");
   
-  // Normalisasi string kategori aktif (hilangkan semua spasi & ubah ke UPPERCASE)
   const cleanActiveCat = activeGenbaCategory.replace(/\s+/g, '').toUpperCase();
 
   const filtered = allCeklisNOSData.filter(row => {
-    // Normalisasi teks kolom B (Tipe) dari spreadsheet
     const tipeSheet = (row[1] || '').toString().replace(/\s+/g, '').toUpperCase();
     return tipeSheet.includes(cleanActiveCat) || cleanActiveCat.includes(tipeSheet);
   });
@@ -274,43 +272,6 @@ function renderFilteredCeklis() {
   });
   container.innerHTML = html;
   validateGenbaCompletion();
-}
-
-function validateGenbaCompletion() {
-  const cleanActiveCat = activeGenbaCategory.replace(/\s+/g, '').toUpperCase();
-  const currentCategoryItems = allCeklisNOSData.filter(row => {
-    const tipeSheet = (row[1] || '').toString().replace(/\s+/g, '').toUpperCase();
-    return tipeSheet.includes(cleanActiveCat) || cleanActiveCat.includes(tipeSheet);
-  });
-
-  const totalCurrentCat = currentCategoryItems.length;
-  
-  let answeredCurrentCat = 0;
-  currentCategoryItems.forEach(row => {
-    const origIdx = allCeklisNOSData.indexOf(row);
-    if (auditSelection[origIdx] && auditSelection[origIdx].status) answeredCurrentCat++;
-  });
-
-  const progressText = document.getElementById("auditProgressText");
-  const catBadge = document.getElementById("auditCatBadge");
-  const btnSubmit = document.getElementById("btnSubmitGenbaAudit");
-
-  if (catBadge) catBadge.innerText = `${activeGenbaCategory} Progress`;
-  if (progressText) progressText.innerText = `${answeredCurrentCat}/${totalCurrentCat} Diselesaikan`;
-
-  if (totalCurrentCat > 0 && answeredCurrentCat >= totalCurrentCat) {
-    if (btnSubmit) {
-      btnSubmit.disabled = false;
-      btnSubmit.className = "flex-1 sm:flex-initial py-2.5 px-5 bg-nosa-green hover:bg-nosa-greenLight text-white font-extrabold text-xs rounded-xl shadow-md transition cursor-pointer";
-      btnSubmit.innerText = `💾 Submit Audit (${activeGenbaCategory})`;
-    }
-  } else {
-    if (btnSubmit) {
-      btnSubmit.disabled = true;
-      btnSubmit.className = "flex-1 sm:flex-initial py-2.5 px-5 bg-gray-300 text-gray-500 font-extrabold text-xs rounded-xl shadow-xs transition cursor-not-allowed";
-      btnSubmit.innerText = `🔒 Submit (${totalCurrentCat - answeredCurrentCat} tersisa)`;
-    }
-  }
 }
 
 function handleAuditPhotoUpload(originalIndex, inputEl) {
@@ -402,9 +363,10 @@ function calculateAuditScores() {
 }
 
 function validateGenbaCompletion() {
+  const cleanActiveCat = activeGenbaCategory.replace(/\s+/g, '').toUpperCase();
   const currentCategoryItems = allCeklisNOSData.filter(row => {
-    const tipe = (row[1] || '').toString().toUpperCase();
-    return tipe.includes(activeGenbaCategory.toUpperCase());
+    const tipeSheet = (row[1] || '').toString().replace(/\s+/g, '').toUpperCase();
+    return tipeSheet.includes(cleanActiveCat) || cleanActiveCat.includes(tipeSheet);
   });
 
   const totalCurrentCat = currentCategoryItems.length;
@@ -438,9 +400,10 @@ function validateGenbaCompletion() {
 }
 
 function submitGenbaForm() {
+  const cleanActiveCat = activeGenbaCategory.replace(/\s+/g, '').toUpperCase();
   const currentCategoryItems = allCeklisNOSData.filter(row => {
-    const tipe = (row[1] || '').toString().toUpperCase();
-    return tipe.includes(activeGenbaCategory.toUpperCase());
+    const tipeSheet = (row[1] || '').toString().replace(/\s+/g, '').toUpperCase();
+    return tipeSheet.includes(cleanActiveCat) || cleanActiveCat.includes(tipeSheet);
   });
 
   const categoryResults = [];
