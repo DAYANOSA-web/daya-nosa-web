@@ -157,28 +157,76 @@
           </div>
         </div>
 
-        <div id="cardPerforma" class="bg-nosa-cardBg p-5 sm:p-6 rounded-3xl border border-gray-200/60 shadow-xs space-y-3">
-          <div class="flex items-center justify-between gap-4">
-            <div class="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 flex items-center justify-center">
-              <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                <path class="text-gray-300" stroke-width="4.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                <path class="text-nosa-green" stroke-dasharray="85, 100" stroke-width="4.5" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-              </svg>
-              <span class="absolute font-extrabold text-gray-800 text-sm sm:text-base">85%</span>
+        <!-- KARTU HASIL GENBA TERAKHIR & GRADING -->
+        <div id="cardPerforma" class="bg-nosa-cardBg p-5 sm:p-6 rounded-3xl border border-gray-200/60 shadow-xs space-y-4">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-gray-300/60 pb-3">
+            <div>
+              <span class="text-[10px] font-extrabold text-nosa-green tracking-wider uppercase">RESULT GENBA TERAKHIR</span>
+              <h3 class="text-base sm:text-lg font-black text-gray-900" id="homeGenbaCabang">Cabang Soekarno Hatta</h3>
             </div>
-            <div class="flex-1 space-y-1 pl-2">
-              <h3 class="font-extrabold text-xs sm:text-sm text-nosa-green tracking-wider uppercase">PERFORMA AREA ANDA</h3>
-              <p class="text-xs text-gray-600 leading-tight">Baik! Terus pertahankan standar terbaik anda.</p>
-              <button onclick="switchTab('pica')" class="inline-flex items-center gap-1.5 mt-2 bg-white/80 hover:bg-white text-nosa-green border border-nosa-green/30 text-xs font-bold px-3 py-1.5 rounded-xl shadow-2xs transition">
-                <span>Lihat Dashboard</span>
-                <span>&rsaquo;</span>
-              </button>
+            
+            <!-- BADGE GRADING HASIL AKHIR -->
+            <div class="flex items-center gap-2 bg-white px-3.5 py-1.5 rounded-2xl border border-gray-200 shadow-2xs">
+              <span class="text-xs text-gray-500 font-bold">Grading Result:</span>
+              <span id="homeGradingBadge" class="bg-amber-500 text-white text-xs font-black px-3 py-0.5 rounded-lg shadow-xs uppercase tracking-wider">
+                GOLD
+              </span>
             </div>
-            <div class="w-12 h-8 text-emerald-500 flex items-center justify-center">
-              <svg class="w-full h-full" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-              </svg>
+          </div>
+
+          <!-- GRID BREAKDOWN PER PILAR -->
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 items-center">
+            
+            <!-- OVERALL SCORE CIRCLE -->
+            <div class="flex items-center sm:justify-center gap-3 bg-white/70 p-3 rounded-2xl border border-gray-200/70">
+              <div class="relative w-14 h-14 sm:w-16 sm:h-16 flex-shrink-0 flex items-center justify-center">
+                <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                  <path class="text-gray-200" stroke-width="4.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                  <path id="homeCircleProgress" class="text-nosa-green" stroke-dasharray="0, 100" stroke-width="4.5" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                </svg>
+                <span class="absolute font-black text-gray-800 text-xs sm:text-sm" id="homeOverallScoreVal">0%</span>
+              </div>
+              <div class="sm:hidden space-y-0.5">
+                <h5 class="text-xs font-black text-nosa-green">Rata-Rata Result</h5>
+                <p class="text-[10px] text-gray-500" id="homeOverallTextMobile">Berdasarkan audit terakhir</p>
+              </div>
             </div>
+
+            <!-- PREMISES RESULT -->
+            <div class="bg-white/80 p-3 rounded-2xl border border-gray-200 space-y-1 text-center">
+              <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">Premises</span>
+              <h4 class="text-base sm:text-xl font-black text-nosa-green" id="homePremisesScore">0%</h4>
+              <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-1">
+                <div id="homeBarPremises" class="bg-nosa-green h-full w-0 transition-all duration-500"></div>
+              </div>
+            </div>
+
+            <!-- PROCESS RESULT -->
+            <div class="bg-white/80 p-3 rounded-2xl border border-gray-200 space-y-1 text-center">
+              <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">Process</span>
+              <h4 class="text-base sm:text-xl font-black text-nosa-green" id="homeProcessScore">0%</h4>
+              <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-1">
+                <div id="homeBarProcess" class="bg-nosa-green h-full w-0 transition-all duration-500"></div>
+              </div>
+            </div>
+
+            <!-- PEOPLE RESULT -->
+            <div class="bg-white/80 p-3 rounded-2xl border border-gray-200 space-y-1 text-center">
+              <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">People</span>
+              <h4 class="text-base sm:text-xl font-black text-nosa-green" id="homePeopleScore">0%</h4>
+              <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-1">
+                <div id="homeBarPeople" class="bg-nosa-green h-full w-0 transition-all duration-500"></div>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="flex justify-between items-center pt-1">
+            <span class="text-[10px] text-gray-500 font-medium" id="homeGenbaDate">Audit Terakhir: -</span>
+            <button onclick="switchTab('genbaAudit')" class="inline-flex items-center gap-1.5 bg-nosa-green hover:bg-nosa-greenLight text-white text-xs font-bold px-3.5 py-1.5 rounded-xl shadow-xs transition">
+              <span>Mulai Audit Baru</span>
+              <span>&rsaquo;</span>
+            </button>
           </div>
         </div>
       </div>
