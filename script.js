@@ -1,5 +1,4 @@
 const API_URL = "https://script.google.com/macros/s/AKfycby3Nv784S410kwfLsKDfexjrd4Mm1LJYYzzweWqgukZK-VegEhnEngNpVLN_wHUPsC5/exec";
-
 let authMode = "login";
 let selectedRole = "Kepala Cabang";
 let currentUser = null;
@@ -8,12 +7,13 @@ let currentUser = null;
 let allCeklisNOSData = [];
 let activeGenbaCategory = "PREMISES H1";
 let currentAuditSession = null;
-let auditSelection = {}; // Memuat { status, pilar, categoryKey, headerLabel, fotoBase64 }
+let auditSelection = {};
 
-// ENGINE ROTASI 3D VIEWER
+// ENGINE ROTASI FOTO 360
+let sprite3DFrames = [];
+let currentFrameIndex = 0;
 let isSpinning3D = false;
 let startX3D = 0;
-let currentRotationY = 0;
 
 // ENGINE DATA NOSIZU
 let nosUserStats = { xp: 0, streak: 1, nyawa: 5, unit: 1 };
@@ -64,618 +64,6 @@ function getGradingResult(percentageVal) {
   return { title: 'Bronze', bgClass: 'bg-amber-700 text-white font-black' };
 }
 
-// FETCH & RENDER RESULT GENBA 6 PILAR PADA HOMEPAGE
-function loadHomeLastGenbaResult(cabangName) {
-  document.getElementById("homeGenbaCabang").innerText = `Cabang ${cabangName}`;
-
-  fetch(`${API_URL}?action=getLastGenbaResult&cabang=${encodeURIComponent(cabangName)}`)
-  .then(res => res.json())
-  .then(res => {
-    const categories = [
-      { key: "premisesH1", scoreId: "homeScorePremisesH1", barId: "homeBarPremisesH1" },
-      { key: "processH1", scoreId: "homeScoreProcessH1", barId: "homeBarProcessH1" },
-      { key: "peopleH1", scoreId: "homeScorePeopleH1", barId: "homeBarPeopleH1" },
-      { key: "premisesH23", scoreId: "homeScorePremisesH23", barId: "homeBarPremisesH23" },
-      { key: "processH23", scoreId: "homeScoreProcessH23", barId: "homeBarProcessH23" },
-      { key: "peopleH23", scoreId: "homeScorePeopleH23", barId: "homeBarPeopleH23" }
-    ];
-
-    let totalScore = 0;
-    let countEvaluated = 0;
-    let tglAudit = "-";
-
-    const dataObj = (res.status === "success" && res.data) ? res.data : {};
-    if (res.data && res.data.tanggal) tglAudit = formatDateNice(res.data.tanggal);
-
-    categories.forEach(cat => {
-      const scoreEl = document.getElementById(cat.scoreId);
-      const barEl = document.getElementById(cat.barId);
-      const rawVal = dataObj[cat.key];
-
-      if (rawVal !== undefined && rawVal !== null && !isNaN(rawVal)) {
-        const valNum = Math.round(parseFloat(rawVal));
-        if (scoreEl) {
-          scoreEl.innerText = `${valNum}%`;
-          scoreEl.className = "text-base sm:text-xl font-black text-nosa-green";
-        }
-        if (barEl) barEl.style.width = `${valNum}%`;
-        totalScore += valNum;
-        countEvaluated++;
-      } else {
-        if (scoreEl) {
-          scoreEl.innerText = "Belum Ada Nilai GENBA Terakhir";
-          scoreEl.className = "text-[10px] sm:text-xs font-bold text-gray-400 italic leading-snug py-1";
-        }
-        if (barEl) barEl.style.width = "0%";
-      }
-    });
-
-    const overallScore = countEvaluated > 0 ? Math.round(totalScore / countEvaluated) : null;
-    const grading = getGradingResult(overallScore);
-
-    const badgeEl = document.getElementById("homeGradingBadge");
-    if (badgeEl) {
-      badgeEl.innerText = grading.title;
-      badgeEl.className = `${grading.bgClass} text-xs font-black px-3 py-0.5 rounded-lg shadow-xs uppercase tracking-wider`;
-    }
-
-    document.getElementById("homeOverallScoreVal").innerText = overallScore !== null ? `${overallScore}%` : "-";
-    const circleBar = document.getElementById("homeCircleProgress");
-    if (circleBar) circleBar.setAttribute("stroke-dasharray", overallScore !== null ? `${overallScore}, 100` : "0, 100");
-
-    document.getElementById("homeGenbaDate").innerText = `Audit Terakhir: ${tglAudit}`;
-  })
-  .catch(err => {
-    console.error("Gagal memuat result GENBA 6 Pilar Home", err);
-  });
-}
-
-function initDirectGenbaSession() {
-  const userCabang = currentUser ? (currentUser.cabang || "Cibiru") : "Cibiru";
-  const userNama = currentUser ? (currentUser.nama || "Rafi") : "Rafi";
-  const userRole = currentUser ? (currentUser.role || "Kepala Cabang") : "Kepala Cabang";
-
-  currentAuditSession = { cabang: userCabang, nama: userNama, jabatan: userRole };
-  document.getElementById("auditInfoCabang").innerText = `Cabang ${userCabang}`;
-  document.getElementById("auditInfoAuditor").innerText = `Auditor: ${userNama} (${userRole})`;
-
-  loadCeklisNOSData();
-}
-
-function loadCeklisNOSData() {
-  const container = document.getElementById("genbaCeklisContainer");
-  container.innerHTML = '<p class="text-xs text-gray-400 italic text-center py-6">Memuat item ceklis NOS...</p>';
-  
-  fetch(`${API_URL}?action=getCeklisNOS`)
-  .then(res => res.json())
-  .then(data => {
-    if (!data || data.length <= 1) {
-      container.innerHTML = '<p class="text-xs text-gray-400 italic text-center py-6">Belum ada item ceklis di spreadsheet CeklisNOS.</p>';
-      return;
-    }
-    allCeklisNOSData = data.slice(1);
-    filterGenbaCategory(activeGenbaCategory);
-    calculateAuditScores();
-  });
-}
-
-function filterGenbaCategory(categoryKey) {
-  activeGenbaCategory = categoryKey;
-  const categories = ['PREMISES H1', 'PROCESS H1', 'PEOPLE H1', 'PREMISES H23', 'PROCESS H23', 'PEOPLE H23'];
-  
-  categories.forEach(cat => {
-    const btn = document.getElementById(`tabCat-${cat.replace(/\s+/g, '')}`);
-    if (btn) {
-      if (cat === categoryKey) {
-        btn.className = "px-3.5 py-2 rounded-xl text-xs font-extrabold whitespace-nowrap bg-nosa-green text-white shadow-xs transition";
-      } else {
-        btn.className = "px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-white text-gray-600 hover:bg-gray-100 transition";
-      }
-    }
-  });
-
-  renderFilteredCeklis();
-}
-
-// PENCOCOKAN FLEKSIBEL CEKLIS & PENANGANAN KOLOM MANDATORY (C) DAN ISNEEDFOTO (I)
-function renderFilteredCeklis() {
-  const container = document.getElementById("genbaCeklisContainer");
-  
-  const cleanActiveCat = activeGenbaCategory.replace(/\s+/g, '').toUpperCase();
-
-  const filtered = allCeklisNOSData.filter(row => {
-    const tipeSheet = (row[1] || '').toString().replace(/\s+/g, '').toUpperCase();
-    return tipeSheet.includes(cleanActiveCat) || cleanActiveCat.includes(tipeSheet);
-  });
-
-  if (filtered.length === 0) {
-    container.innerHTML = `<p class="text-xs text-gray-400 italic text-center py-6">Tidak ada item ceklis untuk kategori ${activeGenbaCategory}.</p>`;
-    validateGenbaCompletion();
-    return;
-  }
-
-  let html = '';
-  filtered.forEach(row => {
-    const originalIndex = allCeklisNOSData.indexOf(row);
-    const idCeklis = (row[0] || '').toString().trim();
-    const tipe = (row[1] || activeGenbaCategory).toString().trim();
-    const mandatory = (row[2] || '-').toString().trim(); // Kolom C: Mandatory
-    const itemVal = (row[3] || '').toString().trim();
-    const subItem1 = (row[4] || '').toString().trim();
-    const subItem2 = (row[5] || '').toString().trim();
-    const penjelasan = (row[6] || 'Penjelasan item ceklis...').toString().trim();
-    
-    let rawImg = (row[7] || '').toString().trim();
-    if (rawImg.includes('drive.google.com') && rawImg.includes('/d/')) {
-      const match = rawImg.match(/\/d\/([^\/]+)/);
-      if (match && match[1]) rawImg = `https://lh3.googleusercontent.com/d/${match[1]}`;
-    }
-    const imgUrl = rawImg;
-    const isNeedFoto = (row[8] || '').toString().trim().toLowerCase() === 'ya'; // Kolom I: IsNeedFoto
-
-    const labelParts = [itemVal, subItem1, subItem2].filter(text => text !== '');
-    const headerLabel = labelParts.join(', ');
-
-    const currentSel = auditSelection[originalIndex] ? auditSelection[originalIndex].status : null;
-
-    let pilar = "PREMISES";
-    const uTipe = tipe.toUpperCase();
-    if (uTipe.includes("PROCESS")) pilar = "PROCESS";
-    if (uTipe.includes("PEOPLE")) pilar = "PEOPLE";
-
-    html += `
-      <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/80 shadow-xs space-y-3 text-left">
-        <div class="flex justify-between items-center border-b border-gray-300/50 pb-1.5">
-          <div class="flex items-center gap-2">
-            <span class="text-[10px] bg-nosa-green text-white px-2 py-0.5 rounded-md font-bold">${idCeklis || 'NOS'}</span>
-            <h3 class="text-xs sm:text-sm font-black text-nosa-green tracking-wider uppercase">${tipe}</h3>
-          </div>
-          <div class="flex items-center gap-2">
-            ${isNeedFoto ? `<span class="bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-black px-2 py-0.5 rounded-md">📷 Wajib Foto</span>` : ''}
-            <span class="text-xs font-black text-nosa-green bg-emerald-100/80 px-2.5 py-0.5 rounded-md border border-emerald-300">Mandatory: ${mandatory}</span>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-stretch">
-          <div class="bg-gray-200/60 p-3 rounded-xl space-y-2 flex flex-col h-full">
-            <h5 class="text-xs font-extrabold text-gray-900 border-b border-gray-300/60 pb-1 flex-shrink-0">${headerLabel || 'Item Ceklis'}</h5>
-            <div class="max-h-40 overflow-y-auto pr-1 flex-1">
-              <p class="text-[11px] text-gray-700 leading-relaxed whitespace-pre-line">${penjelasan}</p>
-            </div>
-          </div>
-          <div class="bg-gray-200/60 p-3 rounded-xl flex flex-col justify-between items-center text-center space-y-2">
-            <span class="text-[10px] font-black text-nosa-green tracking-widest uppercase">REFERENSI</span>
-            <div class="w-full h-28 rounded-lg bg-white overflow-hidden flex items-center justify-center border border-gray-300/40">
-              ${imgUrl ? `<img src="${imgUrl}" class="w-full h-full object-contain p-1">` : '<span class="text-[10px] text-gray-400 italic">No Reference Image</span>'}
-            </div>
-          </div>
-        </div>
-
-        ${isNeedFoto ? `
-          <div class="bg-white/80 p-3 rounded-xl border border-amber-200 space-y-1.5">
-            <label class="block text-[10px] font-extrabold text-amber-900 uppercase">Upload Bukti Foto Temuan/Kondisi</label>
-            <input type="file" accept="image/*" onchange="handleAuditPhotoUpload(${originalIndex}, this)" class="w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-100 file:text-amber-800 hover:file:bg-amber-200">
-            <span id="photoStatus-${originalIndex}" class="text-[10px] text-gray-500 italic block">
-              ${auditSelection[originalIndex] && auditSelection[originalIndex].fotoBase64 ? '✅ Foto telah diunggah' : 'Belum ada foto terpilih'}
-            </span>
-          </div>
-        ` : ''}
-
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-          <button type="button" data-index="${originalIndex}" data-status="Exist Good" onclick="selectAuditStatus(${originalIndex}, 'Exist Good', '${pilar}', '${activeGenbaCategory}')" class="audit-btn-${originalIndex} py-2 ${currentSel === 'Exist Good' ? 'bg-emerald-500 text-white font-extrabold shadow-xs' : 'bg-gray-300 hover:bg-emerald-200 text-gray-800 font-bold'} text-xs rounded-xl border border-gray-400/50 transition cursor-pointer">Exist Good</button>
-          <button type="button" data-index="${originalIndex}" data-status="Exist Not Good" onclick="selectAuditStatus(${originalIndex}, 'Exist Not Good', '${pilar}', '${activeGenbaCategory}')" class="audit-btn-${originalIndex} py-2 ${currentSel === 'Exist Not Good' ? 'bg-amber-500 text-white font-extrabold shadow-xs' : 'bg-gray-300 hover:bg-amber-200 text-gray-800 font-bold'} text-xs rounded-xl border border-gray-400/50 transition cursor-pointer">Exist Not Good</button>
-          <button type="button" data-index="${originalIndex}" data-status="Not Exist" onclick="selectAuditStatus(${originalIndex}, 'Not Exist', '${pilar}', '${activeGenbaCategory}')" class="audit-btn-${originalIndex} py-2 ${currentSel === 'Not Exist' ? 'bg-red-500 text-white font-extrabold shadow-xs' : 'bg-gray-300 hover:bg-red-200 text-gray-800 font-bold'} text-xs rounded-xl border border-gray-400/50 transition cursor-pointer">Not Exist</button>
-          <button type="button" data-index="${originalIndex}" data-status="N/A" onclick="selectAuditStatus(${originalIndex}, 'N/A', '${pilar}', '${activeGenbaCategory}')" class="audit-btn-${originalIndex} py-2 ${currentSel === 'N/A' ? 'bg-gray-600 text-white font-extrabold shadow-xs' : 'bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold'} text-xs rounded-xl border border-gray-400/50 transition cursor-pointer">N/A</button>
-        </div>
-      </div>
-    `;
-  });
-  container.innerHTML = html;
-  validateGenbaCompletion();
-}
-
-function handleAuditPhotoUpload(originalIndex, inputEl) {
-  if (inputEl.files && inputEl.files[0]) {
-    const file = inputEl.files[0];
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      if (!auditSelection[originalIndex]) auditSelection[originalIndex] = {};
-      auditSelection[originalIndex].fotoBase64 = e.target.result;
-      const statusEl = document.getElementById(`photoStatus-${originalIndex}`);
-      if (statusEl) statusEl.innerText = `✅ Foto (${file.name}) terlampir`;
-    };
-    reader.readAsDataURL(file);
-  }
-}
-
-function selectAuditStatus(originalIndex, status, pilar, categoryKey) {
-  const row = allCeklisNOSData[originalIndex] || [];
-  const itemVal = (row[3] || '').toString().trim();
-  const subItem1 = (row[4] || '').toString().trim();
-  const subItem2 = (row[5] || '').toString().trim();
-  const headerLabel = [itemVal, subItem1, subItem2].filter(t => t !== '').join(', ');
-  
-  // Ambil foto yang diunggah dari variabel atau input file DOM jika ada
-  let prevFoto = auditSelection[originalIndex] ? auditSelection[originalIndex].fotoBase64 : null;
-  
-  auditSelection[originalIndex] = { 
-    status: status, 
-    pilar: pilar, 
-    categoryKey: categoryKey,
-    headerLabel: headerLabel,
-    fotoBase64: prevFoto
-  };
-  
-  const btns = document.querySelectorAll(`.audit-btn-${originalIndex}`);
-  btns.forEach(btn => {
-    const btnStatus = btn.getAttribute("data-status");
-    if (btnStatus === status) {
-      if (status === 'Exist Good') btn.className = `audit-btn-${originalIndex} py-2 bg-emerald-500 text-white text-xs font-extrabold rounded-xl shadow-xs border border-emerald-600 cursor-pointer transition`;
-      else if (status === 'Exist Not Good') btn.className = `audit-btn-${originalIndex} py-2 bg-amber-500 text-white text-xs font-extrabold rounded-xl shadow-xs border border-amber-600 cursor-pointer transition`;
-      else if (status === 'Not Exist') btn.className = `audit-btn-${originalIndex} py-2 bg-red-500 text-white text-xs font-extrabold rounded-xl shadow-xs border border-red-600 cursor-pointer transition`;
-      else if (status === 'N/A') btn.className = `audit-btn-${originalIndex} py-2 bg-gray-600 text-white text-xs font-extrabold rounded-xl shadow-xs border border-gray-700 cursor-pointer transition`;
-    } else {
-      btn.className = `audit-btn-${originalIndex} py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-xs font-bold rounded-xl border border-gray-400/50 cursor-pointer transition`;
-    }
-  });
-
-  calculateAuditScores();
-  validateGenbaCompletion();
-}
-
-function calculateAuditScores() {
-  let stats = {
-    PREMISES: { totalPoin: 0, validChecklist: 0 },
-    PROCESS:  { totalPoin: 0, validChecklist: 0 },
-    PEOPLE:   { totalPoin: 0, validChecklist: 0 }
-  };
-
-  Object.values(auditSelection).forEach(item => {
-    const pilar = item.pilar || "PREMISES";
-    const st = item.status;
-
-    if (st === "N/A") return;
-
-    stats[pilar].validChecklist += 1;
-
-    if (pilar === "PREMISES") {
-      if (st === "Exist Good") stats.PREMISES.totalPoin += 1;
-      else if (st === "Exist Not Good") stats.PREMISES.totalPoin += (-1);
-    } else if (pilar === "PROCESS") {
-      if (st === "Exist Good") stats.PROCESS.totalPoin += 1;
-    } else if (pilar === "PEOPLE") {
-      if (st === "Exist Good") stats.PEOPLE.totalPoin += 2;
-      else if (st === "Exist Not Good") stats.PEOPLE.totalPoin += 1;
-    }
-  });
-
-  const resPremises = stats.PREMISES.validChecklist > 0 ? (stats.PREMISES.totalPoin / stats.PREMISES.validChecklist) * 100 : 0;
-  const resProcess  = stats.PROCESS.validChecklist > 0 ? (stats.PROCESS.totalPoin / stats.PROCESS.validChecklist) * 100 : 0;
-  const resPeople   = stats.PEOPLE.validChecklist > 0 ? (stats.PEOPLE.totalPoin / (2 * stats.PEOPLE.validChecklist)) * 100 : 0;
-
-  document.getElementById("resPremisesVal").innerText = `${Math.round(resPremises)}%`;
-  document.getElementById("ptsPremisesVal").innerText = `${stats.PREMISES.totalPoin} Pts / ${stats.PREMISES.validChecklist} Item`;
-
-  document.getElementById("resProcessVal").innerText = `${Math.round(resProcess)}%`;
-  document.getElementById("ptsProcessVal").innerText = `${stats.PROCESS.totalPoin} Pts / ${stats.PROCESS.validChecklist} Item`;
-
-  document.getElementById("resPeopleVal").innerText = `${Math.round(resPeople)}%`;
-  document.getElementById("ptsPeopleVal").innerText = `${stats.PEOPLE.totalPoin} Pts / ${stats.PEOPLE.validChecklist * 2} Max`;
-}
-
-function validateGenbaCompletion() {
-  const cleanActiveCat = activeGenbaCategory.replace(/\s+/g, '').toUpperCase();
-  const currentCategoryItems = allCeklisNOSData.filter(row => {
-    const tipeSheet = (row[1] || '').toString().replace(/\s+/g, '').toUpperCase();
-    return tipeSheet.includes(cleanActiveCat) || cleanActiveCat.includes(tipeSheet);
-  });
-
-  const totalCurrentCat = currentCategoryItems.length;
-  
-  let answeredCurrentCat = 0;
-  currentCategoryItems.forEach(row => {
-    const origIdx = allCeklisNOSData.indexOf(row);
-    if (auditSelection[origIdx] && auditSelection[origIdx].status) answeredCurrentCat++;
-  });
-
-  const progressText = document.getElementById("auditProgressText");
-  const catBadge = document.getElementById("auditCatBadge");
-  const btnSubmit = document.getElementById("btnSubmitGenbaAudit");
-
-  if (catBadge) catBadge.innerText = `${activeGenbaCategory} Progress`;
-  if (progressText) progressText.innerText = `${answeredCurrentCat}/${totalCurrentCat} Diselesaikan`;
-
-  if (totalCurrentCat > 0 && answeredCurrentCat >= totalCurrentCat) {
-    if (btnSubmit) {
-      btnSubmit.disabled = false;
-      btnSubmit.className = "flex-1 sm:flex-initial py-2.5 px-5 bg-nosa-green hover:bg-nosa-greenLight text-white font-extrabold text-xs rounded-xl shadow-md transition cursor-pointer";
-      btnSubmit.innerText = `💾 Submit Audit (${activeGenbaCategory})`;
-    }
-  } else {
-    if (btnSubmit) {
-      btnSubmit.disabled = true;
-      btnSubmit.className = "flex-1 sm:flex-initial py-2.5 px-5 bg-gray-300 text-gray-500 font-extrabold text-xs rounded-xl shadow-xs transition cursor-not-allowed";
-      btnSubmit.innerText = `🔒 Submit (${totalCurrentCat - answeredCurrentCat} tersisa)`;
-    }
-  }
-}
-
-function submitGenbaForm() {
-  const cleanActiveCat = activeGenbaCategory.replace(/\s+/g, '').toUpperCase();
-  const currentCategoryItems = allCeklisNOSData.filter(row => {
-    const tipeSheet = (row[1] || '').toString().replace(/\s+/g, '').toUpperCase();
-    return tipeSheet.includes(cleanActiveCat) || cleanActiveCat.includes(tipeSheet);
-  });
-
-  const categoryResults = [];
-  currentCategoryItems.forEach(row => {
-    const origIdx = allCeklisNOSData.indexOf(row);
-    if (auditSelection[origIdx]) {
-      categoryResults.push(auditSelection[origIdx]);
-    }
-  });
-
-  if (categoryResults.length < currentCategoryItems.length) {
-    alert(`Silakan lengkapi seluruh ceklis pada kategori ${activeGenbaCategory} sebelum melakukan submit!`);
-    return;
-  }
-
-  const btnSubmit = document.getElementById("btnSubmitGenbaAudit");
-  if (btnSubmit) { btnSubmit.disabled = true; btnSubmit.innerText = "Menyimpan..."; }
-
-  fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ 
-      action: "submitGenbaAudit", 
-      auditSession: currentAuditSession, 
-      category: activeGenbaCategory,
-      auditResults: categoryResults 
-    })
-  })
-  .then(res => res.json())
-  .then(res => {
-    if (res.status === "success") {
-      alert(`Audit ${activeGenbaCategory} Berhasil Disimpan! ${res.totalPicaCreated || 0} temuan PICA baru telah ditambahkan.`);
-      
-      const userCabang = currentUser ? (currentUser.cabang || "Cibiru") : "Cibiru";
-      loadHomeLastGenbaResult(userCabang);
-      switchTab("home");
-    } else { alert(res.message || "Gagal menyimpan audit."); }
-  });
-}
-
-function evaluateRealtimeReminders(isManualClick = false) {
-  const userCabang = currentUser ? (currentUser.cabang || "Cibiru") : "Cibiru";
-  const today = new Date();
-  today.setHours(0,0,0,0);
-
-  const previewEl = document.getElementById("reminderPreviewText");
-  if (previewEl) previewEl.innerText = "Mengambil data PICA & GENBA real-time...";
-
-  fetch(`${API_URL}?action=getProfilCabang&cabang=${encodeURIComponent(userCabang)}`)
-  .then(res => res.json())
-  .then(res => {
-    let triggeredMessage = null;
-    let targetTab = "pica";
-
-    if (res.status === "success") {
-      if (res.picaBelumSelesai && res.picaBelumSelesai.length > 0) {
-        for (let pica of res.picaBelumSelesai) {
-          const due = new Date(pica.dueDate);
-          due.setHours(0,0,0,0);
-          const diffDays = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
-
-          if (diffDays < 0 && reminderState.rule2) {
-            triggeredMessage = `⚠️ PICA Overdue: Temuan "${pica.item}" telah melewati batas waktu jatuh tempo (${formatDateNice(pica.dueDate)}).`;
-            targetTab = "pica";
-            break;
-          } else if (diffDays >= 0 && diffDays <= 2 && reminderState.rule1) {
-            triggeredMessage = `Pengingat Due Date: PICA "${pica.item}" di Cabang ${userCabang} jatuh tempo ${diffDays === 0 ? 'hari ini' : 'dalam ' + diffDays + ' hari'}!`;
-            targetTab = "pica";
-            break;
-          }
-        }
-      }
-
-      if (!triggeredMessage && res.info && res.info.jadwalGenba && reminderState.rule3) {
-        const genbaDate = new Date(res.info.jadwalGenba);
-        genbaDate.setHours(0,0,0,0);
-        const diffGenba = Math.ceil((genbaDate - today) / (1000 * 60 * 60 * 24));
-
-        if (diffGenba >= 0 && diffGenba <= 3) {
-          triggeredMessage = `📅 Pengingat GENBA: Audit Onsite berikutnya di Cabang ${userCabang} diselenggarakan tanggal ${formatDateNice(res.info.jadwalGenba)}.`;
-          targetTab = "profil";
-        }
-      }
-    }
-
-    if (triggeredMessage) {
-      if (previewEl) previewEl.innerText = triggeredMessage;
-      showInAppReminderToast(triggeredMessage, targetTab);
-    } else {
-      const emptyMsg = `Tidak ada pengingat mendesak untuk Cabang ${userCabang} pada tanggal hari ini.`;
-      if (previewEl) previewEl.innerText = emptyMsg;
-      if (isManualClick) alert(emptyMsg);
-    }
-  })
-  .catch(err => {
-    if (previewEl) previewEl.innerText = "Gagal memverifikasi jadwal real-time.";
-  });
-}
-
-function showInAppReminderToast(msg, targetTab = "pica") {
-  const toast = document.getElementById("inAppReminderToast");
-  const cabangBadge = document.getElementById("toastCabangBadge");
-  const msgContent = document.getElementById("toastMessageContent");
-
-  const cabang = currentUser ? (currentUser.cabang || "Cibiru") : "Cibiru";
-  cabangBadge.innerText = `Cabang ${cabang}`;
-  msgContent.innerText = msg;
-  activeToastTargetTab = targetTab;
-
-  toast.classList.remove("hidden");
-}
-
-function dismissInAppToast() { document.getElementById("inAppReminderToast").classList.add("hidden"); }
-function handleToastAction() { dismissInAppToast(); switchTab(activeToastTargetTab); }
-
-// VARIABLES UNTUK ENGINE ROTASI FOTO 360
-let sprite3DFrames = [];
-let currentFrameIndex = 0;
-let isSpinning3D = false;
-let startX3D = 0;
-
-function loadReferensiData() {
-  const container = document.getElementById("referensiGridBox");
-  if (!container) return;
-  container.innerHTML = '<p class="text-xs text-gray-400 italic text-center col-span-full py-8">Memuat data referensi standar...</p>';
-  
-  fetch(`${API_URL}?action=getReferensi`)
-  .then(res => res.json())
-  .then(data => {
-    if (!data || data.length <= 1) {
-      container.innerHTML = '<p class="text-xs text-gray-400 italic text-center col-span-full py-8">Belum ada data referensi standar di spreadsheet.</p>';
-      return;
-    }
-    const rows = data.slice(1);
-    let html = '';
-    
-    rows.forEach(row => {
-      const kat = row[1] || 'visual dealer';
-      const judul = row[2] || 'Judul Referensi';
-      const deskripsi = row[3] || 'Deskripsi standar';
-      const instruksi = row[4] || 'Instruksi & ketentuan standar.';
-      
-      let rawImg = row[5] || '';
-      if (rawImg.includes('drive.google.com') && rawImg.includes('/d/')) {
-        const match = rawImg.match(/\/d\/([^\/]+)/);
-        if (match && match[1]) rawImg = `https://lh3.googleusercontent.com/d/${match[1]}`;
-      }
-      const imgUrl = rawImg;
-      const downloadUrl = row[6] || '';
-      const tipeMedia = (row[7] || 'SINGLE_IMAGE').toString().trim().toUpperCase(); // Kolom H
-      const folder360Url = (row[8] || '').toString().trim(); // Kolom I
-
-      const safeJudul = judul.replace(/'/g, "\\'");
-      const safeDesc = deskripsi.replace(/'/g, "\\'");
-      const safeImg = imgUrl.replace(/'/g, "\\'");
-      const safeFolder = folder360Url.replace(/'/g, "\\'");
-
-      html += `
-        <div class="bg-nosa-cardBg p-4 sm:p-5 rounded-3xl border border-gray-200/70 shadow-xs flex flex-col justify-between space-y-3">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
-            <div onclick="open3DViewer('${safeImg}', '${safeJudul}', '${safeDesc}', '${tipeMedia}', '${safeFolder}')" class="w-full h-48 sm:h-56 rounded-2xl overflow-hidden bg-white/90 p-2 flex items-center justify-center border border-gray-300/50 shadow-inner cursor-pointer relative group">
-              ${imgUrl ? `<img src="${imgUrl}" alt="${judul}" class="w-full h-full object-contain transition group-hover:scale-105">` : '<span class="text-xs text-gray-400 italic">Tidak ada gambar</span>'}
-              
-              <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white font-extrabold text-xs gap-1">
-                <span>${tipeMedia === '360_SPRITE' ? '🔄 Putar 360°' : '🔍 Lihat Gambar'}</span>
-              </div>
-              ${tipeMedia === '360_SPRITE' ? '<span class="absolute top-2 right-2 bg-amber-400 text-amber-950 font-black text-[9px] px-2 py-0.5 rounded-full shadow-xs">360° View</span>' : ''}
-            </div>
-            
-            <div class="space-y-2">
-              <span class="inline-block bg-nosa-yellow text-gray-900 text-[10px] font-extrabold px-3 py-0.5 rounded-md uppercase tracking-wider">${kat}</span>
-              <h3 class="text-xl sm:text-2xl font-black text-nosa-green tracking-tight leading-none pt-0.5">${judul}</h3>
-              <p class="text-xs text-gray-700 leading-snug">${deskripsi}</p>
-              <div class="pt-2 space-y-0.5">
-                <h5 class="text-xs font-black text-nosa-green">Instruksi & Ketentuan</h5>
-                <p class="text-[11px] text-gray-600 leading-normal">${instruksi}</p>
-              </div>
-              ${downloadUrl ? `
-                <div class="pt-2">
-                  <h5 class="text-xs font-black text-nosa-green">Link Download</h5>
-                  <a href="${downloadUrl}" target="_blank" class="text-[10px] text-blue-600 underline font-semibold break-all">${downloadUrl}</a>
-                </div>
-              ` : ''}
-            </div>
-          </div>
-        </div>
-      `;
-    });
-    container.innerHTML = html;
-  });
-}
-
-function open3DViewer(imgUrl, title, desc, tipeMedia, folderUrl) {
-  document.getElementById("modal3DTitle").innerText = title;
-  document.getElementById("modal3DDesc").innerText = desc;
-  const mainImgEl = document.getElementById("modal3DImage");
-  const loaderEl = document.getElementById("spinner3DLoader");
-  
-  sprite3DFrames = [];
-  currentFrameIndex = 0;
-  
-  if (tipeMedia === '360_SPRITE' && folderUrl) {
-    mainImgEl.classList.add("hidden");
-    if (loaderEl) loaderEl.classList.remove("hidden");
-    
-    fetch(`${API_URL}?action=getFolderImages&folder=${encodeURIComponent(folderUrl)}`)
-    .then(res => res.json())
-    .then(res => {
-      if (loaderEl) loaderEl.classList.add("hidden");
-      mainImgEl.classList.remove("hidden");
-      
-      if (res.status === "success" && res.images && res.images.length > 0) {
-        sprite3DFrames = res.images;
-        mainImgEl.src = sprite3DFrames[0];
-      } else {
-        mainImgEl.src = imgUrl; // Fallback jika folder kosong
-      }
-    })
-    .catch(() => {
-      if (loaderEl) loaderEl.classList.add("hidden");
-      mainImgEl.classList.remove("hidden");
-      mainImgEl.src = imgUrl;
-    });
-  } else {
-    if (loaderEl) loaderEl.classList.add("hidden");
-    mainImgEl.classList.remove("hidden");
-    mainImgEl.src = imgUrl;
-  }
-
-  const container = document.getElementById("spin3DContainer");
-  container.onmousedown = start3DSpin;
-  window.onmousemove = move3DSpin;
-  window.onmouseup = end3DSpin;
-  
-  container.ontouchstart = (e) => start3DSpin(e.touches[0]);
-  window.ontouchmove = (e) => move3DSpin(e.touches[0]);
-  window.ontouchend = end3DSpin;
-  
-  document.getElementById("modal3DViewer").classList.remove("hidden");
-}
-
-function close3DViewer() { 
-  document.getElementById("modal3DViewer").classList.add("hidden"); 
-}
-
-function start3DSpin(e) { 
-  if (sprite3DFrames.length <= 1) return;
-  isSpinning3D = true; 
-  startX3D = e.clientX; 
-}
-
-function move3DSpin(e) {
-  if (!isSpinning3D || sprite3DFrames.length <= 1) return;
-  const deltaX = e.clientX - startX3D;
-  
-  // Ganti frame setiap pergeseran 15px
-  if (Math.abs(deltaX) > 15) {
-    if (deltaX < 0) {
-      currentFrameIndex = (currentFrameIndex + 1) % sprite3DFrames.length;
-    } else {
-      currentFrameIndex = (currentFrameIndex - 1 + sprite3DFrames.length) % sprite3DFrames.length;
-    }
-    document.getElementById("modal3DImage").src = sprite3DFrames[currentFrameIndex];
-    startX3D = e.clientX;
-  }
-}
-
-function end3DSpin() { 
-  isSpinning3D = false; 
-}
-
 function selectRole(role) {
   selectedRole = role;
   const btnKacab = document.getElementById('btnRoleKacab');
@@ -695,7 +83,6 @@ function selectRole(role) {
     }
   }
   
-  // Jika sedang di mode register, sesuaikan input cabang
   const cabangGroup = document.getElementById("cabangInputGroup");
   if (cabangGroup && authMode === "register") {
     if (role === "PIC NOS") {
@@ -796,7 +183,7 @@ function handleAuthSubmit(e) {
       btn.innerText = authMode === "register" ? "daftar akun" : "masuk";
     }
     console.error("Auth error:", err);
-    alert("Terjadi kesalahan koneksi. Silakan coba lagi.");
+    alert("Terjadi kesalahan koneksi ke server. Silakan coba lagi.");
   });
   
   return false;
@@ -838,101 +225,582 @@ function renderDashboard(user) {
   
   setTimeout(() => { startAppTour(false); }, 600);
 }
-function initReminderUI() {
-  const saved = localStorage.getItem("nosa_reminder_state");
-  if (saved) { try { reminderState = JSON.parse(saved); } catch (e) {} }
-  updateReminderButtons();
-}
 
-function toggleReminderRule(ruleKey) {
-  reminderState[ruleKey] = !reminderState[ruleKey];
-  localStorage.setItem("nosa_reminder_state", JSON.stringify(reminderState));
-  updateReminderButtons();
-  evaluateRealtimeReminders(true);
-}
-
-function updateReminderButtons() {
-  const rules = ['rule1', 'rule2', 'rule3', 'rule4'];
-  rules.forEach((rKey, idx) => {
-    const btn = document.getElementById(`btnRule${idx + 1}`);
-    if (!btn) return;
-    if (reminderState[rKey]) {
-      btn.innerText = "Aktif";
-      btn.className = "px-4 py-1.5 rounded-xl text-xs font-extrabold shadow-2xs transition bg-emerald-400 text-emerald-950";
-    } else {
-      btn.innerText = "Non-Aktif";
-      btn.className = "px-4 py-1.5 rounded-xl text-xs font-extrabold shadow-2xs transition bg-red-300 text-red-950";
+function loadHomeLastGenbaResult(cabangName) {
+  const cabangTitleEl = document.getElementById("homeGenbaCabang");
+  if (cabangTitleEl) cabangTitleEl.innerText = `Cabang ${cabangName}`;
+  
+  fetch(`${API_URL}?action=getLastGenbaResult&cabang=${encodeURIComponent(cabangName)}`)
+  .then(res => res.json())
+  .then(res => {
+    const categories = [
+      { key: "premisesH1", scoreId: "homeScorePremisesH1", barId: "homeBarPremisesH1" },
+      { key: "processH1", scoreId: "homeScoreProcessH1", barId: "homeBarProcessH1" },
+      { key: "peopleH1", scoreId: "homeScorePeopleH1", barId: "homeBarPeopleH1" },
+      { key: "premisesH23", scoreId: "homeScorePremisesH23", barId: "homeBarPremisesH23" },
+      { key: "processH23", scoreId: "homeScoreProcessH23", barId: "homeBarProcessH23" },
+      { key: "peopleH23", scoreId: "homeScorePeopleH23", barId: "homeBarPeopleH23" }
+    ];
+    let totalScore = 0;
+    let countEvaluated = 0;
+    let tglAudit = "-";
+    const dataObj = (res.status === "success" && res.data) ? res.data : {};
+    if (res.data && res.data.tanggal) tglAudit = formatDateNice(res.data.tanggal);
+    
+    categories.forEach(cat => {
+      const scoreEl = document.getElementById(cat.scoreId);
+      const barEl = document.getElementById(cat.barId);
+      const rawVal = dataObj[cat.key];
+      if (rawVal !== undefined && rawVal !== null && !isNaN(rawVal)) {
+        const valNum = Math.round(parseFloat(rawVal));
+        if (scoreEl) {
+          scoreEl.innerText = `${valNum}%`;
+          scoreEl.className = "text-base sm:text-xl font-black text-nosa-green";
+        }
+        if (barEl) barEl.style.width = `${valNum}%`;
+        totalScore += valNum;
+        countEvaluated++;
+      } else {
+        if (scoreEl) {
+          scoreEl.innerText = "Belum Ada Nilai GENBA Terakhir";
+          scoreEl.className = "text-[10px] sm:text-xs font-bold text-gray-400 italic leading-snug py-1";
+        }
+        if (barEl) barEl.style.width = "0%";
+      }
+    });
+    
+    const overallScore = countEvaluated > 0 ? Math.round(totalScore / countEvaluated) : null;
+    const grading = getGradingResult(overallScore);
+    const badgeEl = document.getElementById("homeGradingBadge");
+    if (badgeEl) {
+      badgeEl.innerText = grading.title;
+      badgeEl.className = `${grading.bgClass} text-xs font-black px-3 py-0.5 rounded-lg shadow-xs uppercase tracking-wider`;
     }
+    const scoreValEl = document.getElementById("homeOverallScoreVal");
+    if (scoreValEl) scoreValEl.innerText = overallScore !== null ? `${overallScore}%` : "-";
+    const circleBar = document.getElementById("homeCircleProgress");
+    if (circleBar) circleBar.setAttribute("stroke-dasharray", overallScore !== null ? `${overallScore}, 100` : "0, 100");
+    const genbaDateEl = document.getElementById("homeGenbaDate");
+    if (genbaDateEl) genbaDateEl.innerText = `Audit Terakhir: ${tglAudit}`;
   });
 }
 
-function startAppTour(isManual = false) {
-  const hasToured = localStorage.getItem("nosa_has_toured");
-  if (!isManual && hasToured === "true") return;
-  currentTourStep = 0;
-  document.getElementById("tourOverlay").classList.remove("hidden");
-  renderTourStep();
+function initDirectGenbaSession() {
+  const userCabang = currentUser ? (currentUser.cabang || "Cibiru") : "Cibiru";
+  const userNama = currentUser ? (currentUser.nama || "Rafi") : "Rafi";
+  const userRole = currentUser ? (currentUser.role || "Kepala Cabang") : "Kepala Cabang";
+  currentAuditSession = { cabang: userCabang, nama: userNama, jabatan: userRole };
+  
+  const infoCabang = document.getElementById("auditInfoCabang");
+  const infoAuditor = document.getElementById("auditInfoAuditor");
+  if (infoCabang) infoCabang.innerText = `Cabang ${userCabang}`;
+  if (infoAuditor) infoAuditor.innerText = `Auditor: ${userNama} (${userRole})`;
+  loadCeklisNOSData();
 }
 
-function renderTourStep() {
-  const step = tourSteps[currentTourStep];
-  switchTab(step.tab);
-  document.getElementById("tourStepBadge").innerText = step.badge;
-  document.getElementById("tourDialogText").innerText = step.text;
-  document.querySelectorAll('.ring-4').forEach(el => el.classList.remove('ring-4', 'ring-yellow-400', 'scale-105'));
+function loadCeklisNOSData() {
+  const container = document.getElementById("genbaCeklisContainer");
+  if (!container) return;
+  container.innerHTML = '<p class="text-xs text-gray-400 italic text-center py-6">Memuat item ceklis NOS...</p>';
+  
+  fetch(`${API_URL}?action=getCeklisNOS`)
+  .then(res => res.json())
+  .then(data => {
+    if (!data || data.length <= 1) {
+      container.innerHTML = '<p class="text-xs text-gray-400 italic text-center py-6">Belum ada item ceklis di spreadsheet CeklisNOS.</p>';
+      return;
+    }
+    allCeklisNOSData = data.slice(1);
+    filterGenbaCategory(activeGenbaCategory);
+    calculateAuditScores();
+  });
+}
 
-  if (step.targetId) {
-    const target = document.getElementById(step.targetId);
-    if (target) {
-      target.classList.add('ring-4', 'ring-yellow-400', 'scale-105');
-      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+function filterGenbaCategory(categoryKey) {
+  activeGenbaCategory = categoryKey;
+  const categories = ['PREMISES H1', 'PROCESS H1', 'PEOPLE H1', 'PREMISES H23', 'PROCESS H23', 'PEOPLE H23'];
+  
+  categories.forEach(cat => {
+    const btn = document.getElementById(`tabCat-${cat.replace(/\s+/g, '')}`);
+    if (btn) {
+      if (cat === categoryKey) {
+        btn.className = "px-3.5 py-2 rounded-xl text-xs font-extrabold whitespace-nowrap bg-nosa-green text-white shadow-xs transition";
+      } else {
+        btn.className = "px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-white text-gray-600 hover:bg-gray-100 transition";
+      }
+    }
+  });
+  renderFilteredCeklis();
+}
+
+function renderFilteredCeklis() {
+  const container = document.getElementById("genbaCeklisContainer");
+  if (!container) return;
+  
+  const cleanActiveCat = activeGenbaCategory.replace(/\s+/g, '').toUpperCase();
+  const filtered = allCeklisNOSData.filter(row => {
+    const tipeSheet = (row[1] || '').toString().replace(/\s+/g, '').toUpperCase();
+    return tipeSheet.includes(cleanActiveCat) || cleanActiveCat.includes(tipeSheet);
+  });
+  
+  if (filtered.length === 0) {
+    container.innerHTML = `<p class="text-xs text-gray-400 italic text-center py-6">Tidak ada item ceklis untuk kategori ${activeGenbaCategory}.</p>`;
+    validateGenbaCompletion();
+    return;
+  }
+  
+  let html = '';
+  filtered.forEach(row => {
+    const originalIndex = allCeklisNOSData.indexOf(row);
+    const idCeklis = (row[0] || '').toString().trim();
+    const tipe = (row[1] || activeGenbaCategory).toString().trim();
+    const mandatory = (row[2] || '-').toString().trim();
+    const itemVal = (row[3] || '').toString().trim();
+    const subItem1 = (row[4] || '').toString().trim();
+    const subItem2 = (row[5] || '').toString().trim();
+    const penjelasan = (row[6] || 'Penjelasan item ceklis...').toString().trim();
+    
+    let rawImg = (row[7] || '').toString().trim();
+    if (rawImg.includes('drive.google.com') && rawImg.includes('/d/')) {
+      const match = rawImg.match(/\/d\/([^\/]+)/);
+      if (match && match[1]) rawImg = `https://lh3.googleusercontent.com/d/${match[1]}`;
+    }
+    const imgUrl = rawImg;
+    const isNeedFoto = (row[8] || '').toString().trim().toLowerCase() === 'ya';
+    const labelParts = [itemVal, subItem1, subItem2].filter(text => text !== '');
+    const headerLabel = labelParts.join(', ');
+    const currentSel = auditSelection[originalIndex] ? auditSelection[originalIndex].status : null;
+    let pilar = "PREMISES";
+    const uTipe = tipe.toUpperCase();
+    if (uTipe.includes("PROCESS")) pilar = "PROCESS";
+    if (uTipe.includes("PEOPLE")) pilar = "PEOPLE";
+    
+    html += `
+      <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/80 shadow-xs space-y-3 text-left">
+        <div class="flex justify-between items-center border-b border-gray-300/50 pb-1.5">
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] bg-nosa-green text-white px-2 py-0.5 rounded-md font-bold">${idCeklis || 'NOS'}</span>
+            <h3 class="text-xs sm:text-sm font-black text-nosa-green tracking-wider uppercase">${tipe}</h3>
+          </div>
+          <div class="flex items-center gap-2">
+            ${isNeedFoto ? `<span class="bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-black px-2 py-0.5 rounded-md">📷 Wajib Foto</span>` : ''}
+            <span class="text-xs font-black text-nosa-green bg-emerald-100/80 px-2.5 py-0.5 rounded-md border border-emerald-300">Mandatory: ${mandatory}</span>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-stretch">
+          <div class="bg-gray-200/60 p-3 rounded-xl space-y-2 flex flex-col h-full">
+            <h5 class="text-xs font-extrabold text-gray-900 border-b border-gray-300/60 pb-1 flex-shrink-0">${headerLabel || 'Item Ceklis'}</h5>
+            <div class="max-h-40 overflow-y-auto pr-1 flex-1">
+              <p class="text-[11px] text-gray-700 leading-relaxed whitespace-pre-line">${penjelasan}</p>
+            </div>
+          </div>
+          <div class="bg-gray-200/60 p-3 rounded-xl flex flex-col justify-between items-center text-center space-y-2">
+            <span class="text-[10px] font-black text-nosa-green tracking-widest uppercase">REFERENSI</span>
+            <div class="w-full h-28 rounded-lg bg-white overflow-hidden flex items-center justify-center border border-gray-300/40">
+              ${imgUrl ? `<img src="${imgUrl}" class="w-full h-full object-contain p-1">` : '<span class="text-[10px] text-gray-400 italic">No Reference Image</span>'}
+            </div>
+          </div>
+        </div>
+        ${isNeedFoto ? `
+          <div class="bg-white/80 p-3 rounded-xl border border-amber-200 space-y-1.5">
+            <label class="block text-[10px] font-extrabold text-amber-900 uppercase">Upload Bukti Foto Temuan/Kondisi</label>
+            <input type="file" accept="image/*" onchange="handleAuditPhotoUpload(${originalIndex}, this)" class="w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-100 file:text-amber-800 hover:file:bg-amber-200">
+            <span id="photoStatus-${originalIndex}" class="text-[10px] text-gray-500 italic block">
+              ${auditSelection[originalIndex] && auditSelection[originalIndex].fotoBase64 ? '✅ Foto telah diunggah' : 'Belum ada foto terpilih'}
+            </span>
+          </div>
+        ` : ''}
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+          <button type="button" data-index="${originalIndex}" data-status="Exist Good" onclick="selectAuditStatus(${originalIndex}, 'Exist Good', '${pilar}', '${activeGenbaCategory}')" class="audit-btn-${originalIndex} py-2 ${currentSel === 'Exist Good' ? 'bg-emerald-500 text-white font-extrabold shadow-xs' : 'bg-gray-300 hover:bg-emerald-200 text-gray-800 font-bold'} text-xs rounded-xl border border-gray-400/50 transition cursor-pointer">Exist Good</button>
+          <button type="button" data-index="${originalIndex}" data-status="Exist Not Good" onclick="selectAuditStatus(${originalIndex}, 'Exist Not Good', '${pilar}', '${activeGenbaCategory}')" class="audit-btn-${originalIndex} py-2 ${currentSel === 'Exist Not Good' ? 'bg-amber-500 text-white font-extrabold shadow-xs' : 'bg-gray-300 hover:bg-amber-200 text-gray-800 font-bold'} text-xs rounded-xl border border-gray-400/50 transition cursor-pointer">Exist Not Good</button>
+          <button type="button" data-index="${originalIndex}" data-status="Not Exist" onclick="selectAuditStatus(${originalIndex}, 'Not Exist', '${pilar}', '${activeGenbaCategory}')" class="audit-btn-${originalIndex} py-2 ${currentSel === 'Not Exist' ? 'bg-red-500 text-white font-extrabold shadow-xs' : 'bg-gray-300 hover:bg-red-200 text-gray-800 font-bold'} text-xs rounded-xl border border-gray-400/50 transition cursor-pointer">Not Exist</button>
+          <button type="button" data-index="${originalIndex}" data-status="N/A" onclick="selectAuditStatus(${originalIndex}, 'N/A', '${pilar}', '${activeGenbaCategory}')" class="audit-btn-${originalIndex} py-2 ${currentSel === 'N/A' ? 'bg-gray-600 text-white font-extrabold shadow-xs' : 'bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold'} text-xs rounded-xl border border-gray-400/50 transition cursor-pointer">N/A</button>
+        </div>
+      </div>
+    `;
+  });
+  container.innerHTML = html;
+  validateGenbaCompletion();
+}
+
+function handleAuditPhotoUpload(originalIndex, inputEl) {
+  if (inputEl.files && inputEl.files[0]) {
+    const file = inputEl.files[0];
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      if (!auditSelection[originalIndex]) auditSelection[originalIndex] = {};
+      auditSelection[originalIndex].fotoBase64 = e.target.result;
+      const statusEl = document.getElementById(`photoStatus-${originalIndex}`);
+      if (statusEl) statusEl.innerText = `✅ Foto (${file.name}) terlampir`;
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function selectAuditStatus(originalIndex, status, pilar, categoryKey) {
+  const row = allCeklisNOSData[originalIndex] || [];
+  const itemVal = (row[3] || '').toString().trim();
+  const subItem1 = (row[4] || '').toString().trim();
+  const subItem2 = (row[5] || '').toString().trim();
+  const headerLabel = [itemVal, subItem1, subItem2].filter(t => t !== '').join(', ');
+  
+  let prevFoto = auditSelection[originalIndex] ? auditSelection[originalIndex].fotoBase64 : null;
+  
+  auditSelection[originalIndex] = { 
+    status: status, 
+    pilar: pilar, 
+    categoryKey: categoryKey,
+    headerLabel: headerLabel,
+    fotoBase64: prevFoto
+  };
+  
+  const btns = document.querySelectorAll(`.audit-btn-${originalIndex}`);
+  btns.forEach(btn => {
+    const btnStatus = btn.getAttribute("data-status");
+    if (btnStatus === status) {
+      if (status === 'Exist Good') btn.className = `audit-btn-${originalIndex} py-2 bg-emerald-500 text-white text-xs font-extrabold rounded-xl shadow-xs border border-emerald-600 cursor-pointer transition`;
+      else if (status === 'Exist Not Good') btn.className = `audit-btn-${originalIndex} py-2 bg-amber-500 text-white text-xs font-extrabold rounded-xl shadow-xs border border-amber-600 cursor-pointer transition`;
+      else if (status === 'Not Exist') btn.className = `audit-btn-${originalIndex} py-2 bg-red-500 text-white text-xs font-extrabold rounded-xl shadow-xs border border-red-600 cursor-pointer transition`;
+      else if (status === 'N/A') btn.className = `audit-btn-${originalIndex} py-2 bg-gray-600 text-white text-xs font-extrabold rounded-xl shadow-xs border border-gray-700 cursor-pointer transition`;
+    } else {
+      btn.className = `audit-btn-${originalIndex} py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-xs font-bold rounded-xl border border-gray-400/50 cursor-pointer transition`;
+    }
+  });
+  calculateAuditScores();
+  validateGenbaCompletion();
+}
+
+function calculateAuditScores() {
+  let stats = {
+    PREMISES: { totalPoin: 0, validChecklist: 0 },
+    PROCESS:  { totalPoin: 0, validChecklist: 0 },
+    PEOPLE:   { totalPoin: 0, validChecklist: 0 }
+  };
+  Object.values(auditSelection).forEach(item => {
+    const pilar = item.pilar || "PREMISES";
+    const st = item.status;
+    if (st === "N/A") return;
+    stats[pilar].validChecklist += 1;
+    if (pilar === "PREMISES") {
+      if (st === "Exist Good") stats.PREMISES.totalPoin += 1;
+      else if (st === "Exist Not Good") stats.PREMISES.totalPoin += (-1);
+    } else if (pilar === "PROCESS") {
+      if (st === "Exist Good") stats.PROCESS.totalPoin += 1;
+    } else if (pilar === "PEOPLE") {
+      if (st === "Exist Good") stats.PEOPLE.totalPoin += 2;
+      else if (st === "Exist Not Good") stats.PEOPLE.totalPoin += 1;
+    }
+  });
+  const resPremises = stats.PREMISES.validChecklist > 0 ? (stats.PREMISES.totalPoin / stats.PREMISES.validChecklist) * 100 : 0;
+  const resProcess  = stats.PROCESS.validChecklist > 0 ? (stats.PROCESS.totalPoin / stats.PROCESS.validChecklist) * 100 : 0;
+  const resPeople   = stats.PEOPLE.validChecklist > 0 ? (stats.PEOPLE.totalPoin / (2 * stats.PEOPLE.validChecklist)) * 100 : 0;
+  
+  const elPremises = document.getElementById("resPremisesVal");
+  const elPtsPremises = document.getElementById("ptsPremisesVal");
+  const elProcess = document.getElementById("resProcessVal");
+  const elPtsProcess = document.getElementById("ptsProcessVal");
+  const elPeople = document.getElementById("resPeopleVal");
+  const elPtsPeople = document.getElementById("ptsPeopleVal");
+  
+  if (elPremises) elPremises.innerText = `${Math.round(resPremises)}%`;
+  if (elPtsPremises) elPtsPremises.innerText = `${stats.PREMISES.totalPoin} Pts / ${stats.PREMISES.validChecklist} Item`;
+  if (elProcess) elProcess.innerText = `${Math.round(resProcess)}%`;
+  if (elPtsProcess) elPtsProcess.innerText = `${stats.PROCESS.totalPoin} Pts / ${stats.PROCESS.validChecklist} Item`;
+  if (elPeople) elPeople.innerText = `${Math.round(resPeople)}%`;
+  if (elPtsPeople) elPtsPeople.innerText = `${stats.PEOPLE.totalPoin} Pts / ${stats.PEOPLE.validChecklist * 2} Max`;
+}
+
+function validateGenbaCompletion() {
+  const cleanActiveCat = activeGenbaCategory.replace(/\s+/g, '').toUpperCase();
+  const currentCategoryItems = allCeklisNOSData.filter(row => {
+    const tipeSheet = (row[1] || '').toString().replace(/\s+/g, '').toUpperCase();
+    return tipeSheet.includes(cleanActiveCat) || cleanActiveCat.includes(tipeSheet);
+  });
+  const totalCurrentCat = currentCategoryItems.length;
+  
+  let answeredCurrentCat = 0;
+  currentCategoryItems.forEach(row => {
+    const origIdx = allCeklisNOSData.indexOf(row);
+    if (auditSelection[origIdx] && auditSelection[origIdx].status) answeredCurrentCat++;
+  });
+  const progressText = document.getElementById("auditProgressText");
+  const catBadge = document.getElementById("auditCatBadge");
+  const btnSubmit = document.getElementById("btnSubmitGenbaAudit");
+  if (catBadge) catBadge.innerText = `${activeGenbaCategory} Progress`;
+  if (progressText) progressText.innerText = `${answeredCurrentCat}/${totalCurrentCat} Diselesaikan`;
+  if (totalCurrentCat > 0 && answeredCurrentCat >= totalCurrentCat) {
+    if (btnSubmit) {
+      btnSubmit.disabled = false;
+      btnSubmit.className = "flex-1 sm:flex-initial py-2.5 px-5 bg-nosa-green hover:bg-nosa-greenLight text-white font-extrabold text-xs rounded-xl shadow-md transition cursor-pointer";
+      btnSubmit.innerText = `💾 Submit Audit (${activeGenbaCategory})`;
+    }
+  } else {
+    if (btnSubmit) {
+      btnSubmit.disabled = true;
+      btnSubmit.className = "flex-1 sm:flex-initial py-2.5 px-5 bg-gray-300 text-gray-500 font-extrabold text-xs rounded-xl shadow-xs transition cursor-not-allowed";
+      btnSubmit.innerText = `🔒 Submit (${totalCurrentCat - answeredCurrentCat} tersisa)`;
     }
   }
-  const btnPrev = document.getElementById("btnTourPrev");
-  const btnNext = document.getElementById("btnTourNext");
-  if (currentTourStep === 0) btnPrev.classList.add("hidden"); else btnPrev.classList.remove("hidden");
-  if (currentTourStep === tourSteps.length - 1) btnNext.innerText = "Selesai ✨"; else btnNext.innerText = "Lanjut \u203A";
 }
 
-function nextTourStep() { if (currentTourStep < tourSteps.length - 1) { currentTourStep++; renderTourStep(); } else endAppTour(); }
-function prevTourStep() { if (currentTourStep > 0) { currentTourStep--; renderTourStep(); } }
-function endAppTour() {
-  document.querySelectorAll('.ring-4').forEach(el => el.classList.remove('ring-4', 'ring-yellow-400', 'scale-105'));
-  document.getElementById("tourOverlay").classList.add("hidden");
-  localStorage.setItem("nosa_has_toured", "true"); switchTab("home");
-}
-
-function switchTab(tabId) {
-  const pages = ['dashboardPage', 'referensiPage', 'reminderPage', 'onboardingPage', 'genbaAuditPage', 'picaDashboardPage', 'nosizuPage', 'leaderboardPage', 'profilPage'];
-  pages.forEach(p => { const el = document.getElementById(p); if (el) el.classList.add('hidden'); });
-
-  const navHome = document.getElementById('navHome');
-  const navPica = document.getElementById('navPica');
-  const navLeaderboard = document.getElementById('navLeaderboard');
-  const navProfil = document.getElementById('navProfil');
-  [navHome, navPica, navLeaderboard, navProfil].forEach(n => { if (n) n.classList.add('opacity-70'); });
-
-  if (tabId === 'home') {
-    document.getElementById('dashboardPage').classList.remove('hidden'); navHome.classList.remove('opacity-70');
-    if (currentUser && currentUser.cabang) loadHomeLastGenbaResult(currentUser.cabang);
-  } else if (tabId === 'referensi') {
-    document.getElementById('referensiPage').classList.remove('hidden'); loadReferensiData();
-  } else if (tabId === 'reminder') {
-    document.getElementById('reminderPage').classList.remove('hidden'); initReminderUI(); evaluateRealtimeReminders();
-  } else if (tabId === 'onboarding') {
-    document.getElementById('onboardingPage').classList.remove('hidden'); loadOnboardingData();
-  } else if (tabId === 'genbaAudit') {
-    document.getElementById('genbaAuditPage').classList.remove('hidden'); initDirectGenbaSession();
-  } else if (tabId === 'pica') {
-    document.getElementById('picaDashboardPage').classList.remove('hidden'); navPica.classList.remove('opacity-70'); loadPicaDashboardData();
-  } else if (tabId === 'nosizu') {
-    document.getElementById('nosizuPage').classList.remove('hidden'); loadNOSIZUDashboard();
-  } else if (tabId === 'leaderboard') {
-    document.getElementById('leaderboardPage').classList.remove('hidden'); navLeaderboard.classList.remove('opacity-70'); loadLeaderboardData();
-  } else if (tabId === 'profil') {
-    document.getElementById('profilPage').classList.remove('hidden'); navProfil.classList.remove('opacity-70');
-    if (currentUser && currentUser.cabang) loadProfilCabangData(currentUser.cabang);
+function submitGenbaForm() {
+  const cleanActiveCat = activeGenbaCategory.replace(/\s+/g, '').toUpperCase();
+  const currentCategoryItems = allCeklisNOSData.filter(row => {
+    const tipeSheet = (row[1] || '').toString().replace(/\s+/g, '').toUpperCase();
+    return tipeSheet.includes(cleanActiveCat) || cleanActiveCat.includes(tipeSheet);
+  });
+  const categoryResults = [];
+  currentCategoryItems.forEach(row => {
+    const origIdx = allCeklisNOSData.indexOf(row);
+    if (auditSelection[origIdx]) {
+      categoryResults.push(auditSelection[origIdx]);
+    }
+  });
+  if (categoryResults.length < currentCategoryItems.length) {
+    alert(`Silakan lengkapi seluruh ceklis pada kategori ${activeGenbaCategory} sebelum melakukan submit!`);
+    return;
   }
+  const btnSubmit = document.getElementById("btnSubmitGenbaAudit");
+  if (btnSubmit) { btnSubmit.disabled = true; btnSubmit.innerText = "Menyimpan..."; }
+  fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ 
+      action: "submitGenbaAudit", 
+      auditSession: currentAuditSession, 
+      category: activeGenbaCategory,
+      auditResults: categoryResults 
+    })
+  })
+  .then(res => res.json())
+  .then(res => {
+    if (res.status === "success") {
+      alert(`Audit ${activeGenbaCategory} Berhasil Disimpan! ${res.totalPicaCreated || 0} temuan PICA baru telah ditambahkan.`);
+      const userCabang = currentUser ? (currentUser.cabang || "Cibiru") : "Cibiru";
+      loadHomeLastGenbaResult(userCabang);
+      switchTab("home");
+    } else { alert(res.message || "Gagal menyimpan audit."); }
+  });
+}
+
+function evaluateRealtimeReminders(isManualClick = false) {
+  const userCabang = currentUser ? (currentUser.cabang || "Cibiru") : "Cibiru";
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const previewEl = document.getElementById("reminderPreviewText");
+  if (previewEl) previewEl.innerText = "Mengambil data PICA & GENBA real-time...";
+  
+  fetch(`${API_URL}?action=getProfilCabang&cabang=${encodeURIComponent(userCabang)}`)
+  .then(res => res.json())
+  .then(res => {
+    let triggeredMessage = null;
+    let targetTab = "pica";
+    if (res.status === "success") {
+      if (res.picaBelumSelesai && res.picaBelumSelesai.length > 0) {
+        for (let pica of res.picaBelumSelesai) {
+          const due = new Date(pica.dueDate);
+          due.setHours(0,0,0,0);
+          const diffDays = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
+          if (diffDays < 0 && reminderState.rule2) {
+            triggeredMessage = `⚠️ PICA Overdue: Temuan "${pica.item}" telah melewati batas waktu jatuh tempo (${formatDateNice(pica.dueDate)}).`;
+            targetTab = "pica";
+            break;
+          } else if (diffDays >= 0 && diffDays <= 2 && reminderState.rule1) {
+            triggeredMessage = `Pengingat Due Date: PICA "${pica.item}" di Cabang ${userCabang} jatuh tempo ${diffDays === 0 ? 'hari ini' : 'dalam ' + diffDays + ' hari'}!`;
+            targetTab = "pica";
+            break;
+          }
+        }
+      }
+      if (!triggeredMessage && res.info && res.info.jadwalGenba && reminderState.rule3) {
+        const genbaDate = new Date(res.info.jadwalGenba);
+        genbaDate.setHours(0,0,0,0);
+        const diffGenba = Math.ceil((genbaDate - today) / (1000 * 60 * 60 * 24));
+        if (diffGenba >= 0 && diffGenba <= 3) {
+          triggeredMessage = `📅 Pengingat GENBA: Audit Onsite berikutnya di Cabang ${userCabang} diselenggarakan tanggal ${formatDateNice(res.info.jadwalGenba)}.`;
+          targetTab = "profil";
+        }
+      }
+    }
+    if (triggeredMessage) {
+      if (previewEl) previewEl.innerText = triggeredMessage;
+      showInAppReminderToast(triggeredMessage, targetTab);
+    } else {
+      const emptyMsg = `Tidak ada pengingat mendesak untuk Cabang ${userCabang} pada tanggal hari ini.`;
+      if (previewEl) previewEl.innerText = emptyMsg;
+      if (isManualClick) alert(emptyMsg);
+    }
+  })
+  .catch(() => {
+    if (previewEl) previewEl.innerText = "Gagal memverifikasi jadwal real-time.";
+  });
+}
+
+function showInAppReminderToast(msg, targetTab = "pica") {
+  const toast = document.getElementById("inAppReminderToast");
+  const cabangBadge = document.getElementById("toastCabangBadge");
+  const msgContent = document.getElementById("toastMessageContent");
+  const cabang = currentUser ? (currentUser.cabang || "Cibiru") : "Cibiru";
+  if (cabangBadge) cabangBadge.innerText = `Cabang ${cabang}`;
+  if (msgContent) msgContent.innerText = msg;
+  activeToastTargetTab = targetTab;
+  if (toast) toast.classList.remove("hidden");
+}
+
+function dismissInAppToast() { 
+  const toast = document.getElementById("inAppReminderToast");
+  if (toast) toast.classList.add("hidden"); 
+}
+
+function handleToastAction() { dismissInAppToast(); switchTab(activeToastTargetTab); }
+
+function loadReferensiData() {
+  const container = document.getElementById("referensiGridBox");
+  if (!container) return;
+  container.innerHTML = '<p class="text-xs text-gray-400 italic text-center col-span-full py-8">Memuat data referensi standar...</p>';
+  
+  fetch(`${API_URL}?action=getReferensi`)
+  .then(res => res.json())
+  .then(data => {
+    if (!data || data.length <= 1) {
+      container.innerHTML = '<p class="text-xs text-gray-400 italic text-center col-span-full py-8">Belum ada data referensi standar di spreadsheet.</p>';
+      return;
+    }
+    const rows = data.slice(1);
+    let html = '';
+    
+    rows.forEach(row => {
+      const kat = row[1] || 'visual dealer';
+      const judul = row[2] || 'Judul Referensi';
+      const deskripsi = row[3] || 'Deskripsi standar';
+      const instruksi = row[4] || 'Instruksi & ketentuan standar.';
+      
+      let rawImg = row[5] || '';
+      if (rawImg.includes('drive.google.com') && rawImg.includes('/d/')) {
+        const match = rawImg.match(/\/d\/([^\/]+)/);
+        if (match && match[1]) rawImg = `https://lh3.googleusercontent.com/d/${match[1]}`;
+      }
+      const imgUrl = rawImg;
+      const downloadUrl = row[6] || '';
+      const tipeMedia = (row[7] || 'SINGLE_IMAGE').toString().trim().toUpperCase();
+      const folder360Url = (row[8] || '').toString().trim();
+      
+      const safeJudul = judul.replace(/'/g, "\\'");
+      const safeDesc = deskripsi.replace(/'/g, "\\'");
+      const safeImg = imgUrl.replace(/'/g, "\\'");
+      const safeFolder = folder360Url.replace(/'/g, "\\'");
+      
+      html += `
+        <div class="bg-nosa-cardBg p-4 sm:p-5 rounded-3xl border border-gray-200/70 shadow-xs flex flex-col justify-between space-y-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
+            <div onclick="open3DViewer('${safeImg}', '${safeJudul}', '${safeDesc}', '${tipeMedia}', '${safeFolder}')" class="w-full h-48 sm:h-56 rounded-2xl overflow-hidden bg-white/90 p-2 flex items-center justify-center border border-gray-300/50 shadow-inner cursor-pointer relative group">
+              ${imgUrl ? `<img src="${imgUrl}" alt="${judul}" class="w-full h-full object-contain transition group-hover:scale-105">` : '<span class="text-xs text-gray-400 italic">Tidak ada gambar</span>'}
+              
+              <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white font-extrabold text-xs gap-1">
+                <span>${tipeMedia === '360_SPRITE' ? '🔄 Putar 360°' : '🔍 Lihat Gambar'}</span>
+              </div>
+              ${tipeMedia === '360_SPRITE' ? '<span class="absolute top-2 right-2 bg-amber-400 text-amber-950 font-black text-[9px] px-2 py-0.5 rounded-full shadow-xs">360° View</span>' : ''}
+            </div>
+            
+            <div class="space-y-2">
+              <span class="inline-block bg-nosa-yellow text-gray-900 text-[10px] font-extrabold px-3 py-0.5 rounded-md uppercase tracking-wider">${kat}</span>
+              <h3 class="text-xl sm:text-2xl font-black text-nosa-green tracking-tight leading-none pt-0.5">${judul}</h3>
+              <p class="text-xs text-gray-700 leading-snug">${deskripsi}</p>
+              <div class="pt-2 space-y-0.5">
+                <h5 class="text-xs font-black text-nosa-green">Instruksi & Ketentuan</h5>
+                <p class="text-[11px] text-gray-600 leading-normal">${instruksi}</p>
+              </div>
+              ${downloadUrl ? `
+                <div class="pt-2">
+                  <h5 class="text-xs font-black text-nosa-green">Link Download</h5>
+                  <a href="${downloadUrl}" target="_blank" class="text-[10px] text-blue-600 underline font-semibold break-all">${downloadUrl}</a>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    });
+    container.innerHTML = html;
+  });
+}
+
+function open3DViewer(imgUrl, title, desc, tipeMedia, folderUrl) {
+  document.getElementById("modal3DTitle").innerText = title;
+  document.getElementById("modal3DDesc").innerText = desc;
+  const mainImgEl = document.getElementById("modal3DImage");
+  const loaderEl = document.getElementById("spinner3DLoader");
+  
+  sprite3DFrames = [];
+  currentFrameIndex = 0;
+  
+  if (tipeMedia === '360_SPRITE' && folderUrl) {
+    mainImgEl.classList.add("hidden");
+    if (loaderEl) loaderEl.classList.remove("hidden");
+    
+    fetch(`${API_URL}?action=getFolderImages&folder=${encodeURIComponent(folderUrl)}`)
+    .then(res => res.json())
+    .then(res => {
+      if (loaderEl) loaderEl.classList.add("hidden");
+      mainImgEl.classList.remove("hidden");
+      
+      if (res.status === "success" && res.images && res.images.length > 0) {
+        sprite3DFrames = res.images;
+        mainImgEl.src = sprite3DFrames[0];
+      } else {
+        mainImgEl.src = imgUrl;
+      }
+    })
+    .catch(() => {
+      if (loaderEl) loaderEl.classList.add("hidden");
+      mainImgEl.classList.remove("hidden");
+      mainImgEl.src = imgUrl;
+    });
+  } else {
+    if (loaderEl) loaderEl.classList.add("hidden");
+    mainImgEl.classList.remove("hidden");
+    mainImgEl.src = imgUrl;
+  }
+
+  const container = document.getElementById("spin3DContainer");
+  container.onmousedown = start3DSpin;
+  window.onmousemove = move3DSpin;
+  window.onmouseup = end3DSpin;
+  
+  container.ontouchstart = (e) => start3DSpin(e.touches[0]);
+  window.ontouchmove = (e) => move3DSpin(e.touches[0]);
+  window.ontouchend = end3DSpin;
+  
+  document.getElementById("modal3DViewer").classList.remove("hidden");
+}
+
+function close3DViewer() { 
+  document.getElementById("modal3DViewer").classList.add("hidden"); 
+}
+
+function start3DSpin(e) { 
+  if (sprite3DFrames.length <= 1) return;
+  isSpinning3D = true; 
+  startX3D = e.clientX; 
+}
+
+function move3DSpin(e) {
+  if (!isSpinning3D || sprite3DFrames.length <= 1) return;
+  const deltaX = e.clientX - startX3D;
+  
+  if (Math.abs(deltaX) > 15) {
+    if (deltaX < 0) {
+      currentFrameIndex = (currentFrameIndex + 1) % sprite3DFrames.length;
+    } else {
+      currentFrameIndex = (currentFrameIndex - 1 + sprite3DFrames.length) % sprite3DFrames.length;
+    }
+    document.getElementById("modal3DImage").src = sprite3DFrames[currentFrameIndex];
+    startX3D = e.clientX;
+  }
+}
+
+function end3DSpin() { 
+  isSpinning3D = false; 
 }
 
 function loadOnboardingData() {
@@ -978,7 +846,6 @@ function filterOnboardingVideo() {
 function formatEmbedVideoUrl(url) {
   if (!url) return '';
   let str = url.trim();
-  // Konversi otomatis link Google Drive agar bisa tampil di Iframe Web
   if (str.includes("drive.google.com")) {
     if (str.includes("/view")) {
       return str.replace(/\/view.*/, "/preview");
@@ -992,6 +859,7 @@ function formatEmbedVideoUrl(url) {
   if (str.includes("youtu.be/")) return `https://www.youtube.com/embed/${str.split("youtu.be/")[1].split("?")[0]}`;
   return str;
 }
+
 function loadPicaDashboardData() {
   const container = document.getElementById("picaCardsContainer");
   if (!container) return;
@@ -1025,9 +893,11 @@ function openPicaModal(idPica, itemTitle, status, catatanPerbaikan) {
   document.getElementById("modalPicaTitle").innerText = `Detail PICA (${idPica})`;
   document.getElementById("modalPicaItem").innerText = itemTitle;
   if (status === "Open") {
-    document.getElementById("modalCabangForm").classList.remove("hidden"); document.getElementById("modalNosForm").classList.add("hidden");
+    document.getElementById("modalCabangForm").classList.remove("hidden"); 
+    document.getElementById("modalNosForm").classList.add("hidden");
   } else if (status === "On Check") {
-    document.getElementById("modalCabangForm").classList.add("hidden"); document.getElementById("modalNosForm").classList.remove("hidden");
+    document.getElementById("modalCabangForm").classList.add("hidden"); 
+    document.getElementById("modalNosForm").classList.remove("hidden");
     document.getElementById("modalCatatanPerbaikanView").innerText = catatanPerbaikan || "Cabang telah mengunggah bukti perbaikan.";
   } else { alert("PICA ini sudah Closed."); return; }
   document.getElementById("picaActionModal").classList.remove("hidden");
@@ -1066,6 +936,7 @@ function loadNOSIZUDashboard() {
 
 function renderNOSIZUPathMap() {
   const mapBox = document.getElementById("nosizuPathMap");
+  if (!mapBox) return;
   let html = '';
   const levels = [{ id: 1, title: 'Level 1: Dasar NOS' }, { id: 2, title: 'Level 2: Standar Display' }, { id: 3, title: 'Level 3: Proses Servis' }, { id: 4, title: 'Level 4: Handling Konsumen' }];
   levels.forEach((lvl, idx) => {
@@ -1095,8 +966,6 @@ function startQuizSession(unitId) {
 
 function renderCurrentQuestion() {
   if (quizIndex >= currentQuestionList.length) { finishQuizSession(); return; }
-  
-  // Reset jawaban sebelumnya agar tidak lolos otomatis saat dipencet Periksa
   userSelectedAnswer = null;
   
   const q = currentQuestionList[quizIndex];
@@ -1108,7 +977,6 @@ function renderCurrentQuestion() {
   const box = document.getElementById("quizAnswersBox");
   const tipe = (q.tipe || '').toLowerCase();
   
-  // Render opsi berdasarkan TipeSoal di spreadsheet
   if (tipe.includes("perbandingan")) {
     let imgA = formatDriveImgUrl(q.gambarA);
     let imgB = formatDriveImgUrl(q.gambarB);
@@ -1196,9 +1064,10 @@ function finishQuizSession() { alert(`Sesi Kuis Selesai! XP: ${nosUserStats.xp}`
 
 function loadLeaderboardData() {
   const container = document.getElementById("leaderboardListBox");
+  if (!container) return;
   fetch(`${API_URL}?action=getLeaderboard`).then(res => res.json()).then(data => {
     let html = '';
-    data.forEach((item, idx) => {
+    data.forEach((item) => {
       html += `<div class="bg-nosa-cardBg p-3 rounded-2xl border flex justify-between"><div><h4 class="text-xs font-black">${item.nama}</h4><p class="text-[9px] text-gray-500">${item.cabang}</p></div><span class="text-xs font-black text-blue-600">${item.xp} XP</span></div>`;
     });
     container.innerHTML = html;
@@ -1211,6 +1080,103 @@ function loadProfilCabangData(cabangName) {
       if (res.info.jadwalGenba) document.getElementById("profJadwalGenba").innerText = formatDateNice(res.info.jadwalGenba);
     }
   });
+}
+
+function initReminderUI() {
+  const saved = localStorage.getItem("nosa_reminder_state");
+  if (saved) { try { reminderState = JSON.parse(saved); } catch (e) {} }
+  updateReminderButtons();
+}
+
+function toggleReminderRule(ruleKey) {
+  reminderState[ruleKey] = !reminderState[ruleKey];
+  localStorage.setItem("nosa_reminder_state", JSON.stringify(reminderState));
+  updateReminderButtons();
+  evaluateRealtimeReminders(true);
+}
+
+function updateReminderButtons() {
+  const rules = ['rule1', 'rule2', 'rule3', 'rule4'];
+  rules.forEach((rKey, idx) => {
+    const btn = document.getElementById(`btnRule${idx + 1}`);
+    if (!btn) return;
+    if (reminderState[rKey]) {
+      btn.innerText = "Aktif";
+      btn.className = "px-4 py-1.5 rounded-xl text-xs font-extrabold shadow-2xs transition bg-emerald-400 text-emerald-950";
+    } else {
+      btn.innerText = "Non-Aktif";
+      btn.className = "px-4 py-1.5 rounded-xl text-xs font-extrabold shadow-2xs transition bg-red-300 text-red-950";
+    }
+  });
+}
+
+function startAppTour(isManual = false) {
+  const hasToured = localStorage.getItem("nosa_has_toured");
+  if (!isManual && hasToured === "true") return;
+  currentTourStep = 0;
+  const tourEl = document.getElementById("tourOverlay");
+  if (tourEl) tourEl.classList.remove("hidden");
+  renderTourStep();
+}
+
+function renderTourStep() {
+  const step = tourSteps[currentTourStep];
+  switchTab(step.tab);
+  document.getElementById("tourStepBadge").innerText = step.badge;
+  document.getElementById("tourDialogText").innerText = step.text;
+  document.querySelectorAll('.ring-4').forEach(el => el.classList.remove('ring-4', 'ring-yellow-400', 'scale-105'));
+  if (step.targetId) {
+    const target = document.getElementById(step.targetId);
+    if (target) {
+      target.classList.add('ring-4', 'ring-yellow-400', 'scale-105');
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+  const btnPrev = document.getElementById("btnTourPrev");
+  const btnNext = document.getElementById("btnTourNext");
+  if (currentTourStep === 0) btnPrev.classList.add("hidden"); else btnPrev.classList.remove("hidden");
+  if (currentTourStep === tourSteps.length - 1) btnNext.innerText = "Selesai ✨"; else btnNext.innerText = "Lanjut \u203A";
+}
+
+function nextTourStep() { if (currentTourStep < tourSteps.length - 1) { currentTourStep++; renderTourStep(); } else endAppTour(); }
+function prevTourStep() { if (currentTourStep > 0) { currentTourStep--; renderTourStep(); } }
+function endAppTour() {
+  document.querySelectorAll('.ring-4').forEach(el => el.classList.remove('ring-4', 'ring-yellow-400', 'scale-105'));
+  document.getElementById("tourOverlay").classList.add("hidden");
+  localStorage.setItem("nosa_has_toured", "true"); 
+  switchTab("home");
+}
+
+function switchTab(tabId) {
+  const pages = ['dashboardPage', 'referensiPage', 'reminderPage', 'onboardingPage', 'genbaAuditPage', 'picaDashboardPage', 'nosizuPage', 'leaderboardPage', 'profilPage'];
+  pages.forEach(p => { const el = document.getElementById(p); if (el) el.classList.add('hidden'); });
+  const navHome = document.getElementById('navHome');
+  const navPica = document.getElementById('navPica');
+  const navLeaderboard = document.getElementById('navLeaderboard');
+  const navProfil = document.getElementById('navProfil');
+  [navHome, navPica, navLeaderboard, navProfil].forEach(n => { if (n) n.classList.add('opacity-70'); });
+  
+  if (tabId === 'home') {
+    document.getElementById('dashboardPage').classList.remove('hidden'); navHome.classList.remove('opacity-70');
+    if (currentUser && currentUser.cabang) loadHomeLastGenbaResult(currentUser.cabang);
+  } else if (tabId === 'referensi') {
+    document.getElementById('referensiPage').classList.remove('hidden'); loadReferensiData();
+  } else if (tabId === 'reminder') {
+    document.getElementById('reminderPage').classList.remove('hidden'); initReminderUI(); evaluateRealtimeReminders();
+  } else if (tabId === 'onboarding') {
+    document.getElementById('onboardingPage').classList.remove('hidden'); loadOnboardingData();
+  } else if (tabId === 'genbaAudit') {
+    document.getElementById('genbaAuditPage').classList.remove('hidden'); initDirectGenbaSession();
+  } else if (tabId === 'pica') {
+    document.getElementById('picaDashboardPage').classList.remove('hidden'); navPica.classList.remove('opacity-70'); loadPicaDashboardData();
+  } else if (tabId === 'nosizu') {
+    document.getElementById('nosizuPage').classList.remove('hidden'); loadNOSIZUDashboard();
+  } else if (tabId === 'leaderboard') {
+    document.getElementById('leaderboardPage').classList.remove('hidden'); navLeaderboard.classList.remove('opacity-70'); loadLeaderboardData();
+  } else if (tabId === 'profil') {
+    document.getElementById('profilPage').classList.remove('hidden'); navProfil.classList.remove('opacity-70');
+    if (currentUser && currentUser.cabang) loadProfilCabangData(currentUser.cabang);
+  }
 }
 
 window.onload = function() {
