@@ -32,7 +32,6 @@
   </script>
 </head>
 <body class="bg-nosa-dashBg min-h-screen font-sans text-gray-800 flex flex-col justify-between">
-
   <!-- ==================== PAGE 1: AUTH PAGE (LOGIN & REGISTER) ==================== -->
   <div id="loginPage" class="fixed inset-0 bg-white z-50 flex items-center justify-center p-4">
     <div class="relative w-full max-w-sm bg-white rounded-[32px] shadow-2xl overflow-hidden border border-gray-100 px-6 py-8 flex flex-col justify-between min-h-[600px]">
@@ -83,7 +82,6 @@
       </div>
     </div>
   </div>
-
   <!-- ==================== PAGE 2: MAIN APP FULLSCREEN ==================== -->
   <div id="mainContainer" class="hidden min-h-screen w-full flex flex-col justify-between relative bg-nosa-dashBg">
     
@@ -108,7 +106,6 @@
         </button>
       </div>
     </header>
-
     <!-- SCROLLABLE MAIN CONTENT -->
     <main class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-8 pt-20 pb-24 space-y-6">
       
@@ -120,7 +117,6 @@
           </h2>
           <p class="text-xs sm:text-sm text-gray-600 font-normal">selamat datang kembali! apa yang mau anda input hari ini?</p>
         </div>
-
         <!-- GRID 6 KARTU MENU UTAMA -->
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 sm:gap-4 pt-1">
           <div id="cardRef" onclick="switchTab('referensi')" class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-2 cursor-pointer hover:border-nosa-green hover:shadow-md transition">
@@ -154,7 +150,6 @@
             <p class="text-[9px] sm:text-[10px] text-gray-500 leading-tight">data dan informasi cabang</p>
           </div>
         </div>
-
         <!-- KARTU HASIL GENBA TERAKHIR & GRADING 6 PILAR -->
         <div id="cardPerforma" class="bg-nosa-cardBg p-5 sm:p-6 rounded-3xl border border-gray-200/60 shadow-xs space-y-5">
           <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-gray-300/60 pb-3">
@@ -170,7 +165,6 @@
               </span>
             </div>
           </div>
-
           <!-- CONTAINER UTAMA: SCORE CIRCLE & 6 KARTU PILAR -->
           <div class="grid grid-cols-1 md:grid-cols-7 gap-4 items-center">
             
@@ -185,7 +179,6 @@
               </div>
               <span class="text-[10px] font-extrabold text-nosa-green tracking-wider uppercase">Rata-Rata Result</span>
             </div>
-
             <!-- GRID BREAKDOWN 6 PILAR -->
             <div class="md:col-span-6 grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div class="bg-white/80 p-3 rounded-2xl border border-gray-200 space-y-1 text-center">
@@ -203,7 +196,6 @@
                   <div id="homeBarProcessH1" class="bg-nosa-green h-full w-0 transition-all duration-500"></div>
                 </div>
               </div>
-
               <div class="bg-white/80 p-3 rounded-2xl border border-gray-200 space-y-1 text-center">
                 <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">People H1</span>
                 <h4 class="text-xs sm:text-base font-black text-nosa-green" id="homeScorePeopleH1">Belum Ada Nilai GENBA Terakhir</h4>
@@ -211,7 +203,6 @@
                   <div id="homeBarPeopleH1" class="bg-nosa-green h-full w-0 transition-all duration-500"></div>
                 </div>
               </div>
-
               <div class="bg-white/80 p-3 rounded-2xl border border-gray-200 space-y-1 text-center">
                 <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">Premises H23</span>
                 <h4 class="text-xs sm:text-base font-black text-nosa-green" id="homeScorePremisesH23">Belum Ada Nilai GENBA Terakhir</h4>
@@ -219,7 +210,6 @@
                   <div id="homeBarPremisesH23" class="bg-nosa-green h-full w-0 transition-all duration-500"></div>
                 </div>
               </div>
-
               <div class="bg-white/80 p-3 rounded-2xl border border-gray-200 space-y-1 text-center">
                 <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">Process H23</span>
                 <h4 class="text-xs sm:text-base font-black text-nosa-green" id="homeScoreProcessH23">Belum Ada Nilai GENBA Terakhir</h4>
@@ -227,7 +217,6 @@
                   <div id="homeBarProcessH23" class="bg-nosa-green h-full w-0 transition-all duration-500"></div>
                 </div>
               </div>
-
               <div class="bg-white/80 p-3 rounded-2xl border border-gray-200 space-y-1 text-center">
                 <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">People H23</span>
                 <h4 class="text-xs sm:text-base font-black text-nosa-green" id="homeScorePeopleH23">Belum Ada Nilai GENBA Terakhir</h4>
@@ -247,7 +236,6 @@
           </div>
         </div>
       </div>
-
       <!-- TAB 2: REFERENSI STANDAR VISUAL -->
       <div id="referensiPage" class="hidden space-y-4">
         <div class="flex justify-between items-center border-b border-gray-300/60 pb-3">
@@ -261,7 +249,6 @@
           <p class="text-xs text-gray-400 italic col-span-full text-center py-8">Memuat data referensi standar...</p>
         </div>
       </div>
-
       <!-- TAB REMINDER -->
       <div id="reminderPage" class="hidden space-y-6 max-w-2xl mx-auto">
         <div class="space-y-2">
@@ -323,7 +310,6 @@
           </div>
         </div>
       </div>
-
       <!-- TAB ONBOARDING FLP -->
       <div id="onboardingPage" class="hidden space-y-5">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-300/60 pb-3">
@@ -341,7 +327,6 @@
           <p class="text-xs text-gray-400 italic col-span-full text-center py-8">Memuat materi video onboarding...</p>
         </div>
       </div>
-
       <!-- TAB 4: HALAMAN AUDIT GENBA DIRECT & KATEGORISASI (H1/H23) + RESULT CALCULATOR -->
       <div id="genbaAuditPage" class="hidden space-y-4">
         <div class="bg-nosa-cardBg p-4 sm:p-5 rounded-3xl border border-gray-200/80 shadow-xs space-y-4">
@@ -380,7 +365,6 @@
             </div>
           </div>
         </div>
-
         <div class="flex overflow-x-auto gap-2 pb-2 scrollbar-none border-b border-gray-200">
           <button onclick="filterGenbaCategory('PREMISES H1')" id="tabCat-PREMISESH1" class="px-3.5 py-2 rounded-xl text-xs font-extrabold whitespace-nowrap bg-nosa-green text-white shadow-xs transition">Premises H1</button>
           <button onclick="filterGenbaCategory('PROCESS H1')" id="tabCat-PROCESSH1" class="px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-white text-gray-600 hover:bg-gray-100 transition">Process H1</button>
@@ -389,12 +373,10 @@
           <button onclick="filterGenbaCategory('PROCESS H23')" id="tabCat-PROCESSH23" class="px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-white text-gray-600 hover:bg-gray-100 transition">Process H23</button>
           <button onclick="filterGenbaCategory('PEOPLE H23')" id="tabCat-PEOPLEH23" class="px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-white text-gray-600 hover:bg-gray-100 transition">People H23</button>
         </div>
-
         <div class="space-y-4" id="genbaCeklisContainer">
           <p class="text-xs text-gray-400 italic text-center py-6">Memuat item ceklis NOS...</p>
         </div>
       </div>
-
       <!-- TAB 5: DASHBOARD PICA -->
       <div id="picaDashboardPage" class="hidden space-y-4">
         <div class="flex justify-between items-center border-b border-gray-300/60 pb-2">
@@ -410,7 +392,6 @@
           <p class="text-xs text-gray-400 italic text-center py-8">Memuat data PICA...</p>
         </div>
       </div>
-
       <!-- TAB 6: NOSIZU -->
       <div id="nosizuPage" class="hidden space-y-4 max-w-lg mx-auto">
         <div class="flex items-center justify-between bg-white p-3.5 rounded-2xl shadow-xs border border-gray-200 text-xs font-black">
@@ -430,7 +411,6 @@
           <div class="mt-6 flex flex-col items-center space-y-4 relative py-2" id="nosizuPathMap"></div>
         </div>
       </div>
-
       <div id="nosizuQuizContainer" class="hidden space-y-4 max-w-lg mx-auto bg-white p-6 rounded-3xl border border-gray-200 shadow-xl">
         <div class="flex justify-between items-center gap-3">
           <button onclick="exitQuiz()" class="text-gray-400 font-black text-xl">&times;</button>
@@ -460,7 +440,6 @@
           </button>
         </div>
       </div>
-
       <!-- TAB 7: LEADERBOARD -->
       <div id="leaderboardPage" class="hidden space-y-4">
         <div class="flex justify-between items-center border-b border-gray-300/60 pb-2">
@@ -474,7 +453,6 @@
           <p class="text-xs text-gray-400 italic text-center py-8">Memuat klasemen...</p>
         </div>
       </div>
-
       <!-- TAB 8: PROFIL CABANG -->
       <div id="profilPage" class="hidden space-y-4 max-w-2xl mx-auto">
         <div class="space-y-1 pt-1">
@@ -538,32 +516,30 @@
         </div>
       </div>
     </main>
-
     <!-- FIXED BOTTOM NAVIGATION BAR -->
     <nav class="fixed bottom-0 inset-x-0 bg-nosa-cardBg/95 backdrop-blur-md border-t border-gray-200/80 py-2.5 px-6 flex justify-around items-center z-30 shadow-lg">
       <button onclick="switchTab('home')" id="navHome" class="flex flex-col items-center gap-1 text-nosa-green font-bold text-xs cursor-pointer hover:scale-105 transition">
-        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        <svg id="iconHome" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
         <span>home</span>
-        <div id="barHome" class="w-5 h-0.5 bg-nosa-green rounded-full"></div>
+        <div id="barHome" class="w-5 h-0.5 bg-nosa-green rounded-full transition-all"></div>
       </button>
       <button onclick="switchTab('pica')" id="navPica" class="flex flex-col items-center gap-1 text-nosa-green opacity-70 hover:opacity-100 font-normal text-xs cursor-pointer hover:scale-105 transition">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <svg id="iconPica" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
         <span>PICA</span>
-        <div id="barPica" class="w-5 h-0.5 bg-nosa-green rounded-full hidden"></div>
+        <div id="barPica" class="w-5 h-0.5 bg-nosa-green rounded-full hidden transition-all"></div>
       </button>
       <button onclick="switchTab('leaderboard')" id="navLeaderboard" class="flex flex-col items-center gap-1 text-nosa-green opacity-70 hover:opacity-100 font-normal text-xs cursor-pointer hover:scale-105 transition">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+        <svg id="iconLeaderboard" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
         <span>leaderboard</span>
-        <div id="barLeaderboard" class="w-5 h-0.5 bg-nosa-green rounded-full hidden"></div>
+        <div id="barLeaderboard" class="w-5 h-0.5 bg-nosa-green rounded-full hidden transition-all"></div>
       </button>
       <button onclick="switchTab('profil')" id="navProfil" class="flex flex-col items-center gap-1 text-nosa-green font-normal opacity-70 hover:opacity-100 text-xs cursor-pointer hover:scale-105 transition">
-        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        <svg id="iconProfil" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
         <span>profil</span>
-        <div id="barProfil" class="w-5 h-0.5 bg-nosa-green rounded-full hidden"></div>
+        <div id="barProfil" class="w-5 h-0.5 bg-nosa-green rounded-full hidden transition-all"></div>
       </button>
     </nav>
   </div>
-
   <!-- MODAL PICA ACTION -->
   <div id="picaActionModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
     <div class="bg-white w-full max-w-md rounded-3xl p-5 space-y-4 shadow-2xl border border-gray-100">
@@ -599,7 +575,6 @@
       </div>
     </div>
   </div>
-
   <!-- OVERLAY DIALOG PANDUAN MASKOT DAYA NOSA -->
   <div id="tourOverlay" class="hidden fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-xs transition-all">
     <div class="relative bg-white w-full max-w-lg rounded-3xl p-5 shadow-2xl border-2 border-nosa-green space-y-4 animate-bounce-short">
@@ -623,7 +598,6 @@
       </div>
     </div>
   </div>
-
   <!-- MODAL 3D VIEWER ROTASI 360° INTERAKTIF -->
   <div id="modal3DViewer" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50">
     <div class="bg-white w-full max-w-lg rounded-3xl p-5 space-y-4 shadow-2xl border border-gray-700 relative text-center">
@@ -650,7 +624,6 @@
       <p class="text-xs text-gray-600 font-medium leading-snug" id="modal3DDesc">Tampilan visual rotasi 360° referensi standar NOS.</p>
     </div>
   </div>
-
   <!-- IN-APP TOAST REMINDER -->
   <div id="inAppReminderToast" class="hidden fixed bottom-20 right-4 sm:bottom-6 sm:right-6 max-w-sm w-[calc(100%-2rem)] bg-white rounded-2xl p-4 shadow-2xl border-2 border-nosa-green z-40 transition-all duration-300 transform translate-y-0">
     <div class="flex items-start gap-3">
@@ -674,7 +647,6 @@
       </div>
     </div>
   </div>
-
   <script src="script.js"></script>
 </body>
 </html>
