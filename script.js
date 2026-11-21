@@ -2,28 +2,24 @@ const API_URL = "https://script.google.com/macros/s/AKfycby3Nv784S410kwfLsKDfexj
 let authMode = "login";
 let selectedRole = "Kepala Cabang";
 let currentUser = null;
-
 // ENGINE GENBA, DIRECT AUDIT & KALKULATOR RESULT
 let allCeklisNOSData = [];
 let activeGenbaCategory = "PREMISES H1";
 let currentAuditSession = null;
 let auditSelection = {};
-
 // ENGINE ROTASI FOTO 360
 let sprite3DFrames = [];
 let currentFrameIndex = 0;
 let isSpinning3D = false;
 let startX3D = 0;
-
 // ENGINE DATA NOSIZU
 let nosUserStats = { xp: 0, streak: 1, nyawa: 5, unit: 1 };
 let currentQuestionList = [];
+let activeQuizUnit = 1;
 let quizIndex = 0;
 let userSelectedAnswer = null;
-
 // GLOBAL LIST VIDEO ONBOARDING
 let allOnboardingVideos = [];
-
 // ENGINE GUIDED TOUR PANDUAN MASKOT
 let currentTourStep = 0;
 const tourSteps = [
@@ -35,10 +31,10 @@ const tourSteps = [
   { badge: "ONBOARDING FLP (6/7)", targetId: "cardOnboarding", tab: "home", text: "Menu ini menyediakan video-video materi orientasi & pelatihan khusus FLP baru." },
   { badge: "PROFIL CABANG (7/7)", targetId: "cardProfil", tab: "home", text: "Terakhir, cek Skor NOS Cabang Anda, daftar temuan berulang, serta peringkat Top 3 FLP NOSIZU di menu Profil Cabang." }
 ];
-
 // ENGINE REMINDER
 let reminderState = { rule1: true, rule2: true, rule3: true, rule4: true };
 let activeToastTargetTab = "pica";
+let activePicaId = null;
 
 function formatDateNice(dateStr) {
   if (!dateStr) return "-";
@@ -685,10 +681,10 @@ function loadReferensiData() {
       const tipeMedia = (row[7] || 'SINGLE_IMAGE').toString().trim().toUpperCase();
       const folder360Url = (row[8] || '').toString().trim();
       
-      const safeJudul = judul.replace(/'/g, "\\'");
-      const safeDesc = deskripsi.replace(/'/g, "\\'");
-      const safeImg = imgUrl.replace(/'/g, "\\'");
-      const safeFolder = folder360Url.replace(/'/g, "\\'");
+      const safeJudul = judul.replace(/'/g, "\'");
+      const safeDesc = deskripsi.replace(/'/g, "\'");
+      const safeImg = imgUrl.replace(/'/g, "\'");
+      const safeFolder = folder360Url.replace(/'/g, "\'");
       
       html += `
         <div class="bg-nosa-cardBg p-4 sm:p-5 rounded-3xl border border-gray-200/70 shadow-xs flex flex-col justify-between space-y-3">
@@ -761,7 +757,6 @@ function open3DViewer(imgUrl, title, desc, tipeMedia, folderUrl) {
     mainImgEl.classList.remove("hidden");
     mainImgEl.src = imgUrl;
   }
-
   const container = document.getElementById("spin3DContainer");
   container.onmousedown = start3DSpin;
   window.onmousemove = move3DSpin;
@@ -877,7 +872,7 @@ function loadPicaDashboardData() {
       const isOnCheck = item.status === 'On Check';
       let statusBadge = isClosed ? 'bg-emerald-200 text-emerald-800' : (isOnCheck ? 'bg-amber-200 text-amber-800' : 'bg-red-200 text-red-800');
       html += `
-        <div onclick="openPicaModal('${item.idPica}', '${item.item.replace(/'/g, "\\'")}', '${item.status}', '${(item.catatanPerbaikan || '').replace(/'/g, "\\'")}')" class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/80 shadow-xs space-y-2 cursor-pointer">
+        <div onclick="openPicaModal('${item.idPica}', '${item.item.replace(/'/g, "\'")}', '${item.status}', '${(item.catatanPerbaikan || '').replace(/'/g, "\'")}')" class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/80 shadow-xs space-y-2 cursor-pointer">
           <div class="flex justify-between items-start"><span class="text-[10px] font-extrabold text-gray-400">${item.idPica}</span><span class="${statusBadge} font-extrabold text-[9px] px-2.5 py-0.5 rounded-full">${item.status}</span></div>
           <h4 class="text-xs font-black text-gray-900">${item.item}</h4>
           <div class="pt-2 flex justify-between items-center text-[10px] border-t border-gray-300/40 text-gray-500"><span>👤 Auditor: ${item.auditor}</span><span>📅 Due: ${formatDateNice(item.dueDate)}</span></div>
@@ -921,15 +916,30 @@ function submitPicaVerifikasi(newStatus) {
   }).then(() => { closePicaModal(); loadPicaDashboardData(); });
 }
 
+// ==================== ENGINE NOSIZU (5 SOAL PER LEVEL & LEVEL TERBUKA BERURUTAN) ====================
+function shuffleArray(array) {
+  let arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 function loadNOSIZUDashboard() {
   const userEmail = (currentUser && currentUser.email) ? currentUser.email : "demo@daya.com";
   fetch(`${API_URL}?action=getUserNOSIZU&email=${encodeURIComponent(userEmail)}`)
   .then(res => res.json())
   .then(data => {
-    nosUserStats = data;
-    document.getElementById("nosStreakVal").innerText = data.streak || 1;
-    document.getElementById("nosXpVal").innerText = data.xp || 0;
-    document.getElementById("nosLivesVal").innerText = data.nyawa || 5;
+    nosUserStats = {
+      xp: Number(data.xp) || 0,
+      streak: Number(data.streak) || 1,
+      nyawa: (data.nyawa !== undefined && data.nyawa !== null) ? Number(data.nyawa) : 5,
+      unit: Number(data.unit) || 1
+    };
+    document.getElementById("nosStreakVal").innerText = nosUserStats.streak;
+    document.getElementById("nosXpVal").innerText = nosUserStats.xp;
+    document.getElementById("nosLivesVal").innerText = nosUserStats.nyawa;
     renderNOSIZUPathMap();
   });
 }
@@ -938,16 +948,25 @@ function renderNOSIZUPathMap() {
   const mapBox = document.getElementById("nosizuPathMap");
   if (!mapBox) return;
   let html = '';
-  const levels = [{ id: 1, title: 'Level 1: Dasar NOS' }, { id: 2, title: 'Level 2: Standar Display' }, { id: 3, title: 'Level 3: Proses Servis' }, { id: 4, title: 'Level 4: Handling Konsumen' }];
+  const levels = [
+    { id: 1, title: 'Level 1: Dasar NOS' },
+    { id: 2, title: 'Level 2: Standar Display' },
+    { id: 3, title: 'Level 3: Proses Servis' },
+    { id: 4, title: 'Level 4: Handling Konsumen' },
+    { id: 5, title: 'Level 5: Master NOS' }
+  ];
   levels.forEach((lvl, idx) => {
     const isCompleted = lvl.id < nosUserStats.unit;
     const isCurrent = lvl.id === nosUserStats.unit;
+    const isUnlocked = isCompleted || isCurrent;
     const alignClass = idx % 2 === 0 ? 'self-start ml-8' : 'self-end mr-8';
-    let btnBg = isCompleted ? 'bg-emerald-500 border-emerald-600' : (isCurrent ? 'bg-yellow-400 border-yellow-500 animate-bounce text-black' : 'bg-gray-400 border-gray-500');
+    let btnBg = isCompleted 
+      ? 'bg-emerald-500 border-emerald-600 text-white cursor-pointer' 
+      : (isCurrent ? 'bg-yellow-400 border-yellow-500 animate-bounce text-black cursor-pointer' : 'bg-gray-400 border-gray-500 text-gray-200 cursor-not-allowed');
     html += `
       <div class="${alignClass} flex flex-col items-center space-y-1">
-        <button onclick="startQuizSession(${lvl.id})" ${!isCompleted && !isCurrent ? 'disabled' : ''} class="w-16 h-16 rounded-full border-b-4 flex items-center justify-center text-xl font-black ${btnBg}">${isCompleted ? '✓' : (isCurrent ? '▶' : '🔒')}</button>
-        <span class="text-[10px] font-extrabold text-white bg-black/30 px-2 py-0.5 rounded-full">${lvl.title}</span>
+        <button onclick="startQuizSession(${lvl.id})" ${!isUnlocked ? 'disabled' : ''} class="w-16 h-16 rounded-full border-b-4 flex items-center justify-center text-xl font-black shadow-md transition ${btnBg}">${isCompleted ? '✓' : (isCurrent ? '▶' : '🔒')}</button>
+        <span class="text-[10px] font-extrabold text-white bg-black/40 px-2.5 py-0.5 rounded-full">${lvl.title}</span>
       </div>
     `;
   });
@@ -955,8 +974,35 @@ function renderNOSIZUPathMap() {
 }
 
 function startQuizSession(unitId) {
+  if (nosUserStats.nyawa <= 0) {
+    alert("Nyawa Anda habis! Nyawa akan dipulihkan menjadi 5 untuk mencoba lagi.");
+    nosUserStats.nyawa = 5;
+  }
+  activeQuizUnit = Number(unitId);
+
   fetch(`${API_URL}?action=getSoalNOSIZU`).then(res => res.json()).then(data => {
-    currentQuestionList = data.slice(1).map(r => ({ id: r[0], unit: r[1], tipe: r[2], pertanyaan: r[3], opsiA: r[4], opsiB: r[5], opsiC: r[6], opsiD: r[7], gambarA: r[8], gambarB: r[9], kunci: String(r[10]).trim(), pembahasan: r[11] }));
+    const allQuestions = data.slice(1).map(r => ({
+      id: r[0],
+      unit: Number(r[1]),
+      tipe: r[2],
+      pertanyaan: r[3],
+      opsiA: r[4],
+      opsiB: r[5],
+      opsiC: r[6],
+      opsiD: r[7],
+      gambarA: r[8],
+      gambarB: r[9],
+      kunci: String(r[10]).trim(),
+      pembahasan: r[11]
+    }));
+
+    const unitQuestions = allQuestions.filter(q => q.unit === activeQuizUnit && q.pertanyaan && String(q.pertanyaan).trim() !== "");
+    if (unitQuestions.length === 0) {
+      alert(`Soal untuk Level ${activeQuizUnit} belum diisi pada sheet SoalNOSIZU.`);
+      return;
+    }
+
+    currentQuestionList = shuffleArray(unitQuestions).slice(0, 5);
     quizIndex = 0;
     document.getElementById("nosizuPage").classList.add("hidden");
     document.getElementById("nosizuQuizContainer").classList.remove("hidden");
@@ -969,10 +1015,16 @@ function renderCurrentQuestion() {
   userSelectedAnswer = null;
   
   const q = currentQuestionList[quizIndex];
+  const tipeBadge = document.getElementById("quizTypeBadge");
+  if (tipeBadge) tipeBadge.innerText = `${quizIndex + 1}/${currentQuestionList.length}. ${(q.tipe || 'PILIH JAWABAN TEPAT').toUpperCase()}`;
+
   document.getElementById("quizProgressBar").style.width = `${((quizIndex) / currentQuestionList.length) * 100}%`;
   document.getElementById("quizLivesCount").innerText = nosUserStats.nyawa;
   document.getElementById("quizQuestionText").innerText = q.pertanyaan;
   document.getElementById("quizFeedbackPanel").classList.add("hidden");
+
+  const btnCheck = document.getElementById("btnCheckAnswer");
+  if (btnCheck) btnCheck.classList.remove("hidden");
   
   const box = document.getElementById("quizAnswersBox");
   const tipe = (q.tipe || '').toLowerCase();
@@ -981,16 +1033,16 @@ function renderCurrentQuestion() {
     let imgA = formatDriveImgUrl(q.gambarA);
     let imgB = formatDriveImgUrl(q.gambarB);
     box.innerHTML = `
-      <div class="grid grid-cols-2 gap-3">
+      <div class="grid grid-cols-2 gap-3 select-none">
         <div onclick="selectQuizAnswer('A')" id="opt-A" class="quiz-opt border-2 border-gray-200 p-2 rounded-2xl cursor-pointer text-center space-y-1">
           <div class="h-32 bg-gray-100 rounded-xl overflow-hidden flex items-center justify-center">
-            ${imgA ? `<img src="${imgA}" class="max-h-full max-w-full object-contain">` : '<span class="text-xs text-gray-400">Gambar A</span>'}
+            ${imgA ? `<img src="${imgA}" class="max-h-full max-w-full object-contain pointer-events-none">` : '<span class="text-xs text-gray-400">Gambar A</span>'}
           </div>
           <span class="text-xs font-bold text-gray-800">Pilihan A</span>
         </div>
         <div onclick="selectQuizAnswer('B')" id="opt-B" class="quiz-opt border-2 border-gray-200 p-2 rounded-2xl cursor-pointer text-center space-y-1">
           <div class="h-32 bg-gray-100 rounded-xl overflow-hidden flex items-center justify-center">
-            ${imgB ? `<img src="${imgB}" class="max-h-full max-w-full object-contain">` : '<span class="text-xs text-gray-400">Gambar B</span>'}
+            ${imgB ? `<img src="${imgB}" class="max-h-full max-w-full object-contain pointer-events-none">` : '<span class="text-xs text-gray-400">Gambar B</span>'}
           </div>
           <span class="text-xs font-bold text-gray-800">Pilihan B</span>
         </div>
@@ -998,24 +1050,31 @@ function renderCurrentQuestion() {
     `;
   } else if (tipe.includes("pernyataan")) {
     box.innerHTML = `
-      <div class="grid grid-cols-2 gap-3">
-        ${renderOptionBtn('Benar', 'Benar')}
-        ${renderOptionBtn('Salah', 'Salah')}
+      <div class="grid grid-cols-2 gap-3 select-none">
+        <div onclick="selectQuizAnswer('Benar')" id="opt-Benar" class="quiz-opt border-2 border-gray-200 p-4 rounded-2xl flex items-center justify-center gap-2 cursor-pointer transition">
+          <span class="text-sm font-extrabold text-gray-800">Benar</span>
+        </div>
+        <div onclick="selectQuizAnswer('Salah')" id="opt-Salah" class="quiz-opt border-2 border-gray-200 p-4 rounded-2xl flex items-center justify-center gap-2 cursor-pointer transition">
+          <span class="text-sm font-extrabold text-gray-800">Salah</span>
+        </div>
       </div>
     `;
   } else {
-    box.innerHTML = `
-      ${renderOptionBtn('A', q.opsiA)}
-      ${renderOptionBtn('B', q.opsiB)}
-      ${renderOptionBtn('C', q.opsiC)}
-      ${renderOptionBtn('D', q.opsiD)}
-    `;
+    const opts = [
+      { key: 'A', val: q.opsiA },
+      { key: 'B', val: q.opsiB },
+      { key: 'C', val: q.opsiC },
+      { key: 'D', val: q.opsiD }
+    ].filter(o => o.val !== undefined && String(o.val).trim() !== '');
+
+    const shuffledOpts = shuffleArray(opts);
+    box.innerHTML = shuffledOpts.map(o => renderOptionBtn(o.key, o.val)).join('');
   }
 }
 
 function renderOptionBtn(key, val) {
   if (!val) return '';
-  return `<div onclick="selectQuizAnswer('${key}')" id="opt-${key}" class="quiz-opt border-2 border-gray-200 p-3 rounded-2xl flex items-center gap-3 cursor-pointer"><span class="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center font-bold text-xs">${key}</span><span class="text-xs text-gray-800 font-semibold">${val}</span></div>`;
+  return `<div onclick="selectQuizAnswer('${key}')" id="opt-${key}" class="quiz-opt border-2 border-gray-200 p-3 rounded-2xl flex items-center gap-3 cursor-pointer select-none transition"><span class="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center font-bold text-xs flex-shrink-0">${key}</span><span class="text-xs text-gray-800 font-semibold">${val}</span></div>`;
 }
 
 function selectQuizAnswer(val) {
@@ -1043,24 +1102,77 @@ function checkAnswer() {
   const q = currentQuestionList[quizIndex];
   const isCorrect = String(userSelectedAnswer).trim().toLowerCase() === String(q.kunci).trim().toLowerCase();
   
+  const btnCheck = document.getElementById("btnCheckAnswer");
+  if (btnCheck) btnCheck.classList.add("hidden");
+
   const feedbackPanel = document.getElementById("quizFeedbackPanel");
   feedbackPanel.classList.remove("hidden");
   
   if (isCorrect) { 
     nosUserStats.xp += 20; 
     feedbackPanel.className = "p-4 rounded-2xl border bg-emerald-50 border-emerald-300 space-y-2"; 
-    document.getElementById("feedbackTitle").innerText = "Hebat! Jawaban Benar"; 
+    document.getElementById("feedbackIcon").innerText = "✅";
+    document.getElementById("feedbackTitle").innerText = "Hebat! Jawaban Benar (+20 XP)"; 
   } else { 
     nosUserStats.nyawa = Math.max(0, nosUserStats.nyawa - 1); 
+    document.getElementById("quizLivesCount").innerText = nosUserStats.nyawa;
     feedbackPanel.className = "p-4 rounded-2xl border bg-red-50 border-red-300 space-y-2"; 
-    document.getElementById("feedbackTitle").innerText = "Kurang Tepat"; 
+    document.getElementById("feedbackIcon").innerText = "❌";
+    document.getElementById("feedbackTitle").innerText = `Kurang Tepat (Jawaban: ${q.kunci})`; 
   }
   document.getElementById("feedbackText").innerText = q.pembahasan || "";
 }
 
-function nextQuestion() { quizIndex++; renderCurrentQuestion(); }
-function exitQuiz() { document.getElementById("nosizuQuizContainer").classList.add("hidden"); document.getElementById("nosizuPage").classList.remove("hidden"); loadNOSIZUDashboard(); }
-function finishQuizSession() { alert(`Sesi Kuis Selesai! XP: ${nosUserStats.xp}`); exitQuiz(); }
+function nextQuestion() { 
+  if (nosUserStats.nyawa <= 0) {
+    alert("Nyawa Anda habis! Silakan ulangi level ini.");
+    saveUserNOSIZUProgress();
+    exitQuiz();
+    return;
+  }
+  quizIndex++; 
+  renderCurrentQuestion(); 
+}
+
+function exitQuiz() { 
+  document.getElementById("nosizuQuizContainer").classList.add("hidden"); 
+  document.getElementById("nosizuPage").classList.remove("hidden"); 
+  loadNOSIZUDashboard(); 
+}
+
+function finishQuizSession() { 
+  document.getElementById("quizProgressBar").style.width = "100%";
+  const isLevelUp = activeQuizUnit === nosUserStats.unit;
+  if (isLevelUp) {
+    nosUserStats.unit += 1;
+  }
+  saveUserNOSIZUProgress();
+  alert(`Selamat! Level ${activeQuizUnit} Selesai!
+Total XP: ${nosUserStats.xp}${isLevelUp ? `
+🔓 Level ${nosUserStats.unit} Terbuka!` : ''}`); 
+  exitQuiz(); 
+}
+
+function saveUserNOSIZUProgress() {
+  const userEmail = (currentUser && currentUser.email) ? currentUser.email : "demo@daya.com";
+  const userNama = (currentUser && currentUser.nama) ? currentUser.nama : "User";
+  const userCabang = (currentUser && currentUser.cabang) ? currentUser.cabang : "Cibiru";
+
+  fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({
+      action: "updateUserNOSIZU",
+      email: userEmail,
+      nama: userNama,
+      cabang: userCabang,
+      xp: nosUserStats.xp,
+      streak: nosUserStats.streak,
+      nyawa: nosUserStats.nyawa,
+      unit: nosUserStats.unit
+    })
+  }).catch(err => console.error("Gagal menyimpan progres NOSIZU:", err));
+}
 
 function loadLeaderboardData() {
   const container = document.getElementById("leaderboardListBox");
@@ -1135,11 +1247,12 @@ function renderTourStep() {
   const btnPrev = document.getElementById("btnTourPrev");
   const btnNext = document.getElementById("btnTourNext");
   if (currentTourStep === 0) btnPrev.classList.add("hidden"); else btnPrev.classList.remove("hidden");
-  if (currentTourStep === tourSteps.length - 1) btnNext.innerText = "Selesai ✨"; else btnNext.innerText = "Lanjut \u203A";
+  if (currentTourStep === tourSteps.length - 1) btnNext.innerText = "Selesai ✨"; else btnNext.innerText = "Lanjut ›";
 }
 
 function nextTourStep() { if (currentTourStep < tourSteps.length - 1) { currentTourStep++; renderTourStep(); } else endAppTour(); }
 function prevTourStep() { if (currentTourStep > 0) { currentTourStep--; renderTourStep(); } }
+
 function endAppTour() {
   document.querySelectorAll('.ring-4').forEach(el => el.classList.remove('ring-4', 'ring-yellow-400', 'scale-105'));
   document.getElementById("tourOverlay").classList.add("hidden");
@@ -1148,16 +1261,80 @@ function endAppTour() {
 }
 
 function switchTab(tabId) {
-  const pages = ['dashboardPage', 'referensiPage', 'reminderPage', 'onboardingPage', 'genbaAuditPage', 'picaDashboardPage', 'nosizuPage', 'leaderboardPage', 'profilPage'];
+  const pages = ['dashboardPage', 'referensiPage', 'reminderPage', 'onboardingPage', 'genbaAuditPage', 'picaDashboardPage', 'nosizuPage', 'nosizuQuizContainer', 'leaderboardPage', 'profilPage'];
   pages.forEach(p => { const el = document.getElementById(p); if (el) el.classList.add('hidden'); });
-  const navHome = document.getElementById('navHome');
-  const navPica = document.getElementById('navPica');
-  const navLeaderboard = document.getElementById('navLeaderboard');
-  const navProfil = document.getElementById('navProfil');
-  [navHome, navPica, navLeaderboard, navProfil].forEach(n => { if (n) n.classList.add('opacity-70'); });
+
+  const navConfigs = {
+    home: {
+      btnId: 'navHome',
+      iconId: 'iconHome',
+      barId: 'barHome',
+      filledHtml: '<path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>',
+      outlineHtml: '<path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>'
+    },
+    pica: {
+      btnId: 'navPica',
+      iconId: 'iconPica',
+      barId: 'barPica',
+      filledHtml: '<path fill-rule="evenodd" clip-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" transform="translate(2, 2)"/>',
+      outlineHtml: '<path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>'
+    },
+    leaderboard: {
+      btnId: 'navLeaderboard',
+      iconId: 'iconLeaderboard',
+      barId: 'barLeaderboard',
+      filledHtml: '<path d="M5 3a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V7H3a1 1 0 010-2h1V4a1 1 0 011-1zm1 13a1 1 0 011 1v1h1a1 1 0 110 2H7v1a1 1 0 11-2 0v-1H4a1 1 0 110-2h1v-1a1 1 0 011-1zm7-13a1 1 0 01.92.606l2.06 4.808 4.808 2.06a1 1 0 010 1.838l-4.808 2.06-2.06 4.808a1 1 0 01-1.838 0l-2.06-4.808-4.808-2.06a1 1 0 010-1.838l4.808-2.06 2.06-4.808A1 1 0 0113 3z"/>',
+      outlineHtml: '<path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>'
+    },
+    profil: {
+      btnId: 'navProfil',
+      iconId: 'iconProfil',
+      barId: 'barProfil',
+      filledHtml: '<path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>',
+      outlineHtml: '<path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>'
+    }
+  };
+
+  Object.keys(navConfigs).forEach(key => {
+    const cfg = navConfigs[key];
+    const btn = document.getElementById(cfg.btnId);
+    const icon = document.getElementById(cfg.iconId);
+    const bar = document.getElementById(cfg.barId);
+
+    if (btn) {
+      btn.classList.add('opacity-70', 'font-normal');
+      btn.classList.remove('font-bold');
+    }
+    if (icon) {
+      icon.setAttribute('fill', 'none');
+      icon.setAttribute('stroke', 'currentColor');
+      icon.setAttribute('stroke-width', '2');
+      icon.innerHTML = cfg.outlineHtml;
+    }
+    if (bar) bar.classList.add('hidden');
+  });
+
+  if (navConfigs[tabId]) {
+    const activeCfg = navConfigs[tabId];
+    const activeBtn = document.getElementById(activeCfg.btnId);
+    const activeIcon = document.getElementById(activeCfg.iconId);
+    const activeBar = document.getElementById(activeCfg.barId);
+
+    if (activeBtn) {
+      activeBtn.classList.remove('opacity-70', 'font-normal');
+      activeBtn.classList.add('font-bold');
+    }
+    if (activeIcon) {
+      activeIcon.setAttribute('fill', 'currentColor');
+      activeIcon.removeAttribute('stroke');
+      activeIcon.removeAttribute('stroke-width');
+      activeIcon.innerHTML = activeCfg.filledHtml;
+    }
+    if (activeBar) activeBar.classList.remove('hidden');
+  }
   
   if (tabId === 'home') {
-    document.getElementById('dashboardPage').classList.remove('hidden'); navHome.classList.remove('opacity-70');
+    document.getElementById('dashboardPage').classList.remove('hidden');
     if (currentUser && currentUser.cabang) loadHomeLastGenbaResult(currentUser.cabang);
   } else if (tabId === 'referensi') {
     document.getElementById('referensiPage').classList.remove('hidden'); loadReferensiData();
@@ -1168,13 +1345,13 @@ function switchTab(tabId) {
   } else if (tabId === 'genbaAudit') {
     document.getElementById('genbaAuditPage').classList.remove('hidden'); initDirectGenbaSession();
   } else if (tabId === 'pica') {
-    document.getElementById('picaDashboardPage').classList.remove('hidden'); navPica.classList.remove('opacity-70'); loadPicaDashboardData();
+    document.getElementById('picaDashboardPage').classList.remove('hidden'); loadPicaDashboardData();
   } else if (tabId === 'nosizu') {
     document.getElementById('nosizuPage').classList.remove('hidden'); loadNOSIZUDashboard();
   } else if (tabId === 'leaderboard') {
-    document.getElementById('leaderboardPage').classList.remove('hidden'); navLeaderboard.classList.remove('opacity-70'); loadLeaderboardData();
+    document.getElementById('leaderboardPage').classList.remove('hidden'); loadLeaderboardData();
   } else if (tabId === 'profil') {
-    document.getElementById('profilPage').classList.remove('hidden'); navProfil.classList.remove('opacity-70');
+    document.getElementById('profilPage').classList.remove('hidden');
     if (currentUser && currentUser.cabang) loadProfilCabangData(currentUser.cabang);
   }
 }
