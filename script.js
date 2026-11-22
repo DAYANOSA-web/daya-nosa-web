@@ -20,6 +20,8 @@ let quizIndex = 0;
 let userSelectedAnswer = null;
 // GLOBAL LIST VIDEO ONBOARDING
 let allOnboardingVideos = [];
+// GLOBAL CACHE PICA ITEMS
+let cachedPicaItems = [];
 // ENGINE GUIDED TOUR PANDUAN MASKOT
 let currentTourStep = 0;
 const tourSteps = [
@@ -29,7 +31,7 @@ const tourSteps = [
   { badge: "DASHBOARD PICA (4/7)", targetId: "cardPerforma", tab: "home", text: "Pantau performa area Anda dan tindak lanjuti temuan PICA di sini." },
   { badge: "NOSIZU GAME (5/7)", targetId: "cardNosizu", tab: "home", text: "Sambil senggang, asah pengetahuan standar NOS Anda melalui game kuis interaktif NOSIZU!" },
   { badge: "ONBOARDING FLP (6/7)", targetId: "cardOnboarding", tab: "home", text: "Menu ini menyediakan video-video materi orientasi & pelatihan khusus FLP baru." },
-  { badge: "PROFIL CABANG (7/7)", targetId: "cardProfil", tab: "home", text: "Terakhir, cek Skor NOS Cabang Anda, daftar temuan berulang, serta peringkat Top 3 FLP NOSIZU di menu Profil Cabang." }
+  { badge: "PROFIL CABANG (7/7)", targetId: "cardProfil", tab: "home", text: "Terakhir, cek Skor NOS Cabang Anda, daftar temuan berulang, serta peringkat Top 3 FLP NOSIZU di menu Profil." }
 ];
 // ENGINE REMINDER
 let reminderState = { rule1: true, rule2: true, rule3: true, rule4: true };
@@ -80,11 +82,13 @@ function selectRole(role) {
   }
   
   const cabangGroup = document.getElementById("cabangInputGroup");
+  const cabangInput = document.getElementById("authCabang");
   if (cabangGroup && authMode === "register") {
-    if (role === "PIC NOS") {
-      cabangGroup.classList.add("hidden");
-    } else {
-      cabangGroup.classList.remove("hidden");
+    cabangGroup.classList.remove("hidden");
+    if (cabangInput) {
+      cabangInput.placeholder = role === "PIC NOS"
+        ? "Cabang Binaan (pisahkan koma, misal: Cibiru, Cimahi)"
+        : "Nama Cabang (misal: Cibiru)";
     }
   }
 }
@@ -93,13 +97,21 @@ function setAuthMode(mode) {
   authMode = mode;
   const nameGroup = document.getElementById("nameInputGroup");
   const cabangGroup = document.getElementById("cabangInputGroup");
+  const cabangInput = document.getElementById("authCabang");
   const btnSubmit = document.getElementById("btnSubmitAuth");
   const tabLogin = document.getElementById("tabModeLogin");
   const tabReg = document.getElementById("tabModeRegister");
   
   if (mode === "register") {
     if (nameGroup) nameGroup.classList.remove("hidden");
-    if (cabangGroup && selectedRole !== "PIC NOS") cabangGroup.classList.remove("hidden");
+    if (cabangGroup) {
+      cabangGroup.classList.remove("hidden");
+      if (cabangInput) {
+        cabangInput.placeholder = selectedRole === "PIC NOS"
+          ? "Cabang Binaan (pisahkan koma, misal: Cibiru, Cimahi)"
+          : "Nama Cabang (misal: Cibiru)";
+      }
+    }
     if (btnSubmit) btnSubmit.innerText = "daftar akun";
     if (tabReg) tabReg.className = "flex-1 py-1.5 rounded-xl bg-white text-gray-900 shadow-xs transition font-bold cursor-pointer";
     if (tabLogin) tabLogin.className = "flex-1 py-1.5 rounded-xl hover:text-gray-900 transition cursor-pointer";
@@ -136,7 +148,7 @@ function handleAuthSubmit(e) {
     btn.innerText = "Proses...";
   }
   
-  const userCabang = selectedRole === "PIC NOS" ? "Head Office" : (cabangInput || "Cibiru");
+  const userCabang = selectedRole === "PIC NOS" ? (cabangInput || "Head Office") : (cabangInput || "Cibiru");
   
   const payload = {
     action: authMode === "register" ? "registerUser" : "loginUser",
@@ -204,12 +216,21 @@ function renderDashboard(user) {
   
   const safeNama = user.nama || user.email || "Pengguna";
   const safeCabang = user.cabang || "Cibiru";
+  const isPicNos = (user.role || "").toUpperCase() === "PIC NOS";
   
   const dashUserNamaEl = document.getElementById("dashUserNama");
   if (dashUserNamaEl) dashUserNamaEl.innerText = safeNama;
   
+  // Sesuaikan label kartu profil di Home & Navbar berdasarkan Role
+  const cardProfilTitle = document.getElementById("cardProfilTitle");
+  const cardProfilDesc = document.getElementById("cardProfilDesc");
+  if (cardProfilTitle) cardProfilTitle.innerText = isPicNos ? "profil PIC NOS" : "profil cabang";
+  if (cardProfilDesc) cardProfilDesc.innerText = isPicNos ? "daftar cabang binaan & PICA" : "data dan informasi cabang";
+  
   const profNamaCabangEl = document.getElementById("profNamaCabang");
-  if (profNamaCabangEl) profNamaCabangEl.innerText = "Cabang " + safeCabang;
+  if (profNamaCabangEl) {
+    profNamaCabangEl.innerText = isPicNos ? `PIC NOS: ${safeNama}` : `Cabang ${safeCabang}`;
+  }
   
   switchTab("home");
   
@@ -223,10 +244,14 @@ function renderDashboard(user) {
 }
 
 function loadHomeLastGenbaResult(cabangName) {
+  const isPicNos = currentUser && (currentUser.role || "").toUpperCase() === "PIC NOS";
   const cabangTitleEl = document.getElementById("homeGenbaCabang");
-  if (cabangTitleEl) cabangTitleEl.innerText = `Cabang ${cabangName}`;
+  if (cabangTitleEl) {
+    cabangTitleEl.innerText = isPicNos ? `Area Binaan (${cabangName})` : `Cabang ${cabangName}`;
+  }
   
-  fetch(`${API_URL}?action=getLastGenbaResult&cabang=${encodeURIComponent(cabangName)}`)
+  const targetCabang = cabangName.includes(",") ? cabangName.split(",")[0].trim() : cabangName;
+  fetch(`${API_URL}?action=getLastGenbaResult&cabang=${encodeURIComponent(targetCabang)}`)
   .then(res => res.json())
   .then(res => {
     const categories = [
@@ -581,18 +606,23 @@ function submitGenbaForm() {
 
 function evaluateRealtimeReminders(isManualClick = false) {
   const userCabang = currentUser ? (currentUser.cabang || "Cibiru") : "Cibiru";
+  const userRole = currentUser ? (currentUser.role || "Kepala Cabang") : "Kepala Cabang";
+  const userEmail = currentUser ? (currentUser.email || "") : "";
   const today = new Date();
   today.setHours(0,0,0,0);
   const previewEl = document.getElementById("reminderPreviewText");
   if (previewEl) previewEl.innerText = "Mengambil data PICA & GENBA real-time...";
   
-  fetch(`${API_URL}?action=getProfilCabang&cabang=${encodeURIComponent(userCabang)}`)
+  fetch(`${API_URL}?action=getProfilCabang&cabang=${encodeURIComponent(userCabang)}&role=${encodeURIComponent(userRole)}&email=${encodeURIComponent(userEmail)}`)
   .then(res => res.json())
   .then(res => {
     let triggeredMessage = null;
     let targetTab = "pica";
     if (res.status === "success") {
-      if (res.picaBelumSelesai && res.picaBelumSelesai.length > 0) {
+      if (res.isPicNos && res.picaHarusDiCheck && res.picaHarusDiCheck.length > 0) {
+        triggeredMessage = `📋 Verifikasi PICA: Terdapat ${res.picaHarusDiCheck.length} temuan PICA berstatus "On Check" dari cabang binaan yang menunggu approval Anda.`;
+        targetTab = "pica";
+      } else if (res.picaBelumSelesai && res.picaBelumSelesai.length > 0) {
         for (let pica of res.picaBelumSelesai) {
           const due = new Date(pica.dueDate);
           due.setHours(0,0,0,0);
@@ -613,7 +643,7 @@ function evaluateRealtimeReminders(isManualClick = false) {
         genbaDate.setHours(0,0,0,0);
         const diffGenba = Math.ceil((genbaDate - today) / (1000 * 60 * 60 * 24));
         if (diffGenba >= 0 && diffGenba <= 3) {
-          triggeredMessage = `📅 Pengingat GENBA: Audit Onsite berikutnya di Cabang ${userCabang} diselenggarakan tanggal ${formatDateNice(res.info.jadwalGenba)}.`;
+          triggeredMessage = `📅 Pengingat GENBA: Audit Onsite berikutnya diselenggarakan tanggal ${formatDateNice(res.info.jadwalGenba)}.`;
           targetTab = "profil";
         }
       }
@@ -622,7 +652,7 @@ function evaluateRealtimeReminders(isManualClick = false) {
       if (previewEl) previewEl.innerText = triggeredMessage;
       showInAppReminderToast(triggeredMessage, targetTab);
     } else {
-      const emptyMsg = `Tidak ada pengingat mendesak untuk Cabang ${userCabang} pada tanggal hari ini.`;
+      const emptyMsg = `Tidak ada pengingat mendesak pada tanggal hari ini.`;
       if (previewEl) previewEl.innerText = emptyMsg;
       if (isManualClick) alert(emptyMsg);
     }
@@ -637,7 +667,8 @@ function showInAppReminderToast(msg, targetTab = "pica") {
   const cabangBadge = document.getElementById("toastCabangBadge");
   const msgContent = document.getElementById("toastMessageContent");
   const cabang = currentUser ? (currentUser.cabang || "Cibiru") : "Cibiru";
-  if (cabangBadge) cabangBadge.innerText = `Cabang ${cabang}`;
+  const isPic = currentUser && (currentUser.role || "").toUpperCase() === "PIC NOS";
+  if (cabangBadge) cabangBadge.innerText = isPic ? `PIC NOS` : `Cabang ${cabang}`;
   if (msgContent) msgContent.innerText = msg;
   activeToastTargetTab = targetTab;
   if (toast) toast.classList.remove("hidden");
@@ -681,10 +712,10 @@ function loadReferensiData() {
       const tipeMedia = (row[7] || 'SINGLE_IMAGE').toString().trim().toUpperCase();
       const folder360Url = (row[8] || '').toString().trim();
       
-      const safeJudul = judul.replace(/'/g, "\'");
-      const safeDesc = deskripsi.replace(/'/g, "\'");
-      const safeImg = imgUrl.replace(/'/g, "\'");
-      const safeFolder = folder360Url.replace(/'/g, "\'");
+      const safeJudul = judul.replace(/'/g, "\\'");
+      const safeDesc = deskripsi.replace(/'/g, "\\'");
+      const safeImg = imgUrl.replace(/'/g, "\\'");
+      const safeFolder = folder360Url.replace(/'/g, "\\'");
       
       html += `
         <div class="bg-nosa-cardBg p-4 sm:p-5 rounded-3xl border border-gray-200/70 shadow-xs flex flex-col justify-between space-y-3">
@@ -855,27 +886,63 @@ function formatEmbedVideoUrl(url) {
   return str;
 }
 
+// ==================== ENGINE PICA (APPROVE & REJECT PIC NOS + REVISI CABANG) ====================
 function loadPicaDashboardData() {
   const container = document.getElementById("picaCardsContainer");
   if (!container) return;
+  container.innerHTML = '<p class="text-xs text-gray-400 italic text-center py-8">Memuat data PICA...</p>';
+  
   const userCabang = (currentUser && currentUser.cabang) ? currentUser.cabang : "Cibiru";
-  fetch(`${API_URL}?action=getPicaList&cabang=${encodeURIComponent(userCabang)}`)
+  const userRole = (currentUser && currentUser.role) ? currentUser.role : "Kepala Cabang";
+  const userEmail = (currentUser && currentUser.email) ? currentUser.email : "";
+  const isPicNos = userRole.toUpperCase() === "PIC NOS";
+  
+  const subtitleEl = document.getElementById("picaSubtitleText");
+  if (subtitleEl) {
+    subtitleEl.innerText = isPicNos
+      ? "Daftar temuan PICA berstatus On Check dari cabang binaan yang perlu diverifikasi"
+      : "Daftar temuan audit yang memerlukan tindakan perbaikan";
+  }
+  
+  fetch(`${API_URL}?action=getPicaList&cabang=${encodeURIComponent(userCabang)}&role=${encodeURIComponent(userRole)}&email=${encodeURIComponent(userEmail)}`)
   .then(res => res.json())
   .then(data => {
-    if (!Array.isArray(data) || data.length === 0) {
-      container.innerHTML = `<div class="bg-nosa-cardBg p-6 rounded-2xl text-center space-y-2 border border-gray-200"><p class="text-2xl">🎉</p><h4 class="font-bold text-nosa-green text-sm">Tidak Ada PICA Aktif!</h4></div>`;
+    cachedPicaItems = Array.isArray(data) ? data : [];
+    if (cachedPicaItems.length === 0) {
+      container.innerHTML = `<div class="bg-nosa-cardBg p-6 rounded-2xl text-center space-y-2 border border-gray-200"><p class="text-2xl">🎉</p><h4 class="font-bold text-nosa-green text-sm">${isPicNos ? 'Tidak Ada PICA On Check untuk Diverifikasi!' : 'Tidak Ada PICA Aktif!'}</h4></div>`;
       return;
     }
     let html = '';
-    data.forEach(item => {
-      const isClosed = item.status === 'Closed' || item.status === 'Verified';
-      const isOnCheck = item.status === 'On Check';
-      let statusBadge = isClosed ? 'bg-emerald-200 text-emerald-800' : (isOnCheck ? 'bg-amber-200 text-amber-800' : 'bg-red-200 text-red-800');
+    cachedPicaItems.forEach((item, idx) => {
+      const stLower = String(item.status || "").toLowerCase();
+      const isClosed = stLower === 'closed' || stLower === 'verified' || stLower === 'done';
+      const isOnCheck = stLower === 'on check';
+      const isReject = stLower === 'reject';
+      
+      let statusBadge = 'bg-red-200 text-red-800';
+      if (isClosed) statusBadge = 'bg-emerald-200 text-emerald-800';
+      else if (isOnCheck) statusBadge = 'bg-amber-200 text-amber-800';
+      else if (isReject) statusBadge = 'bg-rose-600 text-white';
+      
       html += `
-        <div onclick="openPicaModal('${item.idPica}', '${item.item.replace(/'/g, "\'")}', '${item.status}', '${(item.catatanPerbaikan || '').replace(/'/g, "\'")}')" class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/80 shadow-xs space-y-2 cursor-pointer">
-          <div class="flex justify-between items-start"><span class="text-[10px] font-extrabold text-gray-400">${item.idPica}</span><span class="${statusBadge} font-extrabold text-[9px] px-2.5 py-0.5 rounded-full">${item.status}</span></div>
+        <div onclick="openPicaModalByIndex(${idx})" class="bg-nosa-cardBg p-4 rounded-2xl border ${isReject ? 'border-rose-400' : 'border-gray-200/80'} shadow-xs space-y-2 cursor-pointer hover:border-nosa-green transition">
+          <div class="flex justify-between items-start">
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-extrabold text-gray-400">${item.idPica}</span>
+              ${isPicNos ? `<span class="text-[10px] font-black bg-nosa-green text-white px-2 py-0.5 rounded-md">🏢 ${item.cabang}</span>` : ''}
+            </div>
+            <span class="${statusBadge} font-extrabold text-[9px] px-2.5 py-0.5 rounded-full">${item.status}</span>
+          </div>
           <h4 class="text-xs font-black text-gray-900">${item.item}</h4>
-          <div class="pt-2 flex justify-between items-center text-[10px] border-t border-gray-300/40 text-gray-500"><span>👤 Auditor: ${item.auditor}</span><span>📅 Due: ${formatDateNice(item.dueDate)}</span></div>
+          ${isReject && item.catatanReject ? `
+            <div class="bg-rose-50 border border-rose-200 rounded-xl px-2.5 py-1.5 text-[10px] text-rose-800 font-semibold">
+              ❌ Ditolak PIC NOS: ${item.catatanReject}
+            </div>
+          ` : ''}
+          <div class="pt-2 flex justify-between items-center text-[10px] border-t border-gray-300/40 text-gray-500">
+            <span>👤 Auditor: ${item.auditor}</span>
+            <span>📅 Due: ${formatDateNice(item.dueDate)}</span>
+          </div>
         </div>
       `;
     });
@@ -883,37 +950,183 @@ function loadPicaDashboardData() {
   });
 }
 
-function openPicaModal(idPica, itemTitle, status, catatanPerbaikan) {
-  activePicaId = idPica;
-  document.getElementById("modalPicaTitle").innerText = `Detail PICA (${idPica})`;
-  document.getElementById("modalPicaItem").innerText = itemTitle;
-  if (status === "Open") {
-    document.getElementById("modalCabangForm").classList.remove("hidden"); 
-    document.getElementById("modalNosForm").classList.add("hidden");
-  } else if (status === "On Check") {
-    document.getElementById("modalCabangForm").classList.add("hidden"); 
-    document.getElementById("modalNosForm").classList.remove("hidden");
-    document.getElementById("modalCatatanPerbaikanView").innerText = catatanPerbaikan || "Cabang telah mengunggah bukti perbaikan.";
-  } else { alert("PICA ini sudah Closed."); return; }
+function openPicaModalByIndex(idx) {
+  const item = cachedPicaItems[idx];
+  if (!item) return;
+  openPicaModal(item);
+}
+
+function openPicaModal(item) {
+  activePicaId = item.idPica;
+  const userRole = (currentUser && currentUser.role) ? currentUser.role.toUpperCase() : "KEPALA CABANG";
+  const isPicNos = userRole === "PIC NOS";
+  const stLower = String(item.status || "").toLowerCase();
+  
+  document.getElementById("modalPicaTitle").innerText = `Detail PICA (${item.idPica}) - ${item.cabang || ''}`;
+  document.getElementById("modalPicaItem").innerText = item.item;
+  
+  const catatanEl = document.getElementById("modalPicaCatatan");
+  if (catatanEl) {
+    catatanEl.innerText = item.catatanPerbaikan || "Temuan dari Audit GENBA";
+  }
+  
+  // Tampilkan foto evidence jika ada
+  const evidBox = document.getElementById("modalEvidencePreviewBox");
+  const evidImg = document.getElementById("modalEvidenceImg");
+  if (evidBox && evidImg) {
+    if (item.fotoEvidence && String(item.fotoEvidence).trim() !== "") {
+      evidImg.src = formatDriveImgUrl(item.fotoEvidence);
+      evidBox.classList.remove("hidden");
+    } else {
+      evidBox.classList.add("hidden");
+      evidImg.src = "";
+    }
+  }
+  
+  // Tampilkan alasan reject jika status sebelumnya Reject
+  const rejectAlertBox = document.getElementById("modalRejectAlertBox");
+  const rejectAlertText = document.getElementById("modalRejectAlertText");
+  if (rejectAlertBox && rejectAlertText) {
+    if (stLower === "reject" && item.catatanReject) {
+      rejectAlertText.innerText = item.catatanReject;
+      rejectAlertBox.classList.remove("hidden");
+    } else {
+      rejectAlertBox.classList.add("hidden");
+    }
+  }
+  
+  const cabangForm = document.getElementById("modalCabangForm");
+  const nosForm = document.getElementById("modalNosForm");
+  const waitInfo = document.getElementById("modalCabangWaitingInfo");
+  
+  cabangForm.classList.add("hidden");
+  nosForm.classList.add("hidden");
+  if (waitInfo) waitInfo.classList.add("hidden");
+  
+  if (isPicNos) {
+    if (stLower === "on check") {
+      nosForm.classList.remove("hidden");
+      document.getElementById("modalCatatanPerbaikanView").innerText = item.catatanPerbaikan || "Cabang telah mengajukan perbaikan.";
+      const rejectInput = document.getElementById("modalCatatanRejectInput");
+      if (rejectInput) rejectInput.value = "";
+    } else {
+      alert(`Status PICA ini adalah "${item.status}". Hanya status "On Check" yang dapat diverifikasi.`);
+      return;
+    }
+  } else {
+    // Role Cabang (Kepala Cabang / FLP)
+    if (stLower === "open" || stLower === "reject") {
+      cabangForm.classList.remove("hidden");
+      const inpCatatan = document.getElementById("modalCatatanPerbaikan");
+      if (inpCatatan) inpCatatan.value = "";
+      const inpFile = document.getElementById("modalFileBukti");
+      if (inpFile) inpFile.value = "";
+    } else if (stLower === "on check") {
+      if (waitInfo) waitInfo.classList.remove("hidden");
+    } else {
+      alert("PICA ini sudah selesai (Closed).");
+      return;
+    }
+  }
+  
   document.getElementById("picaActionModal").classList.remove("hidden");
 }
 
-function closePicaModal() { document.getElementById("picaActionModal").classList.add("hidden"); }
+function closePicaModal() { 
+  document.getElementById("picaActionModal").classList.add("hidden"); 
+}
 
 function submitPicaPerbaikan(newStatus) {
   if (!activePicaId) return;
-  fetch(API_URL, {
-    method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action: "updatePicaStatus", idPica: activePicaId, newStatus: newStatus, catatanPerbaikan: document.getElementById("modalCatatanPerbaikan").value.trim() })
-  }).then(() => { closePicaModal(); loadPicaDashboardData(); });
+  const catatanVal = document.getElementById("modalCatatanPerbaikan").value.trim();
+  const fileInput = document.getElementById("modalFileBukti");
+  const btn = document.getElementById("btnSubmitPerbaikan");
+  
+  if (!catatanVal) {
+    alert("Harap isi catatan tindakan perbaikan sebelum mengirim!");
+    return;
+  }
+  
+  if (btn) { btn.disabled = true; btn.innerText = "Mengirim..."; }
+  
+  const sendRequest = (fotoBase64) => {
+    fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "updatePicaStatus",
+        idPica: activePicaId,
+        newStatus: newStatus,
+        catatanPerbaikan: catatanVal,
+        fotoEvidence: fotoBase64 || ""
+      })
+    })
+    .then(res => res.json())
+    .then(() => {
+      if (btn) { btn.disabled = false; btn.innerText = "🚀 Kirim ke PIC NOS (Ubah Status ke On Check)"; }
+      closePicaModal();
+      loadPicaDashboardData();
+      if (currentUser && currentUser.cabang) loadProfilCabangData(currentUser.cabang);
+    })
+    .catch(() => {
+      if (btn) { btn.disabled = false; btn.innerText = "🚀 Kirim ke PIC NOS (Ubah Status ke On Check)"; }
+      alert("Gagal mengirim perbaikan. Periksa koneksi Anda.");
+    });
+  };
+  
+  if (fileInput && fileInput.files && fileInput.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      sendRequest(e.target.result);
+    };
+    reader.readAsDataURL(fileInput.files[0]);
+  } else {
+    sendRequest("");
+  }
 }
 
 function submitPicaVerifikasi(newStatus) {
   if (!activePicaId) return;
+  const rejectInput = document.getElementById("modalCatatanRejectInput");
+  const catatanReject = rejectInput ? rejectInput.value.trim() : "";
+  
+  if (newStatus === "Reject" && !catatanReject) {
+    alert("Harap isi alasan penolakan (Reject) agar cabang mengetahui bagian mana yang harus diperbaiki ulang!");
+    if (rejectInput) rejectInput.focus();
+    return;
+  }
+  
+  const btnApprove = document.getElementById("btnApprovePica");
+  const btnReject = document.getElementById("btnRejectPica");
+  if (btnApprove) btnApprove.disabled = true;
+  if (btnReject) btnReject.disabled = true;
+  
   fetch(API_URL, {
-    method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action: "updatePicaStatus", idPica: activePicaId, newStatus: newStatus })
-  }).then(() => { closePicaModal(); loadPicaDashboardData(); });
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({
+      action: "updatePicaStatus",
+      idPica: activePicaId,
+      newStatus: newStatus,
+      catatanReject: catatanReject
+    })
+  })
+  .then(res => res.json())
+  .then(() => {
+    if (btnApprove) btnApprove.disabled = false;
+    if (btnReject) btnReject.disabled = false;
+    alert(newStatus === "Closed"
+      ? "✅ PICA berhasil di-Approve dan dinyatakan selesai!"
+      : "❌ PICA di-Reject. Status di cabang berubah menjadi Reject untuk perbaikan ulang.");
+    closePicaModal();
+    loadPicaDashboardData();
+    if (currentUser && currentUser.cabang) loadProfilCabangData(currentUser.cabang);
+  })
+  .catch(() => {
+    if (btnApprove) btnApprove.disabled = false;
+    if (btnReject) btnReject.disabled = false;
+    alert("Gagal memproses verifikasi PICA.");
+  });
 }
 
 // ==================== ENGINE NOSIZU (5 SOAL PER LEVEL & LEVEL TERBUKA BERURUTAN) ====================
@@ -979,7 +1192,6 @@ function startQuizSession(unitId) {
     nosUserStats.nyawa = 5;
   }
   activeQuizUnit = Number(unitId);
-
   fetch(`${API_URL}?action=getSoalNOSIZU`).then(res => res.json()).then(data => {
     const allQuestions = data.slice(1).map(r => ({
       id: r[0],
@@ -995,13 +1207,11 @@ function startQuizSession(unitId) {
       kunci: String(r[10]).trim(),
       pembahasan: r[11]
     }));
-
     const unitQuestions = allQuestions.filter(q => q.unit === activeQuizUnit && q.pertanyaan && String(q.pertanyaan).trim() !== "");
     if (unitQuestions.length === 0) {
       alert(`Soal untuk Level ${activeQuizUnit} belum diisi pada sheet SoalNOSIZU.`);
       return;
     }
-
     currentQuestionList = shuffleArray(unitQuestions).slice(0, 5);
     quizIndex = 0;
     document.getElementById("nosizuPage").classList.add("hidden");
@@ -1017,12 +1227,10 @@ function renderCurrentQuestion() {
   const q = currentQuestionList[quizIndex];
   const tipeBadge = document.getElementById("quizTypeBadge");
   if (tipeBadge) tipeBadge.innerText = `${quizIndex + 1}/${currentQuestionList.length}. ${(q.tipe || 'PILIH JAWABAN TEPAT').toUpperCase()}`;
-
   document.getElementById("quizProgressBar").style.width = `${((quizIndex) / currentQuestionList.length) * 100}%`;
   document.getElementById("quizLivesCount").innerText = nosUserStats.nyawa;
   document.getElementById("quizQuestionText").innerText = q.pertanyaan;
   document.getElementById("quizFeedbackPanel").classList.add("hidden");
-
   const btnCheck = document.getElementById("btnCheckAnswer");
   if (btnCheck) btnCheck.classList.remove("hidden");
   
@@ -1066,7 +1274,6 @@ function renderCurrentQuestion() {
       { key: 'C', val: q.opsiC },
       { key: 'D', val: q.opsiD }
     ].filter(o => o.val !== undefined && String(o.val).trim() !== '');
-
     const shuffledOpts = shuffleArray(opts);
     box.innerHTML = shuffledOpts.map(o => renderOptionBtn(o.key, o.val)).join('');
   }
@@ -1104,7 +1311,6 @@ function checkAnswer() {
   
   const btnCheck = document.getElementById("btnCheckAnswer");
   if (btnCheck) btnCheck.classList.add("hidden");
-
   const feedbackPanel = document.getElementById("quizFeedbackPanel");
   feedbackPanel.classList.remove("hidden");
   
@@ -1147,9 +1353,7 @@ function finishQuizSession() {
     nosUserStats.unit += 1;
   }
   saveUserNOSIZUProgress();
-  alert(`Selamat! Level ${activeQuizUnit} Selesai!
-Total XP: ${nosUserStats.xp}${isLevelUp ? `
-🔓 Level ${nosUserStats.unit} Terbuka!` : ''}`); 
+  alert(`Selamat! Level ${activeQuizUnit} Selesai!\nTotal XP: ${nosUserStats.xp}${isLevelUp ? `\n🔓 Level ${nosUserStats.unit} Terbuka!` : ''}`); 
   exitQuiz(); 
 }
 
@@ -1157,7 +1361,6 @@ function saveUserNOSIZUProgress() {
   const userEmail = (currentUser && currentUser.email) ? currentUser.email : "demo@daya.com";
   const userNama = (currentUser && currentUser.nama) ? currentUser.nama : "User";
   const userCabang = (currentUser && currentUser.cabang) ? currentUser.cabang : "Cibiru";
-
   fetch(API_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -1186,10 +1389,164 @@ function loadLeaderboardData() {
   });
 }
 
+// ==================== PROFIL CABANG & PROFIL PIC NOS ====================
 function loadProfilCabangData(cabangName) {
-  fetch(`${API_URL}?action=getProfilCabang&cabang=${encodeURIComponent(cabangName)}`).then(res => res.json()).then(res => {
-    if (res.status === "success" && res.info) {
-      if (res.info.jadwalGenba) document.getElementById("profJadwalGenba").innerText = formatDateNice(res.info.jadwalGenba);
+  const userRole = (currentUser && currentUser.role) ? currentUser.role : "Kepala Cabang";
+  const userEmail = (currentUser && currentUser.email) ? currentUser.email : "";
+  const userNama = (currentUser && currentUser.nama) ? currentUser.nama : "";
+  const isPicNos = userRole.toUpperCase() === "PIC NOS";
+  
+  const cabangView = document.getElementById("profilCabangView");
+  const picNosView = document.getElementById("profilPicNosView");
+  const headerTitle = document.getElementById("profNamaCabang");
+  const headerSub = document.getElementById("profSubRole");
+  const breadcrumbText = document.getElementById("profBreadcrumbRole");
+  
+  if (isPicNos) {
+    if (cabangView) cabangView.classList.add("hidden");
+    if (picNosView) picNosView.classList.remove("hidden");
+    if (headerTitle) headerTitle.innerText = userNama || "PIC NOS";
+    if (headerSub) headerSub.innerText = "PIC NOS • Monitoring Area Binaan";
+    if (breadcrumbText) breadcrumbText.innerText = "PIC NOS";
+  } else {
+    if (cabangView) cabangView.classList.remove("hidden");
+    if (picNosView) picNosView.classList.add("hidden");
+    if (headerTitle) headerTitle.innerText = `Cabang ${cabangName}`;
+    if (headerSub) headerSub.innerText = `JBR • ${userRole}`;
+    if (breadcrumbText) breadcrumbText.innerText = "Cabang";
+  }
+  
+  fetch(`${API_URL}?action=getProfilCabang&cabang=${encodeURIComponent(cabangName)}&role=${encodeURIComponent(userRole)}&email=${encodeURIComponent(userEmail)}`)
+  .then(res => res.json())
+  .then(res => {
+    if (res.status !== "success") return;
+    
+    // RENDER UNTUK PIC NOS
+    if (res.isPicNos) {
+      const cabangBox = document.getElementById("picCabangBinaanBox");
+      const picaCheckBox = document.getElementById("picPicaCheckBox");
+      
+      if (cabangBox) {
+        if (!res.cabangBinaan || res.cabangBinaan.length === 0) {
+          cabangBox.innerHTML = `<p class="text-gray-400 italic text-xs">Belum ada cabang binaan terdaftar.</p>`;
+        } else {
+          cabangBox.innerHTML = res.cabangBinaan.map(cab => {
+            const gr = getGradingResult(cab.skorNos);
+            return `
+              <div class="bg-white/90 p-3 rounded-xl border border-gray-200 flex items-center justify-between gap-2">
+                <div>
+                  <h4 class="text-xs sm:text-sm font-black text-gray-900">🏢 Cabang ${cab.namaCabang}</h4>
+                  <p class="text-[10px] text-gray-500 mt-0.5">
+                    PICA On Check: <span class="font-bold text-amber-700">${cab.picaOnCheck}</span> • 
+                    PICA Open/Reject: <span class="font-bold text-red-600">${cab.picaOpen}</span>
+                  </p>
+                </div>
+                <div class="text-right">
+                  <span class="${gr.bgClass} text-[10px] px-2.5 py-0.5 rounded-md uppercase">${gr.title}</span>
+                  <p class="text-[10px] font-bold text-gray-500 mt-0.5">${cab.skorNos !== null ? cab.skorNos + '%' : 'Belum Audit'}</p>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+      
+      if (picaCheckBox) {
+        if (!res.picaHarusDiCheck || res.picaHarusDiCheck.length === 0) {
+          picaCheckBox.innerHTML = `<p class="text-gray-400 italic text-xs">🎉 Semua PICA cabang binaan sudah terverifikasi!</p>`;
+        } else {
+          picaCheckBox.innerHTML = res.picaHarusDiCheck.map(p => `
+            <div onclick="switchTab('pica')" class="bg-white/90 p-3 rounded-xl border border-amber-300 flex items-center justify-between gap-2 cursor-pointer hover:bg-amber-50/70 transition">
+              <div class="space-y-0.5">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[10px] font-extrabold text-gray-400">${p.idPica}</span>
+                  <span class="bg-nosa-green text-white text-[9px] font-bold px-2 py-0.5 rounded-md">Cabang ${p.cabang}</span>
+                </div>
+                <p class="text-xs font-bold text-gray-900">${p.item}</p>
+                <p class="text-[10px] text-gray-500">Due: ${formatDateNice(p.dueDate)}</p>
+              </div>
+              <span class="bg-amber-200 text-amber-900 text-[9px] font-extrabold px-2.5 py-1 rounded-full whitespace-nowrap">On Check &rsaquo;</span>
+            </div>
+          `).join('');
+        }
+      }
+      return;
+    }
+    
+    // RENDER UNTUK CABANG (KEPALA CABANG / FLP)
+    // 1. Badge Skor NOS Saat Ini
+    const badgeSkorEl = document.getElementById("profBadgeSkor");
+    if (badgeSkorEl) {
+      const grading = getGradingResult(res.skorNos);
+      const scoreLabel = res.skorNos !== null && res.skorNos !== undefined ? `${res.skorNos}%` : "Belum Ada Nilai";
+      badgeSkorEl.innerHTML = `
+        <span class="${grading.bgClass} text-xs px-3 py-0.5 rounded-md shadow-2xs uppercase">${grading.title}</span>
+        <span class="text-gray-400 font-light text-xs">/</span>
+        <span class="bg-white text-gray-800 border border-gray-300 text-xs font-extrabold px-3 py-0.5 rounded-md">${scoreLabel}</span>
+      `;
+    }
+    
+    // 2. PICA yang Belum Selesai
+    const picaBox = document.getElementById("profPicaBox");
+    if (picaBox) {
+      if (!res.picaBelumSelesai || res.picaBelumSelesai.length === 0) {
+        picaBox.innerHTML = `<p class="text-gray-400 italic">🎉 Tidak ada PICA yang belum selesai.</p>`;
+      } else {
+        picaBox.innerHTML = res.picaBelumSelesai.slice(0, 5).map(p => {
+          const isRej = String(p.status || "").toLowerCase() === "reject";
+          const isChk = String(p.status || "").toLowerCase() === "on check";
+          const bClass = isRej ? "bg-rose-600 text-white" : (isChk ? "bg-amber-200 text-amber-800" : "bg-red-200 text-red-800");
+          return `
+            <div onclick="switchTab('pica')" class="bg-white/80 p-2.5 rounded-xl border border-gray-200 flex justify-between items-center gap-2 cursor-pointer hover:border-nosa-green transition">
+              <div>
+                <p class="font-bold text-gray-900 text-xs">${p.item}</p>
+                <p class="text-[10px] text-gray-500">${p.idPica} • Due: ${formatDateNice(p.dueDate)}</p>
+              </div>
+              <span class="${bClass} text-[9px] font-extrabold px-2.5 py-0.5 rounded-full whitespace-nowrap">${p.status}</span>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+    
+    // 3. Temuan Berulang
+    const berulangBox = document.getElementById("profTemuanBerulangBox");
+    if (berulangBox) {
+      if (!res.temuanBerulang || res.temuanBerulang.length === 0) {
+        berulangBox.innerHTML = `<p class="text-gray-400 italic">Belum ada temuan berulang di cabang ini.</p>`;
+      } else {
+        berulangBox.innerHTML = res.temuanBerulang.slice(0, 5).map(tb => `
+          <div class="bg-white/80 p-2.5 rounded-xl border border-red-200 flex justify-between items-center gap-2">
+            <span class="font-bold text-gray-800 text-xs">${tb.item}</span>
+            <span class="bg-red-100 text-red-700 font-black text-[10px] px-2.5 py-0.5 rounded-full whitespace-nowrap">${tb.jumlah}x Temuan</span>
+          </div>
+        `).join('');
+      }
+    }
+    
+    // 4. 3 Besar FLP NOSIZU
+    const topFlpBox = document.getElementById("profTopFlpBox");
+    if (topFlpBox) {
+      if (!res.topFlp || res.topFlp.length === 0) {
+        topFlpBox.innerHTML = `<p class="text-gray-400 italic">Belum ada data skor FLP NOSIZU di cabang ini.</p>`;
+      } else {
+        const medals = ["🥇", "🥈", "🥉"];
+        topFlpBox.innerHTML = res.topFlp.map((flp, i) => `
+          <div class="bg-white/80 p-2.5 rounded-xl border border-gray-200 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+              <span class="text-base">${medals[i] || "🏅"}</span>
+              <span class="font-bold text-gray-900 text-xs">${flp.nama}</span>
+            </div>
+            <span class="font-black text-blue-600 text-xs">${flp.xp} XP</span>
+          </div>
+        `).join('');
+      }
+    }
+    
+    // 5. Jadwal GENBA Berikutnya
+    if (res.info && res.info.jadwalGenba) {
+      const jadwalEl = document.getElementById("profJadwalGenba");
+      if (jadwalEl) jadwalEl.innerText = formatDateNice(res.info.jadwalGenba);
     }
   });
 }
@@ -1251,6 +1608,7 @@ function renderTourStep() {
 }
 
 function nextTourStep() { if (currentTourStep < tourSteps.length - 1) { currentTourStep++; renderTourStep(); } else endAppTour(); }
+
 function prevTourStep() { if (currentTourStep > 0) { currentTourStep--; renderTourStep(); } }
 
 function endAppTour() {
@@ -1263,7 +1621,6 @@ function endAppTour() {
 function switchTab(tabId) {
   const pages = ['dashboardPage', 'referensiPage', 'reminderPage', 'onboardingPage', 'genbaAuditPage', 'picaDashboardPage', 'nosizuPage', 'nosizuQuizContainer', 'leaderboardPage', 'profilPage'];
   pages.forEach(p => { const el = document.getElementById(p); if (el) el.classList.add('hidden'); });
-
   const navConfigs = {
     home: {
       btnId: 'navHome',
@@ -1294,13 +1651,11 @@ function switchTab(tabId) {
       outlineHtml: '<path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>'
     }
   };
-
   Object.keys(navConfigs).forEach(key => {
     const cfg = navConfigs[key];
     const btn = document.getElementById(cfg.btnId);
     const icon = document.getElementById(cfg.iconId);
     const bar = document.getElementById(cfg.barId);
-
     if (btn) {
       btn.classList.add('opacity-70', 'font-normal');
       btn.classList.remove('font-bold');
@@ -1313,13 +1668,11 @@ function switchTab(tabId) {
     }
     if (bar) bar.classList.add('hidden');
   });
-
   if (navConfigs[tabId]) {
     const activeCfg = navConfigs[tabId];
     const activeBtn = document.getElementById(activeCfg.btnId);
     const activeIcon = document.getElementById(activeCfg.iconId);
     const activeBar = document.getElementById(activeCfg.barId);
-
     if (activeBtn) {
       activeBtn.classList.remove('opacity-70', 'font-normal');
       activeBtn.classList.add('font-bold');
@@ -1352,7 +1705,7 @@ function switchTab(tabId) {
     document.getElementById('leaderboardPage').classList.remove('hidden'); loadLeaderboardData();
   } else if (tabId === 'profil') {
     document.getElementById('profilPage').classList.remove('hidden');
-    if (currentUser && currentUser.cabang) loadProfilCabangData(currentUser.cabang);
+    if (currentUser) loadProfilCabangData(currentUser.cabang || "Cibiru");
   }
 }
 
@@ -1362,3 +1715,4 @@ window.onload = function() {
     try { currentUser = JSON.parse(saved); renderDashboard(currentUser); } catch (e) { localStorage.removeItem("nosa_user"); }
   }
 };
+
