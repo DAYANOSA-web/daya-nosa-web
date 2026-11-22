@@ -67,6 +67,15 @@ function getGradingResult(percentageVal) {
   return { title: 'Bronze', bgClass: 'bg-amber-700 text-white font-black' };
 }
 
+function getLevelBadgeClass(levelStr) {
+  const lvl = String(levelStr || "").trim().toUpperCase();
+  if (lvl === "PLATINUM") return "bg-slate-700 text-white border border-slate-500";
+  if (lvl === "GOLD") return "bg-amber-400 text-amber-950";
+  if (lvl === "SILVER") return "bg-gray-300 text-gray-900";
+  if (lvl === "BRONZE") return "bg-amber-700 text-white";
+  return "bg-gray-200 text-gray-600";
+}
+
 function selectRole(role) {
   selectedRole = role;
   const btnKacab = document.getElementById('btnRoleKacab');
@@ -247,15 +256,28 @@ function renderDashboard(user) {
   setTimeout(() => { startAppTour(false); }, 600);
 }
 
+// ==================== HOME: TAMPILAN CABANG VS TAMPILAN PIC NOS ====================
 function loadHomeLastGenbaResult(cabangName) {
   const isPicNos = isUserPicNos();
-  const cabangTitleEl = document.getElementById("homeGenbaCabang");
-  if (cabangTitleEl) {
-    cabangTitleEl.innerText = isPicNos ? `Area Binaan (${cabangName})` : `Cabang ${cabangName}`;
+  const cabangCardBox = document.getElementById("homeCabangGenbaCard");
+  const picNosCardBox = document.getElementById("homePicNosSummaryCard");
+  
+  if (isPicNos) {
+    if (cabangCardBox) cabangCardBox.classList.add("hidden");
+    if (picNosCardBox) picNosCardBox.classList.remove("hidden");
+    loadHomePicNosSummary();
+    return;
   }
   
-  const targetCabang = cabangName.includes(",") ? cabangName.split(",")[0].trim() : cabangName;
-  fetch(`${API_URL}?action=getLastGenbaResult&cabang=${encodeURIComponent(targetCabang)}`)
+  if (cabangCardBox) cabangCardBox.classList.remove("hidden");
+  if (picNosCardBox) picNosCardBox.classList.add("hidden");
+  
+  const cabangTitleEl = document.getElementById("homeGenbaCabang");
+  if (cabangTitleEl) {
+    cabangTitleEl.innerText = `Cabang ${cabangName}`;
+  }
+  
+  fetch(`${API_URL}?action=getLastGenbaResult&cabang=${encodeURIComponent(cabangName)}`)
   .then(res => res.json())
   .then(res => {
     const categories = [
@@ -307,6 +329,81 @@ function loadHomeLastGenbaResult(cabangName) {
     if (circleBar) circleBar.setAttribute("stroke-dasharray", overallScore !== null ? `${overallScore}, 100` : "0, 100");
     const genbaDateEl = document.getElementById("homeGenbaDate");
     if (genbaDateEl) genbaDateEl.innerText = `Audit Terakhir: ${tglAudit}`;
+  });
+}
+
+function loadHomePicNosSummary() {
+  const userEmail = currentUser ? (currentUser.email || "") : "";
+  const container = document.getElementById("picAreaBinaanGrid");
+  if (container) {
+    container.innerHTML = '<p class="text-xs text-gray-400 italic col-span-full text-center py-6">Memuat informasi cabang area binaan & status PICA...</p>';
+  }
+  
+  fetch(`${API_URL}?action=getPicNosHomeSummary&email=${encodeURIComponent(userEmail)}`)
+  .then(res => res.json())
+  .then(res => {
+    if (res.status !== "success") return;
+    
+    const elTotalCab = document.getElementById("picTotalCabangCount");
+    const elTotalCheck = document.getElementById("picTotalOnCheckCount");
+    const elTotalOpen = document.getElementById("picTotalOpenCount");
+    const elTotalReject = document.getElementById("picTotalRejectCount");
+    
+    if (elTotalCab) elTotalCab.innerText = `${res.totalCabang || 0} Cabang`;
+    if (elTotalCheck) elTotalCheck.innerText = res.totalOnCheck || 0;
+    if (elTotalOpen) elTotalOpen.innerText = res.totalOpen || 0;
+    if (elTotalReject) elTotalReject.innerText = res.totalReject || 0;
+    
+    if (!container) return;
+    const list = res.cabangList || [];
+    if (list.length === 0) {
+      container.innerHTML = '<p class="text-xs text-gray-400 italic col-span-full text-center py-6">Belum ada cabang binaan yang terdaftar pada akun PIC NOS ini.</p>';
+      return;
+    }
+    
+    container.innerHTML = list.map(cab => {
+      const lvlClass = getLevelBadgeClass(cab.levelNos);
+      const skorTxt = (cab.skorPersen !== null && cab.skorPersen !== undefined) ? ` (${cab.skorPersen}%)` : "";
+      const hasAction = cab.picaOnCheck > 0;
+      
+      return `
+        <div onclick="switchTab('pica')" class="bg-white/90 p-4 rounded-2xl border ${hasAction ? 'border-amber-400 shadow-xs' : 'border-gray-200'} hover:border-nosa-green transition cursor-pointer flex flex-col justify-between gap-3">
+          <div class="flex items-start justify-between gap-2 border-b border-gray-200/80 pb-2.5">
+            <div>
+              <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider">CABANG BINAAN</span>
+              <h4 class="text-sm sm:text-base font-black text-gray-900">🏢 ${cab.namaCabang}</h4>
+            </div>
+            <div class="text-right">
+              <span class="block text-[9px] font-bold text-gray-400 uppercase mb-0.5">LEVEL NOS</span>
+              <span class="${lvlClass} text-[10px] font-black px-2.5 py-0.5 rounded-lg uppercase tracking-wider inline-block">
+                ${cab.levelNos}${skorTxt}
+              </span>
+            </div>
+          </div>
+          
+          <div class="space-y-1.5">
+            <span class="block text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">Status PICA Cabang:</span>
+            <div class="flex flex-wrap gap-1.5">
+              <span class="bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-extrabold px-2.5 py-1 rounded-lg">
+                🟡 On Check: ${cab.picaOnCheck}
+              </span>
+              <span class="bg-red-100 text-red-800 border border-red-200 text-[10px] font-bold px-2.5 py-1 rounded-lg">
+                🔴 Open: ${cab.picaOpen}
+              </span>
+              <span class="bg-rose-100 text-rose-800 border border-rose-200 text-[10px] font-bold px-2.5 py-1 rounded-lg">
+                ❌ Reject: ${cab.picaReject}
+              </span>
+              <span class="bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-bold px-2.5 py-1 rounded-lg">
+                ✅ Closed: ${cab.picaClosed}
+              </span>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  })
+  .catch(() => {
+    if (container) container.innerHTML = '<p class="text-xs text-red-500 italic col-span-full text-center py-6">Gagal memuat data area binaan.</p>';
   });
 }
 
@@ -890,7 +987,7 @@ function formatEmbedVideoUrl(url) {
   return str;
 }
 
-// ==================== ENGINE PICA (APPROVE & REJECT PIC NOS + REVISI CABANG) ====================
+// ==================== ENGINE PICA (APPROVE & REJECT PIC NOS + PREVIEW FOTO BUKTI) ====================
 function loadPicaDashboardData() {
   const container = document.getElementById("picaCardsContainer");
   if (!container) return;
@@ -922,6 +1019,7 @@ function loadPicaDashboardData() {
       const isClosed = stLower === 'closed' || stLower === 'verified' || stLower === 'done';
       const isOnCheck = stLower === 'on check';
       const isReject = stLower === 'reject';
+      const hasFoto = item.fotoEvidence && String(item.fotoEvidence).trim() !== "";
       
       let statusBadge = 'bg-red-200 text-red-800';
       if (isClosed) statusBadge = 'bg-emerald-200 text-emerald-800';
@@ -934,6 +1032,7 @@ function loadPicaDashboardData() {
             <div class="flex items-center gap-2">
               <span class="text-[10px] font-extrabold text-gray-400">${item.idPica}</span>
               ${isPicNos ? `<span class="text-[10px] font-black bg-nosa-green text-white px-2 py-0.5 rounded-md">🏢 ${item.cabang}</span>` : ''}
+              ${hasFoto ? `<span class="text-[10px] font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded-md">📷 Ada Foto</span>` : ''}
             </div>
             <span class="${statusBadge} font-extrabold text-[9px] px-2.5 py-0.5 rounded-full">${item.status}</span>
           </div>
@@ -960,6 +1059,21 @@ function openPicaModalByIndex(idx) {
   openPicaModal(item);
 }
 
+function formatEvidenceSrc(rawVal) {
+  if (!rawVal) return "";
+  let str = String(rawVal).trim();
+  if (str.startsWith("data:image")) return str;
+  if (str.includes("drive.google.com") && str.includes("/d/")) {
+    const match = str.match(/\/d\/([^\/\?]+)/);
+    if (match && match[1]) return `https://lh3.googleusercontent.com/d/${match[1]}`;
+  }
+  if (str.includes("drive.google.com") && str.includes("id=")) {
+    const match = str.match(/id=([^&]+)/);
+    if (match && match[1]) return `https://lh3.googleusercontent.com/d/${match[1]}`;
+  }
+  return str;
+}
+
 function openPicaModal(item) {
   activePicaId = item.idPica;
   const isPicNos = isUserPicNos();
@@ -975,9 +1089,26 @@ function openPicaModal(item) {
   
   const evidBox = document.getElementById("modalEvidencePreviewBox");
   const evidImg = document.getElementById("modalEvidenceImg");
+  const evidEmpty = document.getElementById("modalEvidenceEmptyText");
+  const evidLink = document.getElementById("modalEvidenceFullLink");
+  
   if (evidBox && evidImg) {
-    if (item.fotoEvidence && String(item.fotoEvidence).trim() !== "") {
-      evidImg.src = formatDriveImgUrl(item.fotoEvidence);
+    const formattedSrc = formatEvidenceSrc(item.fotoEvidence);
+    if (formattedSrc !== "") {
+      evidImg.src = formattedSrc;
+      evidImg.classList.remove("hidden");
+      if (evidEmpty) evidEmpty.classList.add("hidden");
+      if (evidLink) {
+        evidLink.href = formattedSrc;
+        evidLink.classList.remove("hidden");
+      }
+      evidBox.classList.remove("hidden");
+    } else if (isPicNos || stLower === "on check") {
+      // Tetap tampilkan kotak informasi foto pada mode verifikasi PIC NOS agar jelas jika cabang belum melampirkan foto
+      evidImg.src = "";
+      evidImg.classList.add("hidden");
+      if (evidEmpty) evidEmpty.classList.remove("hidden");
+      if (evidLink) evidLink.classList.add("hidden");
       evidBox.classList.remove("hidden");
     } else {
       evidBox.classList.add("hidden");
@@ -1036,6 +1167,39 @@ function closePicaModal() {
   document.getElementById("picaActionModal").classList.add("hidden"); 
 }
 
+// Helper kompres gambar sebelum upload agar ringan & cepat
+function compressImageToDataUrl(file, callback) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement("canvas");
+      const maxDim = 900;
+      let w = img.width;
+      let h = img.height;
+      if (w > maxDim || h > maxDim) {
+        if (w > h) {
+          h = Math.round((h * maxDim) / w);
+          w = maxDim;
+        } else {
+          w = Math.round((w * maxDim) / h);
+          h = maxDim;
+        }
+      }
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, w, h);
+      callback(canvas.toDataURL("image/jpeg", 0.78));
+    };
+    img.onerror = function() {
+      callback(e.target.result);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
 function submitPicaPerbaikan(newStatus) {
   if (!activePicaId) return;
   const catatanVal = document.getElementById("modalCatatanPerbaikan").value.trim();
@@ -1047,7 +1211,7 @@ function submitPicaPerbaikan(newStatus) {
     return;
   }
   
-  if (btn) { btn.disabled = true; btn.innerText = "Mengirim..."; }
+  if (btn) { btn.disabled = true; btn.innerText = "Mengunggah & Mengirim..."; }
   
   const sendRequest = (fotoBase64) => {
     fetch(API_URL, {
@@ -1075,11 +1239,9 @@ function submitPicaPerbaikan(newStatus) {
   };
   
   if (fileInput && fileInput.files && fileInput.files[0]) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      sendRequest(e.target.result);
-    };
-    reader.readAsDataURL(fileInput.files[0]);
+    compressImageToDataUrl(fileInput.files[0], function(compressedDataUrl) {
+      sendRequest(compressedDataUrl);
+    });
   } else {
     sendRequest("");
   }
@@ -1129,7 +1291,7 @@ function submitPicaVerifikasi(newStatus) {
   });
 }
 
-// ==================== ENGINE NOSIZU (5 SOAL PER LEVEL & LEVEL TERBUKA BERURUTAN) ====================
+// ==================== ENGINE NOSIZU ====================
 function shuffleArray(array) {
   let arr = [...array];
   for (let i = arr.length - 1; i > 0; i--) {
@@ -1421,7 +1583,6 @@ function loadProfilCabangData(cabangName) {
   .then(res => {
     if (res.status !== "success") return;
     
-    // RENDER UNTUK PIC NOS: HANYA LIST CABANG YANG MEMILIKI PICA STATUS ON CHECK
     if (res.isPicNos || isPicNos) {
       const cabangOnCheckBox = document.getElementById("picCabangOnCheckBox");
       if (cabangOnCheckBox) {
@@ -1445,7 +1606,6 @@ function loadProfilCabangData(cabangName) {
       return;
     }
     
-    // RENDER UNTUK CABANG (KEPALA CABANG / FLP)
     const badgeSkorEl = document.getElementById("profBadgeSkor");
     if (badgeSkorEl) {
       const grading = getGradingResult(res.skorNos);
