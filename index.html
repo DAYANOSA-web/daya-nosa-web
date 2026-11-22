@@ -150,89 +150,127 @@
             <p id="cardProfilDesc" class="text-[9px] sm:text-[10px] text-gray-500 leading-tight">data dan informasi cabang</p>
           </div>
         </div>
-        <!-- KARTU HASIL GENBA TERAKHIR & GRADING 6 PILAR -->
-        <div id="cardPerforma" class="bg-nosa-cardBg p-5 sm:p-6 rounded-3xl border border-gray-200/60 shadow-xs space-y-5">
-          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-gray-300/60 pb-3">
-            <div>
-              <span class="text-[10px] font-extrabold text-nosa-green tracking-wider uppercase">RESULT GENBA TERAKHIR</span>
-              <h3 class="text-base sm:text-lg font-black text-gray-900" id="homeGenbaCabang">Cabang Cibiru</h3>
-            </div>
-            
-            <div class="flex items-center gap-2 bg-white px-3.5 py-1.5 rounded-2xl border border-gray-200 shadow-2xs">
-              <span class="text-xs text-gray-500 font-bold">Grading Result:</span>
-              <span id="homeGradingBadge" class="bg-gray-400 text-gray-950 font-black text-xs px-3 py-0.5 rounded-lg shadow-xs uppercase tracking-wider">
-                -
-              </span>
-            </div>
-          </div>
-          <!-- CONTAINER UTAMA: SCORE CIRCLE & 6 KARTU PILAR -->
-          <div class="grid grid-cols-1 md:grid-cols-7 gap-4 items-center">
-            
-            <!-- OVERALL SCORE CIRCLE -->
-            <div class="md:col-span-1 flex flex-col items-center justify-center bg-white/80 p-4 rounded-2xl border border-gray-200 text-center space-y-2">
-              <div class="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 flex items-center justify-center">
-                <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                  <path class="text-gray-200" stroke-width="4" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                  <path id="homeCircleProgress" class="text-nosa-green" stroke-dasharray="0, 100" stroke-width="4" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                </svg>
-                <span class="absolute font-black text-gray-900 text-sm sm:text-base" id="homeOverallScoreVal">0%</span>
-              </div>
-              <span class="text-[10px] font-extrabold text-nosa-green tracking-wider uppercase">Rata-Rata Result</span>
-            </div>
-            <!-- GRID BREAKDOWN 6 PILAR -->
-            <div class="md:col-span-6 grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <div class="bg-white/80 p-3 rounded-2xl border border-gray-200 space-y-1 text-center">
-                <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">Premises H1</span>
-                <h4 class="text-xs sm:text-base font-black text-nosa-green" id="homeScorePremisesH1">Belum Ada Nilai GENBA Terakhir</h4>
-                <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-1">
-                  <div id="homeBarPremisesH1" class="bg-nosa-green h-full w-0 transition-all duration-500"></div>
-                </div>
+        <!-- SECTION PERFORMA HOME (BERUBAH DINAMIS SESUAI ROLE) -->
+        <div id="cardPerforma">
+          
+          <!-- TAMPILAN 1: KHUSUS CABANG (KEPALA CABANG / FLP) -->
+          <div id="homeCabangGenbaCard" class="bg-nosa-cardBg p-5 sm:p-6 rounded-3xl border border-gray-200/60 shadow-xs space-y-5">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-gray-300/60 pb-3">
+              <div>
+                <span class="text-[10px] font-extrabold text-nosa-green tracking-wider uppercase">RESULT GENBA TERAKHIR</span>
+                <h3 class="text-base sm:text-lg font-black text-gray-900" id="homeGenbaCabang">Cabang Cibiru</h3>
               </div>
               
-              <div class="bg-white/80 p-3 rounded-2xl border border-gray-200 space-y-1 text-center">
-                <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">Process H1</span>
-                <h4 class="text-xs sm:text-base font-black text-nosa-green" id="homeScoreProcessH1">Belum Ada Nilai GENBA Terakhir</h4>
-                <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-1">
-                  <div id="homeBarProcessH1" class="bg-nosa-green h-full w-0 transition-all duration-500"></div>
-                </div>
+              <div class="flex items-center gap-2 bg-white px-3.5 py-1.5 rounded-2xl border border-gray-200 shadow-2xs">
+                <span class="text-xs text-gray-500 font-bold">Grading Result:</span>
+                <span id="homeGradingBadge" class="bg-gray-400 text-gray-950 font-black text-xs px-3 py-0.5 rounded-lg shadow-xs uppercase tracking-wider">
+                  -
+                </span>
               </div>
-              <div class="bg-white/80 p-3 rounded-2xl border border-gray-200 space-y-1 text-center">
-                <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">People H1</span>
-                <h4 class="text-xs sm:text-base font-black text-nosa-green" id="homeScorePeopleH1">Belum Ada Nilai GENBA Terakhir</h4>
-                <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-1">
-                  <div id="homeBarPeopleH1" class="bg-nosa-green h-full w-0 transition-all duration-500"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-7 gap-4 items-center">
+              <div class="md:col-span-1 flex flex-col items-center justify-center bg-white/80 p-4 rounded-2xl border border-gray-200 text-center space-y-2">
+                <div class="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 flex items-center justify-center">
+                  <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                    <path class="text-gray-200" stroke-width="4" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <path id="homeCircleProgress" class="text-nosa-green" stroke-dasharray="0, 100" stroke-width="4" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                  </svg>
+                  <span class="absolute font-black text-gray-900 text-sm sm:text-base" id="homeOverallScoreVal">0%</span>
                 </div>
+                <span class="text-[10px] font-extrabold text-nosa-green tracking-wider uppercase">Rata-Rata Result</span>
               </div>
-              <div class="bg-white/80 p-3 rounded-2xl border border-gray-200 space-y-1 text-center">
-                <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">Premises H23</span>
-                <h4 class="text-xs sm:text-base font-black text-nosa-green" id="homeScorePremisesH23">Belum Ada Nilai GENBA Terakhir</h4>
-                <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-1">
-                  <div id="homeBarPremisesH23" class="bg-nosa-green h-full w-0 transition-all duration-500"></div>
+              <div class="md:col-span-6 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div class="bg-white/80 p-3 rounded-2xl border border-gray-200 space-y-1 text-center">
+                  <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">Premises H1</span>
+                  <h4 class="text-xs sm:text-base font-black text-nosa-green" id="homeScorePremisesH1">Belum Ada Nilai GENBA Terakhir</h4>
+                  <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-1">
+                    <div id="homeBarPremisesH1" class="bg-nosa-green h-full w-0 transition-all duration-500"></div>
+                  </div>
                 </div>
-              </div>
-              <div class="bg-white/80 p-3 rounded-2xl border border-gray-200 space-y-1 text-center">
-                <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">Process H23</span>
-                <h4 class="text-xs sm:text-base font-black text-nosa-green" id="homeScoreProcessH23">Belum Ada Nilai GENBA Terakhir</h4>
-                <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-1">
-                  <div id="homeBarProcessH23" class="bg-nosa-green h-full w-0 transition-all duration-500"></div>
+                <div class="bg-white/80 p-3 rounded-2xl border border-gray-200 space-y-1 text-center">
+                  <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">Process H1</span>
+                  <h4 class="text-xs sm:text-base font-black text-nosa-green" id="homeScoreProcessH1">Belum Ada Nilai GENBA Terakhir</h4>
+                  <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-1">
+                    <div id="homeBarProcessH1" class="bg-nosa-green h-full w-0 transition-all duration-500"></div>
+                  </div>
                 </div>
-              </div>
-              <div class="bg-white/80 p-3 rounded-2xl border border-gray-200 space-y-1 text-center">
-                <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">People H23</span>
-                <h4 class="text-xs sm:text-base font-black text-nosa-green" id="homeScorePeopleH23">Belum Ada Nilai GENBA Terakhir</h4>
-                <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-1">
-                  <div id="homeBarPeopleH23" class="bg-nosa-green h-full w-0 transition-all duration-500"></div>
+                <div class="bg-white/80 p-3 rounded-2xl border border-gray-200 space-y-1 text-center">
+                  <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">People H1</span>
+                  <h4 class="text-xs sm:text-base font-black text-nosa-green" id="homeScorePeopleH1">Belum Ada Nilai GENBA Terakhir</h4>
+                  <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-1">
+                    <div id="homeBarPeopleH1" class="bg-nosa-green h-full w-0 transition-all duration-500"></div>
+                  </div>
+                </div>
+                <div class="bg-white/80 p-3 rounded-2xl border border-gray-200 space-y-1 text-center">
+                  <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">Premises H23</span>
+                  <h4 class="text-xs sm:text-base font-black text-nosa-green" id="homeScorePremisesH23">Belum Ada Nilai GENBA Terakhir</h4>
+                  <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-1">
+                    <div id="homeBarPremisesH23" class="bg-nosa-green h-full w-0 transition-all duration-500"></div>
+                  </div>
+                </div>
+                <div class="bg-white/80 p-3 rounded-2xl border border-gray-200 space-y-1 text-center">
+                  <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">Process H23</span>
+                  <h4 class="text-xs sm:text-base font-black text-nosa-green" id="homeScoreProcessH23">Belum Ada Nilai GENBA Terakhir</h4>
+                  <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-1">
+                    <div id="homeBarProcessH23" class="bg-nosa-green h-full w-0 transition-all duration-500"></div>
+                  </div>
+                </div>
+                <div class="bg-white/80 p-3 rounded-2xl border border-gray-200 space-y-1 text-center">
+                  <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">People H23</span>
+                  <h4 class="text-xs sm:text-base font-black text-nosa-green" id="homeScorePeopleH23">Belum Ada Nilai GENBA Terakhir</h4>
+                  <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-1">
+                    <div id="homeBarPeopleH23" class="bg-nosa-green h-full w-0 transition-all duration-500"></div>
+                  </div>
                 </div>
               </div>
             </div>
+            
+            <div class="flex justify-between items-center pt-1">
+              <span class="text-[10px] text-gray-500 font-medium" id="homeGenbaDate">Audit Terakhir: -</span>
+              <button onclick="switchTab('genbaAudit')" class="inline-flex items-center gap-1.5 bg-nosa-green hover:bg-nosa-greenLight text-white text-xs font-bold px-3.5 py-1.5 rounded-xl shadow-xs transition cursor-pointer">
+                <span>Mulai Audit Baru</span>
+                <span>&rsaquo;</span>
+              </button>
+            </div>
           </div>
-          
-          <div class="flex justify-between items-center pt-1">
-            <span class="text-[10px] text-gray-500 font-medium" id="homeGenbaDate">Audit Terakhir: -</span>
-            <button onclick="switchTab('genbaAudit')" class="inline-flex items-center gap-1.5 bg-nosa-green hover:bg-nosa-greenLight text-white text-xs font-bold px-3.5 py-1.5 rounded-xl shadow-xs transition cursor-pointer">
-              <span>Mulai Audit Baru</span>
-              <span>&rsaquo;</span>
-            </button>
+          <!-- TAMPILAN 2: KHUSUS LOGIN PIC NOS (MONITORING AREA BINAAN & LEVEL/STATUS PICA PER CABANG) -->
+          <div id="homePicNosSummaryCard" class="hidden bg-nosa-cardBg p-5 sm:p-6 rounded-3xl border border-gray-200/60 shadow-xs space-y-5">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-gray-300/60 pb-3">
+              <div>
+                <span class="text-[10px] font-extrabold text-nosa-green tracking-wider uppercase">MONITORING AREA BINAAN PIC NOS</span>
+                <h3 class="text-base sm:text-lg font-black text-gray-900">Status NOS & PICA Cabang Binaan</h3>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="bg-white text-nosa-green border border-gray-200 text-xs font-black px-3 py-1 rounded-xl" id="picTotalCabangCount">0 Cabang</span>
+                <button onclick="loadHomePicNosSummary()" class="bg-white hover:bg-nosa-bgRole text-nosa-green border border-nosa-green/30 text-xs font-bold px-3 py-1 rounded-xl transition cursor-pointer">🔄 Refresh</button>
+              </div>
+            </div>
+            <!-- RINGKASAN STATUS PICA SELURUH AREA BINAAN -->
+            <div class="grid grid-cols-3 gap-2.5 sm:gap-4 text-center">
+              <div onclick="switchTab('pica')" class="bg-amber-50 border border-amber-300 p-3 rounded-2xl cursor-pointer hover:shadow-xs transition">
+                <span class="block text-[10px] font-extrabold text-amber-800 uppercase">Perlu Verifikasi (On Check)</span>
+                <span id="picTotalOnCheckCount" class="text-xl sm:text-2xl font-black text-amber-900">0</span>
+              </div>
+              <div class="bg-white/90 border border-gray-200 p-3 rounded-2xl">
+                <span class="block text-[10px] font-extrabold text-red-700 uppercase">PICA Open Cabang</span>
+                <span id="picTotalOpenCount" class="text-xl sm:text-2xl font-black text-red-700">0</span>
+              </div>
+              <div class="bg-white/90 border border-gray-200 p-3 rounded-2xl">
+                <span class="block text-[10px] font-extrabold text-rose-700 uppercase">PICA Reject (Revisi)</span>
+                <span id="picTotalRejectCount" class="text-xl sm:text-2xl font-black text-rose-700">0</span>
+              </div>
+            </div>
+            <!-- DAFTAR CABANG BINAAN + LEVEL NOS + STATUS PICA MASING-MASING -->
+            <div id="picAreaBinaanGrid" class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+              <p class="text-xs text-gray-400 italic col-span-full text-center py-6">Memuat informasi area binaan...</p>
+            </div>
+            <div class="flex justify-between items-center pt-1 border-t border-gray-300/50">
+              <span class="text-[10px] text-gray-500 font-medium">Klik kartu cabang untuk memeriksa & memverifikasi PICA On Check</span>
+              <button onclick="switchTab('pica')" class="inline-flex items-center gap-1.5 bg-nosa-green hover:bg-nosa-greenLight text-white text-xs font-bold px-3.5 py-1.5 rounded-xl shadow-xs transition cursor-pointer">
+                <span>Buka Dashboard PICA</span>
+                <span>&rsaquo;</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -327,7 +365,7 @@
           <p class="text-xs text-gray-400 italic col-span-full text-center py-8">Memuat materi video onboarding...</p>
         </div>
       </div>
-      <!-- TAB 4: HALAMAN AUDIT GENBA DIRECT & KATEGORISASI (H1/H23) + RESULT CALCULATOR -->
+      <!-- TAB 4: HALAMAN AUDIT GENBA DIRECT -->
       <div id="genbaAuditPage" class="hidden space-y-4">
         <div class="bg-nosa-cardBg p-4 sm:p-5 rounded-3xl border border-gray-200/80 shadow-xs space-y-4">
           <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-gray-300/50 pb-3">
@@ -463,7 +501,7 @@
           <p class="text-xs font-bold text-gray-400" id="profSubRole">JBR</p>
         </div>
         
-        <!-- VIEW KHUSUS CABANG (KEPALA CABANG / FLP) -->
+        <!-- VIEW KHUSUS CABANG -->
         <div id="profilCabangView" class="space-y-4">
           <div class="bg-nosa-cardBg p-4 rounded-2xl border-2 border-indigo-400/80 shadow-xs flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -569,11 +607,15 @@
         <p class="text-gray-500" id="modalPicaCatatan">Temuan dari Audit GENBA</p>
       </div>
       
-      <!-- PREVIEW FOTO EVIDENCE -->
-      <div id="modalEvidencePreviewBox" class="hidden bg-gray-50 p-2.5 rounded-2xl border border-gray-200 space-y-1">
-        <span class="text-[10px] font-bold text-gray-500 uppercase">Bukti Foto Terlampir:</span>
-        <div class="w-full h-40 bg-white rounded-xl overflow-hidden flex items-center justify-center border border-gray-200">
+      <!-- PREVIEW FOTO EVIDENCE / FOTO BUKTI PERBAIKAN CABANG -->
+      <div id="modalEvidencePreviewBox" class="hidden bg-gray-50 p-3 rounded-2xl border border-gray-200 space-y-1.5">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-extrabold text-gray-600 uppercase">📷 Bukti Foto Perbaikan Cabang:</span>
+          <a id="modalEvidenceFullLink" href="#" target="_blank" class="hidden text-[10px] font-bold text-nosa-green hover:underline">Buka Penuh &nearr;</a>
+        </div>
+        <div class="w-full h-52 bg-white rounded-xl overflow-hidden flex items-center justify-center border border-gray-200">
           <img id="modalEvidenceImg" src="" alt="Bukti PICA" class="max-h-full max-w-full object-contain">
+          <p id="modalEvidenceEmptyText" class="hidden text-[11px] text-gray-400 italic px-4 text-center">Cabang belum melampirkan foto bukti perbaikan.</p>
         </div>
       </div>
       
