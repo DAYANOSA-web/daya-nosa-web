@@ -517,29 +517,17 @@
           </div>
         </div>
         
-        <!-- VIEW KHUSUS PIC NOS -->
+        <!-- VIEW KHUSUS PIC NOS: HANYA LIST CABANG YANG MEMILIKI PICA STATUS ON CHECK -->
         <div id="profilPicNosView" class="hidden space-y-4">
           <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs space-y-3">
             <div class="flex justify-between items-center border-b border-gray-300/50 pb-2">
               <div class="flex items-center gap-2 text-xs sm:text-sm font-extrabold text-gray-800">
-                <span>🏢</span> <span>Cabang yang Dipegang (Area Binaan)</span>
+                <span>🏢</span> <span>Cabang dengan PICA Status On Check</span>
               </div>
               <button onclick="loadProfilCabangData(currentUser ? currentUser.cabang : '')" class="text-[10px] font-bold text-nosa-green hover:underline">🔄 Refresh</button>
             </div>
-            <div class="space-y-2 text-xs" id="picCabangBinaanBox">
-              <p class="text-gray-400 italic">Memuat daftar cabang binaan...</p>
-            </div>
-          </div>
-          
-          <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs space-y-3">
-            <div class="flex justify-between items-center border-b border-gray-300/50 pb-2">
-              <div class="flex items-center gap-2 text-xs sm:text-sm font-extrabold text-gray-800">
-                <span>✅</span> <span>PICA yang Harus Di-Check (On Check)</span>
-              </div>
-              <a href="#" onclick="switchTab('pica')" class="text-xs text-nosa-green font-bold hover:underline">Buka Dashboard PICA &rsaquo;</a>
-            </div>
-            <div class="space-y-2 text-xs" id="picPicaCheckBox">
-              <p class="text-gray-400 italic">Memuat daftar PICA On Check...</p>
+            <div class="space-y-2 text-xs" id="picCabangOnCheckBox">
+              <p class="text-gray-400 italic">Memuat daftar cabang...</p>
             </div>
           </div>
         </div>
