@@ -38,6 +38,11 @@ let reminderState = { rule1: true, rule2: true, rule3: true, rule4: true };
 let activeToastTargetTab = "pica";
 let activePicaId = null;
 
+function isUserPicNos() {
+  if (!currentUser || !currentUser.role) return false;
+  return String(currentUser.role).trim().toUpperCase().includes("PIC");
+}
+
 function formatDateNice(dateStr) {
   if (!dateStr) return "-";
   try {
@@ -216,20 +221,19 @@ function renderDashboard(user) {
   
   const safeNama = user.nama || user.email || "Pengguna";
   const safeCabang = user.cabang || "Cibiru";
-  const isPicNos = (user.role || "").toUpperCase() === "PIC NOS";
+  const isPicNos = isUserPicNos();
   
   const dashUserNamaEl = document.getElementById("dashUserNama");
   if (dashUserNamaEl) dashUserNamaEl.innerText = safeNama;
   
-  // Sesuaikan label kartu profil di Home & Navbar berdasarkan Role
   const cardProfilTitle = document.getElementById("cardProfilTitle");
   const cardProfilDesc = document.getElementById("cardProfilDesc");
   if (cardProfilTitle) cardProfilTitle.innerText = isPicNos ? "profil PIC NOS" : "profil cabang";
-  if (cardProfilDesc) cardProfilDesc.innerText = isPicNos ? "daftar cabang binaan & PICA" : "data dan informasi cabang";
+  if (cardProfilDesc) cardProfilDesc.innerText = isPicNos ? "daftar cabang PICA On Check" : "data dan informasi cabang";
   
   const profNamaCabangEl = document.getElementById("profNamaCabang");
   if (profNamaCabangEl) {
-    profNamaCabangEl.innerText = isPicNos ? `PIC NOS: ${safeNama}` : `Cabang ${safeCabang}`;
+    profNamaCabangEl.innerText = isPicNos ? safeNama : `Cabang ${safeCabang}`;
   }
   
   switchTab("home");
@@ -244,7 +248,7 @@ function renderDashboard(user) {
 }
 
 function loadHomeLastGenbaResult(cabangName) {
-  const isPicNos = currentUser && (currentUser.role || "").toUpperCase() === "PIC NOS";
+  const isPicNos = isUserPicNos();
   const cabangTitleEl = document.getElementById("homeGenbaCabang");
   if (cabangTitleEl) {
     cabangTitleEl.innerText = isPicNos ? `Area Binaan (${cabangName})` : `Cabang ${cabangName}`;
@@ -667,7 +671,7 @@ function showInAppReminderToast(msg, targetTab = "pica") {
   const cabangBadge = document.getElementById("toastCabangBadge");
   const msgContent = document.getElementById("toastMessageContent");
   const cabang = currentUser ? (currentUser.cabang || "Cibiru") : "Cibiru";
-  const isPic = currentUser && (currentUser.role || "").toUpperCase() === "PIC NOS";
+  const isPic = isUserPicNos();
   if (cabangBadge) cabangBadge.innerText = isPic ? `PIC NOS` : `Cabang ${cabang}`;
   if (msgContent) msgContent.innerText = msg;
   activeToastTargetTab = targetTab;
@@ -895,7 +899,7 @@ function loadPicaDashboardData() {
   const userCabang = (currentUser && currentUser.cabang) ? currentUser.cabang : "Cibiru";
   const userRole = (currentUser && currentUser.role) ? currentUser.role : "Kepala Cabang";
   const userEmail = (currentUser && currentUser.email) ? currentUser.email : "";
-  const isPicNos = userRole.toUpperCase() === "PIC NOS";
+  const isPicNos = isUserPicNos();
   
   const subtitleEl = document.getElementById("picaSubtitleText");
   if (subtitleEl) {
@@ -958,8 +962,7 @@ function openPicaModalByIndex(idx) {
 
 function openPicaModal(item) {
   activePicaId = item.idPica;
-  const userRole = (currentUser && currentUser.role) ? currentUser.role.toUpperCase() : "KEPALA CABANG";
-  const isPicNos = userRole === "PIC NOS";
+  const isPicNos = isUserPicNos();
   const stLower = String(item.status || "").toLowerCase();
   
   document.getElementById("modalPicaTitle").innerText = `Detail PICA (${item.idPica}) - ${item.cabang || ''}`;
@@ -970,7 +973,6 @@ function openPicaModal(item) {
     catatanEl.innerText = item.catatanPerbaikan || "Temuan dari Audit GENBA";
   }
   
-  // Tampilkan foto evidence jika ada
   const evidBox = document.getElementById("modalEvidencePreviewBox");
   const evidImg = document.getElementById("modalEvidenceImg");
   if (evidBox && evidImg) {
@@ -983,7 +985,6 @@ function openPicaModal(item) {
     }
   }
   
-  // Tampilkan alasan reject jika status sebelumnya Reject
   const rejectAlertBox = document.getElementById("modalRejectAlertBox");
   const rejectAlertText = document.getElementById("modalRejectAlertText");
   if (rejectAlertBox && rejectAlertText) {
@@ -1014,7 +1015,6 @@ function openPicaModal(item) {
       return;
     }
   } else {
-    // Role Cabang (Kepala Cabang / FLP)
     if (stLower === "open" || stLower === "reject") {
       cabangForm.classList.remove("hidden");
       const inpCatatan = document.getElementById("modalCatatanPerbaikan");
@@ -1394,7 +1394,7 @@ function loadProfilCabangData(cabangName) {
   const userRole = (currentUser && currentUser.role) ? currentUser.role : "Kepala Cabang";
   const userEmail = (currentUser && currentUser.email) ? currentUser.email : "";
   const userNama = (currentUser && currentUser.nama) ? currentUser.nama : "";
-  const isPicNos = userRole.toUpperCase() === "PIC NOS";
+  const isPicNos = isUserPicNos();
   
   const cabangView = document.getElementById("profilCabangView");
   const picNosView = document.getElementById("profilPicNosView");
@@ -1406,7 +1406,7 @@ function loadProfilCabangData(cabangName) {
     if (cabangView) cabangView.classList.add("hidden");
     if (picNosView) picNosView.classList.remove("hidden");
     if (headerTitle) headerTitle.innerText = userNama || "PIC NOS";
-    if (headerSub) headerSub.innerText = "PIC NOS • Monitoring Area Binaan";
+    if (headerSub) headerSub.innerText = "PIC NOS • Daftar Cabang Perlu Verifikasi PICA (On Check)";
     if (breadcrumbText) breadcrumbText.innerText = "PIC NOS";
   } else {
     if (cabangView) cabangView.classList.remove("hidden");
@@ -1421,51 +1421,23 @@ function loadProfilCabangData(cabangName) {
   .then(res => {
     if (res.status !== "success") return;
     
-    // RENDER UNTUK PIC NOS
-    if (res.isPicNos) {
-      const cabangBox = document.getElementById("picCabangBinaanBox");
-      const picaCheckBox = document.getElementById("picPicaCheckBox");
-      
-      if (cabangBox) {
-        if (!res.cabangBinaan || res.cabangBinaan.length === 0) {
-          cabangBox.innerHTML = `<p class="text-gray-400 italic text-xs">Belum ada cabang binaan terdaftar.</p>`;
+    // RENDER UNTUK PIC NOS: HANYA LIST CABANG YANG MEMILIKI PICA STATUS ON CHECK
+    if (res.isPicNos || isPicNos) {
+      const cabangOnCheckBox = document.getElementById("picCabangOnCheckBox");
+      if (cabangOnCheckBox) {
+        const listCabang = res.cabangOnCheckList || [];
+        if (listCabang.length === 0) {
+          cabangOnCheckBox.innerHTML = `<p class="text-gray-400 italic text-xs py-2">🎉 Tidak ada cabang dengan status PICA On Check saat ini.</p>`;
         } else {
-          cabangBox.innerHTML = res.cabangBinaan.map(cab => {
-            const gr = getGradingResult(cab.skorNos);
-            return `
-              <div class="bg-white/90 p-3 rounded-xl border border-gray-200 flex items-center justify-between gap-2">
-                <div>
-                  <h4 class="text-xs sm:text-sm font-black text-gray-900">🏢 Cabang ${cab.namaCabang}</h4>
-                  <p class="text-[10px] text-gray-500 mt-0.5">
-                    PICA On Check: <span class="font-bold text-amber-700">${cab.picaOnCheck}</span> • 
-                    PICA Open/Reject: <span class="font-bold text-red-600">${cab.picaOpen}</span>
-                  </p>
-                </div>
-                <div class="text-right">
-                  <span class="${gr.bgClass} text-[10px] px-2.5 py-0.5 rounded-md uppercase">${gr.title}</span>
-                  <p class="text-[10px] font-bold text-gray-500 mt-0.5">${cab.skorNos !== null ? cab.skorNos + '%' : 'Belum Audit'}</p>
-                </div>
-              </div>
-            `;
-          }).join('');
-        }
-      }
-      
-      if (picaCheckBox) {
-        if (!res.picaHarusDiCheck || res.picaHarusDiCheck.length === 0) {
-          picaCheckBox.innerHTML = `<p class="text-gray-400 italic text-xs">🎉 Semua PICA cabang binaan sudah terverifikasi!</p>`;
-        } else {
-          picaCheckBox.innerHTML = res.picaHarusDiCheck.map(p => `
-            <div onclick="switchTab('pica')" class="bg-white/90 p-3 rounded-xl border border-amber-300 flex items-center justify-between gap-2 cursor-pointer hover:bg-amber-50/70 transition">
+          cabangOnCheckBox.innerHTML = listCabang.map(cab => `
+            <div onclick="switchTab('pica')" class="bg-white/90 p-3.5 rounded-xl border border-amber-300 flex items-center justify-between gap-2 cursor-pointer hover:bg-amber-50/70 transition">
               <div class="space-y-0.5">
-                <div class="flex items-center gap-1.5">
-                  <span class="text-[10px] font-extrabold text-gray-400">${p.idPica}</span>
-                  <span class="bg-nosa-green text-white text-[9px] font-bold px-2 py-0.5 rounded-md">Cabang ${p.cabang}</span>
-                </div>
-                <p class="text-xs font-bold text-gray-900">${p.item}</p>
-                <p class="text-[10px] text-gray-500">Due: ${formatDateNice(p.dueDate)}</p>
+                <h4 class="text-xs sm:text-sm font-black text-gray-900">🏢 Cabang ${cab.namaCabang}</h4>
+                <p class="text-[10px] text-gray-500">Klik untuk memeriksa & memverifikasi temuan PICA</p>
               </div>
-              <span class="bg-amber-200 text-amber-900 text-[9px] font-extrabold px-2.5 py-1 rounded-full whitespace-nowrap">On Check &rsaquo;</span>
+              <span class="bg-amber-200 text-amber-900 text-[10px] font-extrabold px-3 py-1 rounded-full whitespace-nowrap">
+                ${cab.picaOnCheck} On Check &rsaquo;
+              </span>
             </div>
           `).join('');
         }
@@ -1474,7 +1446,6 @@ function loadProfilCabangData(cabangName) {
     }
     
     // RENDER UNTUK CABANG (KEPALA CABANG / FLP)
-    // 1. Badge Skor NOS Saat Ini
     const badgeSkorEl = document.getElementById("profBadgeSkor");
     if (badgeSkorEl) {
       const grading = getGradingResult(res.skorNos);
@@ -1486,7 +1457,6 @@ function loadProfilCabangData(cabangName) {
       `;
     }
     
-    // 2. PICA yang Belum Selesai
     const picaBox = document.getElementById("profPicaBox");
     if (picaBox) {
       if (!res.picaBelumSelesai || res.picaBelumSelesai.length === 0) {
@@ -1509,7 +1479,6 @@ function loadProfilCabangData(cabangName) {
       }
     }
     
-    // 3. Temuan Berulang
     const berulangBox = document.getElementById("profTemuanBerulangBox");
     if (berulangBox) {
       if (!res.temuanBerulang || res.temuanBerulang.length === 0) {
@@ -1524,7 +1493,6 @@ function loadProfilCabangData(cabangName) {
       }
     }
     
-    // 4. 3 Besar FLP NOSIZU
     const topFlpBox = document.getElementById("profTopFlpBox");
     if (topFlpBox) {
       if (!res.topFlp || res.topFlp.length === 0) {
@@ -1543,7 +1511,6 @@ function loadProfilCabangData(cabangName) {
       }
     }
     
-    // 5. Jadwal GENBA Berikutnya
     if (res.info && res.info.jadwalGenba) {
       const jadwalEl = document.getElementById("profJadwalGenba");
       if (jadwalEl) jadwalEl.innerText = formatDateNice(res.info.jadwalGenba);
