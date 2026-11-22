@@ -146,8 +146,8 @@
           </div>
           <div id="cardProfil" onclick="switchTab('profil')" class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs flex flex-col items-center text-center space-y-2 cursor-pointer hover:border-nosa-green hover:shadow-md transition">
             <div class="text-3xl sm:text-4xl">🏢</div>
-            <h4 class="font-extrabold text-xs sm:text-sm text-nosa-green leading-tight">profil cabang</h4>
-            <p class="text-[9px] sm:text-[10px] text-gray-500 leading-tight">data dan informasi cabang</p>
+            <h4 id="cardProfilTitle" class="font-extrabold text-xs sm:text-sm text-nosa-green leading-tight">profil cabang</h4>
+            <p id="cardProfilDesc" class="text-[9px] sm:text-[10px] text-gray-500 leading-tight">data dan informasi cabang</p>
           </div>
         </div>
         <!-- KARTU HASIL GENBA TERAKHIR & GRADING 6 PILAR -->
@@ -382,7 +382,7 @@
         <div class="flex justify-between items-center border-b border-gray-300/60 pb-2">
           <div>
             <h2 class="text-xl font-extrabold text-nosa-green tracking-tight">Dashboard PICA</h2>
-            <p class="text-[10px] text-gray-500">Daftar temuan audit yang memerlukan tindakan perbaikan</p>
+            <p id="picaSubtitleText" class="text-[10px] text-gray-500">Daftar temuan audit yang memerlukan tindakan perbaikan</p>
           </div>
           <button onclick="loadPicaDashboardData()" class="text-[10px] font-bold bg-white text-nosa-green px-3 py-1.5 rounded-xl border border-nosa-green/30 hover:bg-nosa-bgRole transition">
             🔄 Refresh
@@ -453,66 +453,95 @@
           <p class="text-xs text-gray-400 italic text-center py-8">Memuat klasemen...</p>
         </div>
       </div>
-      <!-- TAB 8: PROFIL CABANG -->
+      <!-- TAB 8: PROFIL CABANG & PROFIL PIC NOS -->
       <div id="profilPage" class="hidden space-y-4 max-w-2xl mx-auto">
         <div class="space-y-1 pt-1">
           <div class="flex items-center gap-1.5 text-xs text-gray-400 font-normal">
-            <span>🏠</span> <span>JBR</span> <span>&gt;</span> <span>Cabang</span>
+            <span>🏠</span> <span>JBR</span> <span>&gt;</span> <span id="profBreadcrumbRole">Cabang</span>
           </div>
           <h2 class="text-2xl font-black text-gray-900 tracking-tight" id="profNamaCabang">Cabang Cibiru</h2>
-          <p class="text-xs font-bold text-gray-400">JBR</p>
+          <p class="text-xs font-bold text-gray-400" id="profSubRole">JBR</p>
         </div>
-        <div class="bg-nosa-cardBg p-4 rounded-2xl border-2 border-indigo-400/80 shadow-xs flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <div class="text-3xl">🏆</div>
-            <div>
-              <p class="text-xs font-bold text-gray-800">Skor NOS saat ini</p>
-              <div class="flex items-center gap-1.5 mt-1" id="profBadgeSkor">
-                <span class="bg-amber-400 text-gray-900 text-xs font-extrabold px-3 py-0.5 rounded-md shadow-2xs">GOLD</span>
-                <span class="text-gray-400 font-light text-xs">/</span>
-                <span class="bg-gray-300 text-gray-600 text-xs font-bold px-3 py-0.5 rounded-md">PLATINUM</span>
+        
+        <!-- VIEW KHUSUS CABANG (KEPALA CABANG / FLP) -->
+        <div id="profilCabangView" class="space-y-4">
+          <div class="bg-nosa-cardBg p-4 rounded-2xl border-2 border-indigo-400/80 shadow-xs flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="text-3xl">🏆</div>
+              <div>
+                <p class="text-xs font-bold text-gray-800">Skor NOS saat ini</p>
+                <div class="flex items-center gap-1.5 mt-1" id="profBadgeSkor">
+                  <span class="bg-gray-300 text-gray-600 text-xs font-bold px-3 py-0.5 rounded-md">-</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-        <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs space-y-3">
-          <div class="flex justify-between items-center border-b border-gray-300/50 pb-2">
-            <div class="flex items-center gap-2 text-xs sm:text-sm font-extrabold text-gray-800">
-              <span>📋</span> <span>PICA yang belum selesai</span>
+          <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs space-y-3">
+            <div class="flex justify-between items-center border-b border-gray-300/50 pb-2">
+              <div class="flex items-center gap-2 text-xs sm:text-sm font-extrabold text-gray-800">
+                <span>📋</span> <span>PICA yang belum selesai</span>
+              </div>
+              <a href="#" onclick="switchTab('pica')" class="text-xs text-gray-500 hover:underline">Lihat semua &rsaquo;</a>
             </div>
-            <a href="#" onclick="switchTab('pica')" class="text-xs text-gray-500 hover:underline">Lihat semua &rsaquo;</a>
-          </div>
-          <div class="space-y-2 text-xs" id="profPicaBox">
-            <p class="text-gray-400 italic">Memuat data PICA...</p>
-          </div>
-        </div>
-        <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs space-y-3">
-          <div class="flex justify-between items-center border-b border-gray-300/50 pb-2">
-            <div class="flex items-center gap-2 text-xs sm:text-sm font-extrabold text-gray-800">
-              <span class="text-red-500">🔄</span> <span>Temuan Berulang</span>
+            <div class="space-y-2 text-xs" id="profPicaBox">
+              <p class="text-gray-400 italic">Memuat data PICA...</p>
             </div>
-            <a href="#" onclick="switchTab('pica')" class="text-xs text-gray-500 hover:underline">Lihat semua &rsaquo;</a>
           </div>
-          <div class="space-y-2 text-xs" id="profTemuanBerulangBox">
-            <p class="text-gray-400 italic">Memuat temuan berulang...</p>
+          <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs space-y-3">
+            <div class="flex justify-between items-center border-b border-gray-300/50 pb-2">
+              <div class="flex items-center gap-2 text-xs sm:text-sm font-extrabold text-gray-800">
+                <span class="text-red-500">🔄</span> <span>Temuan Berulang</span>
+              </div>
+              <a href="#" onclick="switchTab('pica')" class="text-xs text-gray-500 hover:underline">Lihat semua &rsaquo;</a>
+            </div>
+            <div class="space-y-2 text-xs" id="profTemuanBerulangBox">
+              <p class="text-gray-400 italic">Memuat temuan berulang...</p>
+            </div>
+          </div>
+          <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs space-y-3">
+            <div class="flex items-center gap-2 text-xs sm:text-sm font-extrabold text-gray-800 border-b border-gray-300/50 pb-2">
+              <span>🏆</span> <span>3 Besar FLP NOSIZU</span>
+            </div>
+            <div class="space-y-2 text-xs" id="profTopFlpBox">
+              <p class="text-gray-400 italic">Memuat peringkat FLP...</p>
+            </div>
+          </div>
+          <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs flex items-center justify-between">
+            <div class="space-y-1">
+              <p class="text-xs font-bold text-gray-700 flex items-center gap-1.5">
+                <span>📅</span> Jadwal GENBA berikutnya
+              </p>
+              <h4 class="text-lg font-black text-gray-900" id="profJadwalGenba">25 Okt 2026</h4>
+            </div>
+            <span class="bg-emerald-300 text-emerald-900 text-xs font-extrabold px-3 py-1 rounded-full flex items-center gap-1">📍 Onsite</span>
           </div>
         </div>
-        <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs space-y-3">
-          <div class="flex items-center gap-2 text-xs sm:text-sm font-extrabold text-gray-800 border-b border-gray-300/50 pb-2">
-            <span>🏆</span> <span>3 Besar FLP NOSIZU</span>
+        
+        <!-- VIEW KHUSUS PIC NOS -->
+        <div id="profilPicNosView" class="hidden space-y-4">
+          <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs space-y-3">
+            <div class="flex justify-between items-center border-b border-gray-300/50 pb-2">
+              <div class="flex items-center gap-2 text-xs sm:text-sm font-extrabold text-gray-800">
+                <span>🏢</span> <span>Cabang yang Dipegang (Area Binaan)</span>
+              </div>
+              <button onclick="loadProfilCabangData(currentUser ? currentUser.cabang : '')" class="text-[10px] font-bold text-nosa-green hover:underline">🔄 Refresh</button>
+            </div>
+            <div class="space-y-2 text-xs" id="picCabangBinaanBox">
+              <p class="text-gray-400 italic">Memuat daftar cabang binaan...</p>
+            </div>
           </div>
-          <div class="space-y-2 text-xs" id="profTopFlpBox">
-            <p class="text-gray-400 italic">Memuat peringkat FLP...</p>
+          
+          <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs space-y-3">
+            <div class="flex justify-between items-center border-b border-gray-300/50 pb-2">
+              <div class="flex items-center gap-2 text-xs sm:text-sm font-extrabold text-gray-800">
+                <span>✅</span> <span>PICA yang Harus Di-Check (On Check)</span>
+              </div>
+              <a href="#" onclick="switchTab('pica')" class="text-xs text-nosa-green font-bold hover:underline">Buka Dashboard PICA &rsaquo;</a>
+            </div>
+            <div class="space-y-2 text-xs" id="picPicaCheckBox">
+              <p class="text-gray-400 italic">Memuat daftar PICA On Check...</p>
+            </div>
           </div>
-        </div>
-        <div class="bg-nosa-cardBg p-4 rounded-2xl border border-gray-200/60 shadow-xs flex items-center justify-between">
-          <div class="space-y-1">
-            <p class="text-xs font-bold text-gray-700 flex items-center gap-1.5">
-              <span>📅</span> Jadwal GENBA berikutnya
-            </p>
-            <h4 class="text-lg font-black text-gray-900" id="profJadwalGenba">25 Okt 2026</h4>
-          </div>
-          <span class="bg-emerald-300 text-emerald-900 text-xs font-extrabold px-3 py-1 rounded-full flex items-center gap-1">📍 Onsite</span>
         </div>
       </div>
     </main>
@@ -542,7 +571,7 @@
   </div>
   <!-- MODAL PICA ACTION -->
   <div id="picaActionModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-    <div class="bg-white w-full max-w-md rounded-3xl p-5 space-y-4 shadow-2xl border border-gray-100">
+    <div class="bg-white w-full max-w-md rounded-3xl p-5 space-y-4 shadow-2xl border border-gray-100 max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center border-b border-gray-200 pb-2">
         <h3 class="text-base font-black text-gray-900" id="modalPicaTitle">Detail Tindakan PICA</h3>
         <button onclick="closePicaModal()" class="text-gray-400 hover:text-gray-700 text-lg font-bold">&times;</button>
@@ -551,6 +580,22 @@
         <p class="font-extrabold text-nosa-green text-sm" id="modalPicaItem">Kebersihan Network</p>
         <p class="text-gray-500" id="modalPicaCatatan">Temuan dari Audit GENBA</p>
       </div>
+      
+      <!-- PREVIEW FOTO EVIDENCE -->
+      <div id="modalEvidencePreviewBox" class="hidden bg-gray-50 p-2.5 rounded-2xl border border-gray-200 space-y-1">
+        <span class="text-[10px] font-bold text-gray-500 uppercase">Bukti Foto Terlampir:</span>
+        <div class="w-full h-40 bg-white rounded-xl overflow-hidden flex items-center justify-center border border-gray-200">
+          <img id="modalEvidenceImg" src="" alt="Bukti PICA" class="max-h-full max-w-full object-contain">
+        </div>
+      </div>
+      
+      <!-- ALERT CATATAN REJECT DARI PIC NOS (MUNCUL DI CABANG JIKA DI-REJECT) -->
+      <div id="modalRejectAlertBox" class="hidden bg-rose-50 p-3 rounded-xl border border-rose-300 text-xs space-y-1">
+        <p class="font-extrabold text-rose-800">❌ Ditolak oleh PIC NOS (Perlu Perbaikan Ulang):</p>
+        <p class="text-rose-700 text-[11px]" id="modalRejectAlertText">Alasan penolakan...</p>
+      </div>
+      
+      <!-- FORM CABANG (OPEN / REJECT) -->
       <div id="modalCabangForm" class="space-y-3 pt-2 border-t border-gray-100">
         <div>
           <label class="block text-[10px] font-bold text-gray-600 uppercase mb-1">Upload Bukti Perbaikan (Foto)</label>
@@ -560,18 +605,35 @@
           <label class="block text-[10px] font-bold text-gray-600 uppercase mb-1">Catatan Tindakan Perbaikan</label>
           <textarea id="modalCatatanPerbaikan" rows="3" placeholder="Tuliskan perbaikan yang telah dilakukan..." class="w-full p-2.5 rounded-xl border border-gray-300 text-xs text-gray-800 focus:outline-none"></textarea>
         </div>
-        <button type="button" onclick="submitPicaPerbaikan('On Check')" id="btnSubmitPerbaikan" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs rounded-xl shadow-md transition">
-          🚀 Kirim ke NOS Officer (Ubah Status ke On Check)
+        <button type="button" onclick="submitPicaPerbaikan('On Check')" id="btnSubmitPerbaikan" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs rounded-xl shadow-md transition cursor-pointer">
+          🚀 Kirim ke PIC NOS (Ubah Status ke On Check)
         </button>
       </div>
+      
+      <!-- INFO MENUNGGU VERIFIKASI (CABANG SAAT STATUS ON CHECK) -->
+      <div id="modalCabangWaitingInfo" class="hidden bg-amber-50 p-3.5 rounded-2xl border border-amber-200 text-xs space-y-1">
+        <p class="font-extrabold text-amber-900">⏳ Menunggu Verifikasi PIC NOS</p>
+        <p class="text-amber-800 text-[11px]">Perbaikan Anda sudah terkirim dan sedang diperiksa oleh PIC NOS.</p>
+      </div>
+      
+      <!-- FORM PIC NOS (APPROVE / REJECT STATUS ON CHECK) -->
       <div id="modalNosForm" class="space-y-3 pt-2 border-t border-gray-100 hidden">
         <div class="bg-amber-50 p-3 rounded-xl border border-amber-200 text-xs space-y-1">
-          <p class="font-bold text-amber-900">Perbaikan telah diajukan Cabang</p>
+          <p class="font-bold text-amber-900">Catatan Perbaikan dari Cabang:</p>
           <p class="text-gray-700 text-[11px]" id="modalCatatanPerbaikanView">Catatan perbaikan cabang...</p>
         </div>
-        <button type="button" onclick="submitPicaVerifikasi('Closed')" id="btnSubmitVerifikasi" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-md transition">
-          ✅ Verifikasi & Approve (Ubah Status ke Closed)
-        </button>
+        <div>
+          <label class="block text-[10px] font-bold text-gray-600 uppercase mb-1">Alasan Penolakan (Wajib diisi jika Reject)</label>
+          <textarea id="modalCatatanRejectInput" rows="2" placeholder="Isi catatan revisi jika perbaikan cabang belum sesuai..." class="w-full p-2.5 rounded-xl border border-gray-300 text-xs text-gray-800 focus:outline-none"></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" onclick="submitPicaVerifikasi('Reject')" id="btnRejectPica" class="py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl shadow-md transition cursor-pointer">
+            ❌ Reject (Revisi)
+          </button>
+          <button type="button" onclick="submitPicaVerifikasi('Closed')" id="btnApprovePica" class="py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-md transition cursor-pointer">
+            ✅ Approve (Selesai)
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -650,3 +712,4 @@
   <script src="script.js"></script>
 </body>
 </html>
+
